@@ -109,7 +109,7 @@ public class PlayerController : MonoBehaviour
             }
 
             if (enemyFront) {
-                Debug.Log("//---PLAYER ATTACK\n---//");moving = true;
+                Debug.Log("//---PLAYER ATTACK---//");moving = true;
                 highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                 highPoint = targetPosition;
                 targetPosition = startPosition;
