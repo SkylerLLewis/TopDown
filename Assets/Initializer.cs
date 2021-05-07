@@ -17,6 +17,31 @@ public class Initializer : MonoBehaviour
     private Tilemap lowerWallMap;
     Vector3Int cellLoc;
     private GameObject enemies;
+
+    private class Room {
+        private Vector3Int head, tail;
+        private int width, height;
+        Room() {
+
+        }
+
+        public bool Contains(Vector3Int cell) {
+            return (cell.x <= head.x && cell.x >= tail.x &&
+                    cell.y <= head.y && cell.y >= tail.y);
+        }
+
+        /*public bool Collides(in Room r) {
+            bool collide;
+            if (r.head.x > this.head.x && r.head.y > this.head.y) {
+                collide = Abs(r.head.x-this.head.x) < r.width || Abs(r.head.y-this.head.y) < r.height;
+            } else if (r.head.x < this.head.x) {
+                wide = Abs(r.head.x-this.head.x) < this.width;
+            } else if (r.tail.x > this.head.x) {
+                return (Abs(r.head.x-this.head.x) < this.width);
+            }
+            return collide;
+        }*/
+    }
     
     void Awake() {
         // Load tile resources
@@ -72,14 +97,14 @@ public class Initializer : MonoBehaviour
     }
 
     // Creates a floorspace, rooted at top corner
-    void createRoom(Vector3Int root, Vector3Int tail) {
-        int xLen = root.x - tail.x+1;
-        int yLen = root.y - tail.y+1;
+    void createRoom(Vector3Int head, Vector3Int tail) {
+        int xLen = head.x - tail.x+1;
+        int yLen = head.y - tail.y+1;
         Vector3Int placement = new Vector3Int(0,0,0);
         for (int x=0; x>-xLen; x--) {
             for (int y=0; y>-yLen; y--) {
-                placement.x = root.x + x;
-                placement.y = root.y + y;
+                placement.x = head.x + x;
+                placement.y = head.y + y;
                 Tile clone = Instantiate(floor);
                 clone.name = "floor";
                 dungeonMap.SetTile(placement, clone);
@@ -88,8 +113,8 @@ public class Initializer : MonoBehaviour
         createWalls(tail);
         for (int x=0; x>-xLen; x--) {
             for (int y=0; y>-yLen; y--) {
-                placement.x = root.x + x;
-                placement.y = root.y + y;
+                placement.x = head.x + x;
+                placement.y = head.y + y;
                 createWalls(placement);
             }
         }
