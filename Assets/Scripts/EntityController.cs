@@ -28,9 +28,12 @@ public class EntityController : MonoBehaviour
             var ret = x.timer.CompareTo(y.timer);
             return ret;
         });
-        // Remove slow ones
+        // Remove dead/slow ones
         for (int i=entities.Count-1; i>=0; i--) {
             if (entities[i].timer >= 0) {
+                Debug.Log(entities[i].name+" being removed for slowness");
+                entities.RemoveAt(i);
+            } else if (entities[i].dying) {
                 entities.RemoveAt(i);
             }
         }
@@ -54,19 +57,16 @@ public class EntityController : MonoBehaviour
 
     public void doubleTurn() {
         if (next.Count != 0) {
-            for (int i=0; i<next.Count; i++) {
+            for (int i=next.Count-1; i>=0; i--) {
                 EnemyBehavior e = next[i];
-                e.timer += e.speed;
-                if (i == next.Count-1) {
-                    //Debug.Log(e.name+" Designated reporter.");
+                    e.timer += e.speed;
+                if (next[i].timer >= 0) {
+                    next.RemoveAt(i);
+                }
+                if (i == 0) {
                     e.BroadcastMessage("myTurn", true);
                 } else {
                     e.BroadcastMessage("myTurn", true);
-                }
-            }
-            for (int i=next.Count-1; i>=0; i--) {
-                if (next[i].timer >= 0) {
-                    next.RemoveAt(i);
                 }
             }
         } else {

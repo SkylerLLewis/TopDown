@@ -9,6 +9,7 @@ TagManager:
   - EnemyList
   - EntityList
   - WallMap
+  - WorldCanvas
   layers:
   - Default
   - TransparentFX
