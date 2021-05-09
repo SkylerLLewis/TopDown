@@ -93,7 +93,7 @@ public class Initializer : MonoBehaviour
         */
         enemies = GameObject.FindWithTag("EntityList");
         Object gobFab = Resources.Load("Prefabs/Goblin");
-        Instantiate(gobFab, new Vector3(0,-1.25f,0), Quaternion.identity, enemies.transform);
+        Instantiate(gobFab, new Vector3(0,-1.5f,0), Quaternion.identity, enemies.transform);
     }
 
     // Creates a floorspace, rooted at top corner

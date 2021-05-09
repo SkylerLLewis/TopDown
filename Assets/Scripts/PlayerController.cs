@@ -2,23 +2,29 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
     public float speed = 1;
     public bool moving = false;
     public bool attacking = false;
+    public bool dying = false;
     public Vector3Int tilePosition;
+    public string[] facing;
     private Tilemap dungeonMap;
     private Tilemap wallMap;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
+    private GameObject canvas;
     private GameObject[] enemyList;
-    private Vector3 targetPosition;
-    private Vector3 startPosition;
-    private Vector3 highPoint;
+    private Vector3 targetPosition, startPosition, highPoint;
+    private Quaternion startAngle, targetAngle;
     private float count = 1.0f;
+    
+    // Combat Stats
+    public int maxhp, hp, attack, defense, mindmg, maxdmg;
 
     void Start() {
         targetPosition = this.transform.position;
@@ -29,10 +35,18 @@ public class PlayerController : MonoBehaviour
                 break;
             }
         }
+        canvas = GameObject.FindWithTag("WorldCanvas");
         tilePosition = dungeonMap.WorldToCell(this.transform.position);
         entities = GameObject.FindWithTag("EntityList");
         entityController = entities.GetComponent<EntityController>();
         mainCamera = GameObject.FindWithTag("MainCamera");
+        facing = new string[2];
+        maxhp = 20;
+        hp = maxhp;
+        attack = 5;
+        defense = 5;
+        mindmg = 1;
+        maxdmg = 3;
     }
 
 
@@ -51,7 +65,6 @@ public class PlayerController : MonoBehaviour
             transform.position = new Vector3(transform.position.x, transform.position.y, 2);
         */// End new code
         if (Input.GetMouseButtonDown(0)) {
-            Debug.Log("Click!");
             if (moving) {
                 Debug.Log("Can't, I'm moving!");
             }
@@ -73,21 +86,28 @@ public class PlayerController : MonoBehaviour
                 return;
             }
 
+            // A numerical direction that can rotate 0-3
+            int direction = 0;
+
             // Calculate target pos
             targetPosition = this.transform.position;
             startPosition = this.transform.position;
             if (pos.x < 0.5 && pos.y >= 0.5) { // y++
                 targetPosition.x = this.transform.position.x - 1f;
                 targetPosition.y = this.transform.position.y + 0.5f;
+                direction = 0;
             } else if (pos.x >= 0.5 && pos.y >= 0.5) { // x++
                 targetPosition.x = this.transform.position.x + 1f;
                 targetPosition.y = this.transform.position.y + 0.5f;
+                direction = 1;
             } else if (pos.x >= 0.5 && pos.y < 0.5) { // y--
                 targetPosition.x = this.transform.position.x + 1f;
                 targetPosition.y = this.transform.position.y - 0.5f;
+                direction = 2;
             } else if (pos.x < 0.5 && pos.y < 0.5) { // x--
                 targetPosition.x = this.transform.position.x - 1f;
                 targetPosition.y = this.transform.position.y - 0.5f;
+                direction = 3;
             } else {
                 Debug.Log("AAAAAAAAAHHHHHHH THIS IS IMPOSSIBLE");
             }
@@ -98,22 +118,24 @@ public class PlayerController : MonoBehaviour
             TileBase targetTile =  dungeonMap.GetTile(targetCell);
 
             // Attack enemy in front?
+            EnemyBehavior target = null;
             bool enemyFront = false;
             enemyList = GameObject.FindGameObjectsWithTag("Enemy");
             foreach (var e in enemyList) {
-                EnemyBehavior es = e.GetComponent<EnemyBehavior>();
-                if (es.tilePosition == targetCell) {
+                target = e.GetComponent<EnemyBehavior>();
+                if (target.tilePosition == targetCell) {
                     enemyFront = true;
                     break;
                 }
             }
 
-            if (enemyFront) {
-                Debug.Log("//---PLAYER ATTACK---//");moving = true;
+            if (enemyFront && !target.dying) {
+                attacking = true;
                 highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                 highPoint = targetPosition;
                 targetPosition = startPosition;
                 count = 0.0f;
+                Attack(target);
             // Point is valid?
             } else if (targetTile != null && targetTile.name == "floor") {
                 // Init bezier curve
@@ -121,6 +143,19 @@ public class PlayerController : MonoBehaviour
                 tilePosition = dungeonMap.WorldToCell(targetPosition);
                 highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                 count = 0.0f;
+            }
+            // Face player in new direction
+            if (attacking || moving) {
+                if (direction < 2) {
+                    facing[0] = "up";
+                } else {
+                    facing[0] = "down";
+                }
+                if (direction == 0 || direction == 3) {
+                    facing [1] = "left";
+                } else {
+                    facing[1] = "right";
+                }
             }
         }
 
@@ -150,6 +185,54 @@ public class PlayerController : MonoBehaviour
                 attacking = false;
                 endTurn();
             }
+        } else if (dying) {
+            if (count < 1.0f) {
+                count += 1.0f * 2.5f * Time.deltaTime;
+                float t = Mathf.Sin(count * Mathf.PI * 0.5f);
+                this.transform.rotation = Quaternion.Lerp(startAngle, targetAngle, t);
+            } else {
+                Destroy(this.gameObject, 0.5f);
+            }
+        }
+    }
+
+    void Attack(EnemyBehavior target) {
+        int roll = Mathf.RoundToInt(Random.Range(1,20));
+        roll += attack - target.defense;
+        if (roll >= 10) {
+            target.Damage(Mathf.RoundToInt(Random.Range(mindmg,maxdmg)));
+        } else {
+            target.Damage(0);
+        }
+    }
+    
+    public void Damage(int dmg) {
+        GameObject dmgTextFab = Resources.Load("Prefabs/DamageText") as GameObject;
+        GameObject text = Instantiate(dmgTextFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
+        DmgTextController textCont = text.GetComponent<DmgTextController>();
+        textCont.Init(this.transform.position);
+        TextMeshProUGUI textMesh = text.GetComponent<TextMeshProUGUI>();
+        if (dmg == 0) {
+            textMesh.color = new Color32(255,255,0,255);
+            textMesh.text = "miss";
+        } else {
+            textMesh.text = dmg.ToString();
+            hp -= dmg;
+            if (hp <= 0) {
+                Die();
+            }
+        }
+    }
+
+    private void Die() {
+        dying = true;
+        count = 0f;
+        startAngle = this.transform.rotation;
+        targetAngle = startAngle;
+        if (facing[1] == "left") {
+            targetAngle.z -= 1;
+        } else {
+            targetAngle.z += 1;
         }
     }
 
