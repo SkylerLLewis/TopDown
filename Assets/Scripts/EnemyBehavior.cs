@@ -14,7 +14,7 @@ public class EnemyBehavior : MonoBehaviour
     private bool last = false;
     public Vector3Int tilePosition;
     public string[] facing;
-    private Tilemap dungeonMap;
+    private Tilemap dungeonMap, wallMap;
     private GameObject plObj;
     private PlayerController player;
     private EntityController entityController;
@@ -30,7 +30,8 @@ public class EnemyBehavior : MonoBehaviour
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "DungeonMap") {
                 dungeonMap = map;
-                break;
+            } else if (map.name == "WallMap") {
+                wallMap = map;
             }
         }
         canvas = GameObject.FindWithTag("WorldCanvas");
@@ -49,9 +50,8 @@ public class EnemyBehavior : MonoBehaviour
         maxdmg = 2;*/
     }
 
-    public void myTurn(bool last=false) {
+    public void MyTurn(bool last=false) {
         this.last = last;
-        Debug.Log(name+" taking turn!");
         targetPosition = this.transform.position;
         startPosition = this.transform.position;
         // A numerical direction that can rotate 0-3
@@ -83,9 +83,34 @@ public class EnemyBehavior : MonoBehaviour
                 targetPosition.y = this.transform.position.y - 0.5f;
             }
 
-            // Find target tile
+            // Find target tile/wall
             Vector3Int targetCell = dungeonMap.WorldToCell(targetPosition);
-            TileBase targetTile =  dungeonMap.GetTile(targetCell);
+            targetCell.z = 0;
+            TileBase targetTile = dungeonMap.GetTile(targetCell);
+            targetCell = tilePosition;
+            TileBase targetWall;
+            bool blocked = false;
+            string face = "";
+            if (direction == 0) {
+                face = "left";
+            } else if (direction == 1) {
+                face = "right";
+            } else if (direction == 2) {
+                face = "left";
+                targetCell.y--;
+            } else if (direction == 3) {
+                face = "right";
+                targetCell.x--;
+            }
+            targetWall = wallMap.GetTile(targetCell);
+            if (targetWall != null) {
+                if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") >= 0) {
+                    blocked = false;
+                } else if (targetWall.name.ToLower().IndexOf(face) >= 0) {
+                    blocked = true;
+                }
+            }
+            targetCell = dungeonMap.WorldToCell(targetPosition);
             
             // Tile clear of friends?
             bool friend = false;
@@ -98,14 +123,14 @@ public class EnemyBehavior : MonoBehaviour
                 }
             }
 
-            if (targetCell == player.tilePosition) { // ATTACK!
+            if (targetCell == player.tilePosition && !blocked) { // ATTACK!
                 attacking = true;
                 targetPosition = startPosition;
                 highPoint = player.transform.position;
                 count = 0.0f;
                 Attack(player);
                 break;
-            } else if (targetTile != null && targetTile.name == "floor" && !friend) { // Move
+            } else if (!blocked && !friend) { // Move
                 // Init bezier curve
                 moving = true;
                 highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
@@ -122,7 +147,7 @@ public class EnemyBehavior : MonoBehaviour
                 } else if (i == 1) { // Then, try the other way
                     direction = (direction+2) % 4;
                 } else if (i == 2 && last) {
-                    Debug.Log(name+" Designated reporter reporting from uselessness.");
+                    //Debug.Log(name+" Designated reporter reporting from uselessness.");
                     entityController.doubleTurn();
                 }
                 continue;

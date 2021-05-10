@@ -12,8 +12,8 @@ public class PlayerController : MonoBehaviour
     public bool dying = false;
     public Vector3Int tilePosition;
     public string[] facing;
-    private Tilemap dungeonMap;
-    private Tilemap wallMap;
+    private Tilemap dungeonMap, wallMap;
+    private Initializer mapController;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
@@ -32,11 +32,11 @@ public class PlayerController : MonoBehaviour
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "DungeonMap") {
                 dungeonMap = map;
-                break;
             } else if (map.name == "WallMap") {
                 wallMap = map;
             }
         }
+        mapController = dungeonMap.GetComponent<Initializer>();
         canvas = GameObject.FindWithTag("WorldCanvas");
         tilePosition = dungeonMap.WorldToCell(this.transform.position);
         entities = GameObject.FindWithTag("EntityList");
@@ -56,16 +56,6 @@ public class PlayerController : MonoBehaviour
     public Vector3 pos;
     // Update is called once per frame
     void Update() {
-        /*/ Start new code
-        pos = new Vector3 (transform.position.x, transform.position.y, 0);
-        Vector3Int tilepos = dungeonMap.WorldToCell(pos);
-        Vector3 tileworldpos = dungeonMap.CellToWorld(tilepos);
-        relativePos = pos - tileworldpos;
-        if (relativePos.y < .25)
-            transform.position = new Vector3(transform.position.x, transform.position.y, 1);
-        else
-            transform.position = new Vector3(transform.position.x, transform.position.y, 2);
-        */// End new code
         if (Input.GetMouseButtonDown(0)) {
             if (moving) {
                 Debug.Log("Can't, I'm moving!");
@@ -84,7 +74,7 @@ public class PlayerController : MonoBehaviour
             // Wait?
             //Vector3Int click = dungeonMap.WorldToCell(Input.mousePosition);
             if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.5f)<0.05f) {
-                endTurn();
+                EndTurn();
                 return;
             }
 
@@ -114,19 +104,45 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("AAAAAAAAAHHHHHHH THIS IS IMPOSSIBLE");
             }
 
-            // Find target tile
+            // Find target tile/wall
             Vector3Int targetCell = dungeonMap.WorldToCell(targetPosition);
             targetCell.z = 0;
             TileBase targetTile = dungeonMap.GetTile(targetCell);
+            targetCell = tilePosition;
             TileBase targetWall;
-            /*if (direction == 0 || direction == 1) {
-                targetWall = wallMap.GetTile(targetCell);
-                if (targetWall.name.IndexOf("door", StringComparison.OrdinalIgnoreCase) >= 0) {
-                    Debug.Log("Door found!");
+            bool blocked = false;
+            string face = "";
+            if (direction == 0) {
+                face = "left";
+            } else if (direction == 1) {
+                face = "right";
+            } else if (direction == 2) {
+                face = "left";
+                targetCell.y--;
+            } else if (direction == 3) {
+                face = "right";
+                targetCell.x--;
+            }
+            targetWall = wallMap.GetTile(targetCell);
+            if (targetWall != null) {
+                if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") < 0) {
+                    blocked = true;
+                    // Open door and simulate an attack move on door
+                    mapController.OpenDoor(targetCell);
+                    attacking = true;
+                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                    highPoint = targetPosition;
+                    targetPosition = startPosition;
+                    count = 0.0f;
+                } else if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") >= 0) {
+                    blocked = false;
+                } else if (targetWall.name.ToLower().IndexOf(face) >= 0) {
+                    blocked = true;
                 }
-            }*/
+            }
 
             // Attack enemy in front?
+            targetCell = dungeonMap.WorldToCell(targetPosition);
             EnemyBehavior target = null;
             bool enemyFront = false;
             enemyList = GameObject.FindGameObjectsWithTag("Enemy");
@@ -146,7 +162,7 @@ public class PlayerController : MonoBehaviour
                 count = 0.0f;
                 Attack(target);
             // Point is valid?
-            } else if (targetTile != null && targetTile.name == "floor") {
+            } else if (!blocked) {//targetTile != null && targetTile.name == "floor") {
                 // Init bezier curve
                 moving = true;
                 tilePosition = dungeonMap.WorldToCell(targetPosition);
@@ -181,7 +197,7 @@ public class PlayerController : MonoBehaviour
             } else {
                 // Turn over, activate entities
                 moving = false;
-                endTurn();
+                EndTurn();
             }
         } else if (attacking) {
             if (count < 1.0f) {
@@ -192,7 +208,7 @@ public class PlayerController : MonoBehaviour
             } else {
                 // Turn over, activate entities
                 attacking = false;
-                endTurn();
+                EndTurn();
             }
         } else if (dying) {
             if (count < 1.0f) {
@@ -245,7 +261,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void endTurn() {
+    void EndTurn() {
         entities.BroadcastMessage("turnStart", speed);
     }
 }

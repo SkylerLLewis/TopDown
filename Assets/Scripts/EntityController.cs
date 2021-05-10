@@ -31,7 +31,6 @@ public class EntityController : MonoBehaviour
         // Remove dead/slow ones
         for (int i=entities.Count-1; i>=0; i--) {
             if (entities[i].timer >= 0) {
-                Debug.Log(entities[i].name+" being removed for slowness");
                 entities.RemoveAt(i);
             } else if (entities[i].dying) {
                 entities.RemoveAt(i);
@@ -45,9 +44,9 @@ public class EntityController : MonoBehaviour
                 next.Add(e);
             }
             if (i == entities.Count-1) {
-                e.myTurn(true);
+                e.MyTurn(true);
             } else {
-                e.myTurn();
+                e.MyTurn();
             }
         }
         if (entities.Count == 0) {
@@ -64,9 +63,9 @@ public class EntityController : MonoBehaviour
                     next.RemoveAt(i);
                 }
                 if (i == 0) {
-                    e.BroadcastMessage("myTurn", true);
+                    e.BroadcastMessage("MyTurn", true);
                 } else {
-                    e.BroadcastMessage("myTurn", true);
+                    e.BroadcastMessage("MyTurn", true);
                 }
             }
         } else {
