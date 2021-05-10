@@ -33,6 +33,8 @@ public class PlayerController : MonoBehaviour
             if (map.name == "DungeonMap") {
                 dungeonMap = map;
                 break;
+            } else if (map.name == "WallMap") {
+                wallMap = map;
             }
         }
         canvas = GameObject.FindWithTag("WorldCanvas");
@@ -115,7 +117,14 @@ public class PlayerController : MonoBehaviour
             // Find target tile
             Vector3Int targetCell = dungeonMap.WorldToCell(targetPosition);
             targetCell.z = 0;
-            TileBase targetTile =  dungeonMap.GetTile(targetCell);
+            TileBase targetTile = dungeonMap.GetTile(targetCell);
+            TileBase targetWall;
+            /*if (direction == 0 || direction == 1) {
+                targetWall = wallMap.GetTile(targetCell);
+                if (targetWall.name.IndexOf("door", StringComparison.OrdinalIgnoreCase) >= 0) {
+                    Debug.Log("Door found!");
+                }
+            }*/
 
             // Attack enemy in front?
             EnemyBehavior target = null;

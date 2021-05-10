@@ -96,6 +96,13 @@ public class Initializer : MonoBehaviour
         Instantiate(gobFab, new Vector3(0,-1.5f,0), Quaternion.identity, enemies.transform);
     }
 
+    // Creates an 
+    void CreateRooms() {
+        int intRate;
+        float IntRate;
+        double int_rate;
+    }
+
     // Creates a floorspace, rooted at top corner
     void createRoom(Vector3Int head, Vector3Int tail) {
         int xLen = head.x - tail.x+1;
