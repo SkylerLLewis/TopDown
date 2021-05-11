@@ -14,7 +14,8 @@ public class EnemyBehavior : MonoBehaviour
     private bool last = false;
     public Vector3Int tilePosition;
     public string[] facing;
-    private Tilemap dungeonMap, wallMap;
+    private Tilemap dungeonMap, leftWallMap, rightWallMap;
+    private Dictionary<string,Tilemap> maps;
     private GameObject plObj;
     private PlayerController player;
     private EntityController entityController;
@@ -30,10 +31,15 @@ public class EnemyBehavior : MonoBehaviour
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "DungeonMap") {
                 dungeonMap = map;
-            } else if (map.name == "WallMap") {
-                wallMap = map;
+            } else if (map.name == "LeftWallMap") {
+                leftWallMap = map;
+            } else if (map.name == "RightWallMap") {
+                rightWallMap = map;
             }
         }
+        maps = new Dictionary<string, Tilemap>();
+        maps.Add("left", leftWallMap);
+        maps.Add("right", rightWallMap);
         canvas = GameObject.FindWithTag("WorldCanvas");
         tilePosition = dungeonMap.WorldToCell(this.transform.position);
         plObj = GameObject.FindWithTag("Player");
@@ -102,7 +108,8 @@ public class EnemyBehavior : MonoBehaviour
                 face = "right";
                 targetCell.x--;
             }
-            targetWall = wallMap.GetTile(targetCell);
+            Debug.Log(gameObject.name+" Face: "+face+" Direction: "+direction);
+            targetWall = maps[face].GetTile(targetCell);
             if (targetWall != null) {
                 if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") >= 0) {
                     blocked = false;
@@ -140,7 +147,7 @@ public class EnemyBehavior : MonoBehaviour
             } else { // Try again
                 if (i == 0) { // First, turn left or right
                     if (Random.Range(-1,1) < 0 ) {
-                        direction = (direction-1) % 4;
+                        direction = (direction+3) % 4;
                     } else {
                         direction = (direction+1) % 4;
                     }

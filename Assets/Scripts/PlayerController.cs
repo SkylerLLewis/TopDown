@@ -12,7 +12,8 @@ public class PlayerController : MonoBehaviour
     public bool dying = false;
     public Vector3Int tilePosition;
     public string[] facing;
-    private Tilemap dungeonMap, wallMap;
+    private Tilemap dungeonMap, leftWallMap, rightWallMap;
+    private Dictionary<string,Tilemap> maps;
     private Initializer mapController;
     private GameObject entities;
     private EntityController entityController;
@@ -32,10 +33,15 @@ public class PlayerController : MonoBehaviour
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "DungeonMap") {
                 dungeonMap = map;
-            } else if (map.name == "WallMap") {
-                wallMap = map;
+            } else if (map.name == "LeftWallMap") {
+                leftWallMap = map;
+            } else if (map.name == "RightWallMap") {
+                rightWallMap = map;
             }
         }
+        maps = new Dictionary<string, Tilemap>();
+        maps.Add("left", leftWallMap);
+        maps.Add("right", rightWallMap);
         mapController = dungeonMap.GetComponent<Initializer>();
         canvas = GameObject.FindWithTag("WorldCanvas");
         tilePosition = dungeonMap.WorldToCell(this.transform.position);
@@ -64,7 +70,7 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("Can't, enemy's turn!");
             }
         }
-        if (Input.GetMouseButtonDown(0) && !moving && !entityController.enemyTurn) {
+        if (Input.GetMouseButtonDown(0) && !moving && !entityController.enemyTurn && !dying) {
 
             // Determine screen position
             Vector2 pos = new Vector2(
@@ -123,12 +129,12 @@ public class PlayerController : MonoBehaviour
                 face = "right";
                 targetCell.x--;
             }
-            targetWall = wallMap.GetTile(targetCell);
+            targetWall = maps[face].GetTile(targetCell);
             if (targetWall != null) {
                 if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") < 0) {
                     blocked = true;
                     // Open door and simulate an attack move on door
-                    mapController.OpenDoor(targetCell);
+                    mapController.OpenDoor(targetCell, direction);
                     attacking = true;
                     highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                     highPoint = targetPosition;

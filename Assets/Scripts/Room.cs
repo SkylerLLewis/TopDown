@@ -5,7 +5,7 @@ using UnityEngine.Tilemaps;
 
 public class Room
 {
-    public Vector3Int head, tail;
+    public Vector3Int head, tail, center;
     public int width, height;
     public Room[] neighbors;
     public bool active;
@@ -25,6 +25,9 @@ public class Room
         active = false;
         head = h;
         tail = t;
+        width = head.x - tail.x + 1;
+        height = head.y - tail.y + 1;
+        center = (head + tail) / 2;
         neighbors = new Room[4];
         neighbors[dir] = parent;
     }
@@ -36,7 +39,6 @@ public class Room
 
     // Draws the room into existence
     public void Draw() {
-        Debug.Log("Mapcontroller: "+mapController.ToString());
         mapController.DrawRoom(this);
     }
 
