@@ -6,10 +6,13 @@ using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
+    private Animator animator;
+    private string[] walkNames, attackNames;
     public float speed = 1;
     public bool moving = false;
     public bool attacking = false;
     public bool dying = false;
+    public int direction;
     public Vector3Int tilePosition;
     public string[] facing;
     private Tilemap dungeonMap, leftWallMap, rightWallMap;
@@ -28,6 +31,9 @@ public class PlayerController : MonoBehaviour
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
 
     void Start() {
+        animator = gameObject.GetComponent<Animator>();
+        walkNames = new string[4] {"walkUp", "walkRight", "walkDown", "walkLeft"};
+        attackNames = new string[4] {"attackUp", "attackRight", "attackDown", "attackLeft"};
         targetPosition = this.transform.position;
         Grid grid = FindObjectOfType<Grid>();
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
@@ -85,7 +91,7 @@ public class PlayerController : MonoBehaviour
             }
 
             // A numerical direction that can rotate 0-3
-            int direction = 0;
+            direction = 0;
 
             // Calculate target pos
             targetPosition = this.transform.position;
@@ -187,6 +193,11 @@ public class PlayerController : MonoBehaviour
                 } else {
                     facing[1] = "right";
                 }
+                if (moving) {
+                    animator.CrossFade(walkNames[direction], 0f);
+                } else {
+                    animator.CrossFade(attackNames[direction], 0f);
+                }
             }
         }
 
@@ -212,18 +223,19 @@ public class PlayerController : MonoBehaviour
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
                 this.transform.position = Vector3.Lerp(m1, m2, count);
             } else {
+                animator.CrossFade(walkNames[direction], 0f);
                 // Turn over, activate entities
                 attacking = false;
                 EndTurn();
             }
         } else if (dying) {
-            if (count < 1.0f) {
+            /*if (count < 1.0f) {
                 count += 1.0f * 2.5f * Time.deltaTime;
                 float t = Mathf.Sin(count * Mathf.PI * 0.5f);
                 this.transform.rotation = Quaternion.Lerp(startAngle, targetAngle, t);
             } else {
-                Destroy(this.gameObject, 0.5f);
-            }
+                Destroy(this.gameObject, 10f);
+            }*/
         }
     }
 
@@ -257,14 +269,15 @@ public class PlayerController : MonoBehaviour
 
     private void Die() {
         dying = true;
-        count = 0f;
+        /*count = 0f;
         startAngle = this.transform.rotation;
         targetAngle = startAngle;
         if (facing[1] == "left") {
             targetAngle.z -= 1;
         } else {
             targetAngle.z += 1;
-        }
+        }*/
+        animator.CrossFade("die", 0f);
     }
 
     void EndTurn() {
