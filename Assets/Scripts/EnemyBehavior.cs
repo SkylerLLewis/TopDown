@@ -108,7 +108,6 @@ public class EnemyBehavior : MonoBehaviour
                 face = "right";
                 targetCell.x--;
             }
-            Debug.Log(gameObject.name+" Face: "+face+" Direction: "+direction);
             targetWall = maps[face].GetTile(targetCell);
             if (targetWall != null) {
                 if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") >= 0) {
@@ -213,10 +212,10 @@ public class EnemyBehavior : MonoBehaviour
         }
     }
     void Attack(PlayerController target) {
-        int roll = Mathf.RoundToInt(Random.Range(1,20));
+        int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
         if (roll >= 10) {
-            target.Damage(Mathf.RoundToInt(Random.Range(mindmg,maxdmg)));
+            target.Damage(Random.Range(mindmg,maxdmg+1));
         } else {
             target.Damage(0);
         }

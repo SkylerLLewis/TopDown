@@ -11,6 +11,7 @@ public class Room
     public bool active;
     Tilemap dungeonMap, wallMap;
     Initializer mapController;
+    public List<string> enemies;
 
     public Room(Vector3Int h, Vector3Int t, Room parent=null, int dir=0) {
         Grid grid = GameObject.FindObjectOfType<Grid>();
@@ -30,6 +31,8 @@ public class Room
         center = (head + tail) / 2;
         neighbors = new Room[4];
         neighbors[dir] = parent;
+        enemies = new List<string>();
+        mapController.RetrieveEnemies(this);
     }
 
     public bool Contains(Vector3Int cell) {
