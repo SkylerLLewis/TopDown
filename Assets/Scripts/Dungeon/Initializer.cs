@@ -8,7 +8,7 @@ public class Initializer : MonoBehaviour
     Tile floor, leftWall, rightWall, leftRightWall, leftDoor, leftDoorOpen;
     Tile leftClearWall, rightClearWall, leftRightClearWall;
     Dictionary<string,Tile> tiles, clearTiles;
-    private Tilemap dungeonMap, leftWallMap, rightWallMap;
+    private Tilemap floorMap, leftWallMap, rightWallMap;
     Vector3Int cellLoc;
     private GameObject enemies;
     private PlayerController player;
@@ -22,28 +22,28 @@ public class Initializer : MonoBehaviour
 
         // Load tile resources
         /*floor = Resources.Load<Tile>("DungeonMap/floor");
-        leftWall = Resources.Load<Tile>("DungeonMap/WallPalette/leftWall");
-        rightWall = Resources.Load<Tile>("DungeonMap/WallPalette/rightWall");
-        leftRightWall = Resources.Load<Tile>("DungeonMap/WallPalette/leftRightWall");
-        leftDoor = Resources.Load<Tile>("DungeonMap/WallPalette/leftDoor");
-        leftDoorOpen = Resources.Load<Tile>("DungeonMap/WallPalette/leftDoorOpen");
-        leftClearWall = Resources.Load<Tile>("DungeonMap/WallPalette/leftClearWall");
-        rightClearWall = Resources.Load<Tile>("DungeonMap/WallPalette/rightClearWall");
-        leftRightClearWall = Resources.Load<Tile>("DungeonMap/WallPalette/leftRightClearWall");
+        leftWall = Resources.Load<Tile>("Tiles/DungeonMap/leftWall");
+        rightWall = Resources.Load<Tile>("Tiles/DungeonMap/rightWall");
+        leftRightWall = Resources.Load<Tile>("Tiles/DungeonMap/leftRightWall");
+        leftDoor = Resources.Load<Tile>("Tiles/DungeonMap/leftDoor");
+        leftDoorOpen = Resources.Load<Tile>("Tiles/DungeonMap/leftDoorOpen");
+        leftClearWall = Resources.Load<Tile>("Tiles/DungeonMap/leftClearWall");
+        rightClearWall = Resources.Load<Tile>("Tiles/DungeonMap/rightClearWall");
+        leftRightClearWall = Resources.Load<Tile>("Tiles/DungeonMap/leftRightClearWall");
         */
         // Load tile Resources into dictionaries
         tiles = new Dictionary<string,Tile>();
-        tiles.Add("floor", Resources.Load<Tile>("DungeonMap/floor"));
-        tiles.Add("leftWall", Resources.Load<Tile>("DungeonMap/WallPalette/leftWall"));
-        tiles.Add("rightWall", Resources.Load<Tile>("DungeonMap/WallPalette/rightWall"));
-        tiles.Add("leftDoor", Resources.Load<Tile>("DungeonMap/WallPalette/leftDoor"));
-        tiles.Add("leftDoorOpen", Resources.Load<Tile>("DungeonMap/WallPalette/leftDoorOpen"));
-        tiles.Add("rightDoor", Resources.Load<Tile>("DungeonMap/WallPalette/rightDoor"));
-        tiles.Add("rightDoorOpen", Resources.Load<Tile>("DungeonMap/WallPalette/rightDoorOpen"));
+        tiles.Add("floor", Resources.Load<Tile>("Tiles/DungeonMap/floor"));
+        tiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftWall"));
+        tiles.Add("rightWall", Resources.Load<Tile>("Tiles/DungeonMap/rightWall"));
+        tiles.Add("leftDoor", Resources.Load<Tile>("Tiles/DungeonMap/leftDoor"));
+        tiles.Add("leftDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorOpen"));
+        tiles.Add("rightDoor", Resources.Load<Tile>("Tiles/DungeonMap/rightDoor"));
+        tiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpen"));
 
         clearTiles = new Dictionary<string,Tile>();
-        clearTiles.Add("leftWall", Resources.Load<Tile>("DungeonMap/WallPalette/leftClearWall"));
-        clearTiles.Add("rightWall", Resources.Load<Tile>("DungeonMap/WallPalette/rightClearWall"));
+        clearTiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftClearWall"));
+        clearTiles.Add("rightWall", Resources.Load<Tile>("Tiles/DungeonMap/rightClearWall"));
 
         // Load Enemy prefabs and likelyhood
         enemyFabs = new Dictionary<string, GameObject>();
@@ -57,8 +57,8 @@ public class Initializer : MonoBehaviour
 
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
-            if (map.name == "DungeonMap") {
-                dungeonMap = map;
+            if (map.name == "FloorMap") {
+                floorMap = map;
             } else if (map.name == "LeftWallMap") {
                 leftWallMap = map;
             } else if (map.name == "RightWallMap") {
@@ -99,7 +99,7 @@ public class Initializer : MonoBehaviour
                 placement.y = r.head.y + y;
                 Tile clone = Instantiate(tiles["floor"]);
                 clone.name = clone.name.Split('(')[0];
-                dungeonMap.SetTile(placement, clone);
+                floorMap.SetTile(placement, clone);
             }
         }
         CreateWalls(r);
@@ -313,7 +313,7 @@ public class Initializer : MonoBehaviour
         vectors.RemoveAt(0);
         int ei = 0;
         foreach (string e in r.enemies) {
-            Vector3 pos = dungeonMap.CellToWorld(vectors[ei]);
+            Vector3 pos = floorMap.CellToWorld(vectors[ei]);
             pos.y += 0.25f;
             GameObject clone = Instantiate(
                 enemyFabs[e],

@@ -9,20 +9,19 @@ public class Room
     public int width, height;
     public Room[] neighbors;
     public bool active;
-    Tilemap dungeonMap, wallMap;
+    Tilemap floorMap;
     Initializer mapController;
     public List<string> enemies;
 
     public Room(Vector3Int h, Vector3Int t, Room parent=null, int dir=0) {
         Grid grid = GameObject.FindObjectOfType<Grid>();
         foreach (Tilemap map in GameObject.FindObjectsOfType<Tilemap>()) {
-            if (map.name == "DungeonMap") {
-                dungeonMap = map;
-            } else if (map.name == "WallMap") {
-                wallMap = map;
+            if (map.name == "FloorMap") {
+                floorMap = map;
+                break;
             }
         }
-        mapController = dungeonMap.GetComponent<Initializer>();
+        mapController = floorMap.GetComponent<Initializer>();
         active = false;
         head = h;
         tail = t;

@@ -14,7 +14,7 @@ public class EnemyBehavior : MonoBehaviour
     private bool last = false;
     public Vector3Int tilePosition;
     public string[] facing;
-    private Tilemap dungeonMap, leftWallMap, rightWallMap;
+    private Tilemap floorMap, leftWallMap, rightWallMap;
     private Dictionary<string,Tilemap> maps;
     private GameObject plObj;
     private PlayerController player;
@@ -29,8 +29,8 @@ public class EnemyBehavior : MonoBehaviour
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
     void Start() {
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
-            if (map.name == "DungeonMap") {
-                dungeonMap = map;
+            if (map.name == "FloorMap") {
+                floorMap = map;
             } else if (map.name == "LeftWallMap") {
                 leftWallMap = map;
             } else if (map.name == "RightWallMap") {
@@ -41,7 +41,7 @@ public class EnemyBehavior : MonoBehaviour
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
         canvas = GameObject.FindWithTag("WorldCanvas");
-        tilePosition = dungeonMap.WorldToCell(this.transform.position);
+        tilePosition = floorMap.WorldToCell(this.transform.position);
         plObj = GameObject.FindWithTag("Player");
         player = plObj.GetComponent<PlayerController>();
         entityController = GameObject.FindObjectOfType<EntityController>();
@@ -90,9 +90,9 @@ public class EnemyBehavior : MonoBehaviour
             }
 
             // Find target tile/wall
-            Vector3Int targetCell = dungeonMap.WorldToCell(targetPosition);
+            Vector3Int targetCell = floorMap.WorldToCell(targetPosition);
             targetCell.z = 0;
-            TileBase targetTile = dungeonMap.GetTile(targetCell);
+            TileBase targetTile = floorMap.GetTile(targetCell);
             targetCell = tilePosition;
             TileBase targetWall;
             bool blocked = false;
@@ -116,7 +116,7 @@ public class EnemyBehavior : MonoBehaviour
                     blocked = true;
                 }
             }
-            targetCell = dungeonMap.WorldToCell(targetPosition);
+            targetCell = floorMap.WorldToCell(targetPosition);
             
             // Tile clear of friends?
             bool friend = false;
@@ -141,7 +141,7 @@ public class EnemyBehavior : MonoBehaviour
                 moving = true;
                 highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                 count = 0.0f;
-                tilePosition = dungeonMap.WorldToCell(targetPosition);
+                tilePosition = floorMap.WorldToCell(targetPosition);
                 break;
             } else { // Try again
                 if (i == 0) { // First, turn left or right

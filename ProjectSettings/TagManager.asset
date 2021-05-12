@@ -10,6 +10,7 @@ TagManager:
   - EntityList
   - WallMap
   - WorldCanvas
+  - FloorMap
   layers:
   - Default
   - TransparentFX
