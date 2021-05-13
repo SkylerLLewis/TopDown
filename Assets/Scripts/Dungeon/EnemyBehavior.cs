@@ -14,7 +14,7 @@ public class EnemyBehavior : MonoBehaviour
     private bool last = false;
     public Vector3Int tilePosition;
     public string[] facing;
-    private Tilemap floorMap, leftWallMap, rightWallMap;
+    private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     private Dictionary<string,Tilemap> maps;
     private GameObject plObj;
     private PlayerController player;
@@ -27,6 +27,10 @@ public class EnemyBehavior : MonoBehaviour
     
     // Combat Stats
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
+
+    public void SetCoords(Vector3Int cell) {
+        tilePosition = cell;
+    }
     void Start() {
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -35,13 +39,16 @@ public class EnemyBehavior : MonoBehaviour
                 leftWallMap = map;
             } else if (map.name == "RightWallMap") {
                 rightWallMap = map;
+            } else if (map.name == "BlockMap") {
+                blockMap = map;
             }
         }
         maps = new Dictionary<string, Tilemap>();
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
         canvas = GameObject.FindWithTag("WorldCanvas");
-        tilePosition = floorMap.WorldToCell(this.transform.position);
+        //tilePosition = floorMap.WorldToCell(this.transform.position);
+        //tilePosition.z = 0;
         plObj = GameObject.FindWithTag("Player");
         player = plObj.GetComponent<PlayerController>();
         entityController = GameObject.FindObjectOfType<EntityController>();
@@ -75,27 +82,33 @@ public class EnemyBehavior : MonoBehaviour
         }
         
         for (int i=0; i<3; i++) { // Broken when action executed
+            Vector3Int targetCell = tilePosition;
             if (direction == 0) {
                 targetPosition.x = this.transform.position.x - 1f;
                 targetPosition.y = this.transform.position.y + 0.5f;
+                targetCell.y++;
             } else if (direction == 1) {
                 targetPosition.x = this.transform.position.x + 1f;
                 targetPosition.y = this.transform.position.y + 0.5f;
+                targetCell.x++;
             } else if (direction == 2) {
                 targetPosition.x = this.transform.position.x + 1f;
                 targetPosition.y = this.transform.position.y - 0.5f;
+                targetCell.y--;
             } else if (direction == 3) {
                 targetPosition.x = this.transform.position.x - 1f;
                 targetPosition.y = this.transform.position.y - 0.5f;
+                targetCell.x--;
             }
 
             // Find target tile/wall
-            Vector3Int targetCell = floorMap.WorldToCell(targetPosition);
-            targetCell.z = 0;
-            TileBase targetTile = floorMap.GetTile(targetCell);
-            targetCell = tilePosition;
-            TileBase targetWall;
             bool blocked = false;
+            TileBase targetTile = blockMap.GetTile(targetCell);
+            if (targetTile != null) {
+                blocked = true;
+            }
+            TileBase targetWall;
+            Vector3Int wallCell = tilePosition;
             string face = "";
             if (direction == 0) {
                 face = "left";
@@ -103,20 +116,21 @@ public class EnemyBehavior : MonoBehaviour
                 face = "right";
             } else if (direction == 2) {
                 face = "left";
-                targetCell.y--;
+                wallCell.y--;
             } else if (direction == 3) {
                 face = "right";
-                targetCell.x--;
+                wallCell.x--;
             }
-            targetWall = maps[face].GetTile(targetCell);
+
+            targetWall = maps[face].GetTile(wallCell);
             if (targetWall != null) {
-                if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") >= 0) {
-                    blocked = false;
-                } else if (targetWall.name.ToLower().IndexOf(face) >= 0) {
-                    blocked = true;
-                }
+                if (targetWall.name.ToLower().IndexOf(face) >= 0) {
+                    if (targetWall.name.ToLower().IndexOf("open") >= 0) {
+                        blocked = false;
+                    } else 
+                        blocked = true;
+                    }
             }
-            targetCell = floorMap.WorldToCell(targetPosition);
             
             // Tile clear of friends?
             bool friend = false;
@@ -128,7 +142,7 @@ public class EnemyBehavior : MonoBehaviour
                     break;
                 }
             }
-
+            
             if (targetCell == player.tilePosition && !blocked) { // ATTACK!
                 attacking = true;
                 targetPosition = startPosition;
@@ -141,7 +155,7 @@ public class EnemyBehavior : MonoBehaviour
                 moving = true;
                 highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                 count = 0.0f;
-                tilePosition = floorMap.WorldToCell(targetPosition);
+                tilePosition = targetCell;
                 break;
             } else { // Try again
                 if (i == 0) { // First, turn left or right

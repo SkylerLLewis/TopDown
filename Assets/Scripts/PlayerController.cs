@@ -125,6 +125,7 @@ public class PlayerController : MonoBehaviour
             }
 
             // Find target tile/wall
+            mapController.notableCollide(targetCell);
             bool blocked = false;
             TileBase targetTile = blockMap.GetTile(targetCell);
             if (targetTile != null) {
@@ -148,17 +149,19 @@ public class PlayerController : MonoBehaviour
                 targetWall = maps[face].GetTile(wallCell);
             }
             if (targetWall != null) {
-                if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") < 0) {
-                    blocked = true;
-                    // Open door and simulate an attack move on door
-                    mapController.OpenDoor(wallCell, direction);
-                    attacking = true;
-                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                    highPoint = targetPosition;
-                    targetPosition = startPosition;
-                    count = 0.0f;
-                } else if (targetWall.name.ToLower().IndexOf(face+"door") >= 0 && targetWall.name.ToLower().IndexOf("open") >= 0) {
-                    blocked = false;
+                if (targetWall.name.ToLower().IndexOf(face+"door") >= 0) { 
+                    if (targetWall.name.ToLower().IndexOf("open") < 0) {
+                        blocked = true;
+                        // Open door and simulate an attack move on door
+                        mapController.OpenDoor(wallCell, direction);
+                        attacking = true;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        highPoint = targetPosition;
+                        targetPosition = startPosition;
+                        count = 0.0f;
+                    } else {
+                        blocked = false;
+                    }
                 } else if (targetWall.name.ToLower().IndexOf(face) >= 0) {
                     blocked = true;
                 }

@@ -2,13 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.SceneManagement;
 
 public class Initializer : MonoBehaviour
 {
+    public Dictionary<string,Vector3Int> notableCells;
     Tile floor, leftWall, rightWall, leftRightWall, leftDoor, leftDoorOpen;
     Tile leftClearWall, rightClearWall, leftRightClearWall;
     Dictionary<string,Tile> tiles, clearTiles;
-    private Tilemap floorMap, leftWallMap, rightWallMap;
+    private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     Vector3Int cellLoc;
     private GameObject enemies;
     private PlayerController player;
@@ -19,6 +21,8 @@ public class Initializer : MonoBehaviour
     void Awake() {
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         enemies = GameObject.FindWithTag("EntityList");
+
+        notableCells = new Dictionary<string, Vector3Int>();
 
         // Load tile resources
         /*floor = Resources.Load<Tile>("DungeonMap/floor");
@@ -40,10 +44,16 @@ public class Initializer : MonoBehaviour
         tiles.Add("leftDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorOpen"));
         tiles.Add("rightDoor", Resources.Load<Tile>("Tiles/DungeonMap/rightDoor"));
         tiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpen"));
+        tiles.Add("stairsUp", Resources.Load<Tile>("Tiles/DungeonMap/stairsUp"));
+        tiles.Add("stairsDown", Resources.Load<Tile>("Tiles/DungeonMap/stairsDown"));
 
         clearTiles = new Dictionary<string,Tile>();
         clearTiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftClearWall"));
         clearTiles.Add("rightWall", Resources.Load<Tile>("Tiles/DungeonMap/rightClearWall"));
+        clearTiles.Add("leftDoor", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorClear"));
+        clearTiles.Add("leftDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorOpenClear"));
+        clearTiles.Add("rightDoor", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorClear"));
+        clearTiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpenClear"));
 
         // Load Enemy prefabs and likelyhood
         enemyFabs = new Dictionary<string, GameObject>();
@@ -63,10 +73,13 @@ public class Initializer : MonoBehaviour
                 leftWallMap = map;
             } else if (map.name == "RightWallMap") {
                 rightWallMap = map;
+            } else if (map.name == "BlockMap") {
+                blockMap = map;
             }
 
         }
 
+        // Gen Dungeon
         // Create core room
         rooms = new List<Room>();
         Room core = new Room(new Vector3Int(1,1,0), new Vector3Int(-3,-3,0));
@@ -80,8 +93,9 @@ public class Initializer : MonoBehaviour
         core.neighbors[2] = rooms[3];
         rooms.Add(new Room(new Vector3Int(-4,1,0), new Vector3Int(-8,-4,0), core, 1));
         core.neighbors[3] = rooms[4];
+        GenExits();
+        // Draw core rom
         core.Draw();
-        //branch.Draw();
     }
 
     // Creates a map of rooms 
@@ -93,6 +107,7 @@ public class Initializer : MonoBehaviour
         int xLen = r.head.x - r.tail.x+1;
         int yLen = r.head.y - r.tail.y+1;
         Vector3Int placement = new Vector3Int(0,0,0);
+        // Place floor
         for (int x=0; x>-xLen; x--) {
             for (int y=0; y>-yLen; y--) {
                 placement.x = r.head.x + x;
@@ -102,7 +117,16 @@ public class Initializer : MonoBehaviour
                 floorMap.SetTile(placement, clone);
             }
         }
+        // Place Walls
         CreateWalls(r);
+        // Create exits, if applicable
+        foreach (KeyValuePair<string,Vector3Int> exit in notableCells) {
+            if (r.Contains(exit.Value)) {
+                floorMap.SetTile(exit.Value, null);
+                blockMap.SetTile(exit.Value, tiles[exit.Key]);
+            }
+        }
+        // Place Doors
         foreach (Room n in r.neighbors) {
             if (n != null && !n.active) {
                 PlaceDoor(r, n);
@@ -161,7 +185,7 @@ public class Initializer : MonoBehaviour
         string currentName = "";
         if (currentWall != null) { // Wall in-place, clarify it
             currentName = currentWall.name;
-            if (currentName.ToLower().IndexOf("clear") < 0 && currentName.ToLower().IndexOf("door") < 0) { // No clear or door tiles
+            if (currentName.ToLower().IndexOf("clear") < 0) {
                 Tile clone = Instantiate(clearTiles[currentName]);
                 map.SetTile(cell, clone);
                 clone.name = clone.name.Split('(')[0];
@@ -180,16 +204,13 @@ public class Initializer : MonoBehaviour
     }
 
     void PlaceDoor(Room r1, Room r2) {
-        Debug.Log("Placing Door!");
         Vector3Int cell = new Vector3Int();
         if (r1.head.y == r2.tail.y-1) { // New room is above
-            Debug.Log("Head: "+r1.head.ToString()+" to Tail: "+r2.tail.ToString());
             // Cycle through possible door placments
             cell.y = r1.head.y;
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                Debug.Log("Trying Cell: "+cell.ToString());
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y+1,cell.z))) {
                     leftWallMap.SetTile(cell, tiles["leftDoor"]);
                     break;
@@ -197,13 +218,11 @@ public class Initializer : MonoBehaviour
                 x = (x+1) % r1.width;
             }
         } else if (r1.head.x == r2.tail.x-1) { // New room is right
-            Debug.Log("Head: "+r1.head.ToString()+" to Tail: "+r2.tail.ToString());
             // Cycle through possible door placments
             cell.x = r1.head.x;
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                Debug.Log("Trying Cell: "+cell.ToString());
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))) {
                     rightWallMap.SetTile(cell, tiles["rightDoor"]);
                     break;
@@ -211,33 +230,59 @@ public class Initializer : MonoBehaviour
                 y = (y+1) % r1.height;
             }
         } else if (r1.tail.y == r2.head.y+1) { // New room is below
-            Debug.Log("Tail: "+r1.tail.ToString()+" to Head: "+r2.head.ToString());
             // Cycle through possible door placments
             cell.y = r1.tail.y;
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                Debug.Log("Trying Cell: "+cell.ToString());
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))) {
-                    leftWallMap.SetTile(new Vector3Int(cell.x,cell.y-1,cell.z), tiles["leftDoor"]);
+                    leftWallMap.SetTile(new Vector3Int(cell.x,cell.y-1,cell.z), clearTiles["leftDoor"]);
                     break;
                 }
                 x = (x+1) % r1.width;
             }
         } else if (r1.tail.x == r2.head.x+1) { // New room is left
-            Debug.Log("Tail: "+r1.tail.ToString()+" to Head: "+r2.head.ToString());
             // Cycle through possible door placments
             cell.x = r1.tail.x;
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                Debug.Log("Trying Cell: "+cell.ToString());
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))) {
-                    rightWallMap.SetTile(new Vector3Int(cell.x-1,cell.y,cell.z), tiles["rightDoor"]);
+                    rightWallMap.SetTile(new Vector3Int(cell.x-1,cell.y,cell.z), clearTiles["rightDoor"]);
                     break;
                 }
                 y = (y+1) % r1.height;
             }
+        }
+    }
+
+    void GenExits() {
+        notableCells.Add("stairsUp", new Vector3Int(-1,0,0));
+        int rand = Random.Range(0, rooms.Count);
+        int i = 0;
+        foreach(Room r in rooms) {
+            if (i == rand) {
+                Vector3Int cell = new Vector3Int(
+                    r.tail.x+Random.Range(0,r.width),
+                    r.tail.y+Random.Range(0,r.height),
+                    0);
+                notableCells.Add("stairsDown", cell);
+                break;
+            }
+            i++;
+        }
+    }
+
+    public void notableCollide(Vector3Int cell) {
+        foreach (KeyValuePair<string,Vector3Int> n in notableCells) {
+            if (cell == n.Value) {
+                notableActions(n.Key);
+            }
+        }
+    }
+    private void notableActions(string key) {
+        if (key == "stairsUp") {
+            SceneManager.LoadScene("GreenVillage");
         }
     }
 
@@ -315,12 +360,15 @@ public class Initializer : MonoBehaviour
         foreach (string e in r.enemies) {
             Vector3 pos = floorMap.CellToWorld(vectors[ei]);
             pos.y += 0.25f;
+            pos.z = 0;
+            Debug.Log("Creating enemy at cell: "+vectors[ei]+"\nAnd pos: "+pos);
             GameObject clone = Instantiate(
                 enemyFabs[e],
                 pos,
                 Quaternion.identity,
                 enemies.transform);
             clone.name = clone.name.Split('(')[0];
+            clone.GetComponent<EnemyBehavior>().SetCoords(vectors[ei]);
             ei++;
         }
     }
