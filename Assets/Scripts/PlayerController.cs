@@ -17,11 +17,15 @@ public class PlayerController : MonoBehaviour
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     private Dictionary<string,Tilemap> maps;
-    private Initializer mapController;
+    private DungeonController dungeonController;
+    private VillageController villageController;
+    System.Action<Vector3Int> NotableCollide;
+    System.Action<Vector3Int, int> OpenDoor;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
     private GameObject canvas;
+    private UIController uiController;
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
@@ -50,7 +54,19 @@ public class PlayerController : MonoBehaviour
         maps = new Dictionary<string, Tilemap>();
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
-        mapController = floorMap.GetComponent<Initializer>();
+        // Get local map controller
+        dungeonController = floorMap.GetComponent<DungeonController>();
+        if (dungeonController != null) {
+            NotableCollide = dungeonController.NotableCollide;
+            OpenDoor = dungeonController.OpenDoor;
+        }
+        villageController = floorMap.GetComponent<VillageController>();
+        if (villageController != null) {
+            NotableCollide = villageController.NotableCollide;
+            OpenDoor = villageController.OpenDoor;
+        }
+
+        uiController = GameObject.Find("UICanvas").GetComponent<UIController>();
         canvas = GameObject.FindWithTag("WorldCanvas");
         tilePosition = new Vector3Int(0,0,0);
         entities = GameObject.FindWithTag("EntityList");
@@ -65,7 +81,7 @@ public class PlayerController : MonoBehaviour
         attack = 5;
         defense = 5;
         mindmg = 1;
-        maxdmg = 3;
+        maxdmg = 4;
     }
 
 
@@ -125,7 +141,7 @@ public class PlayerController : MonoBehaviour
             }
 
             // Find target tile/wall
-            mapController.notableCollide(targetCell);
+            NotableCollide(targetCell);
             bool blocked = false;
             TileBase targetTile = blockMap.GetTile(targetCell);
             if (targetTile != null) {
@@ -153,7 +169,7 @@ public class PlayerController : MonoBehaviour
                     if (targetWall.name.ToLower().IndexOf("open") < 0) {
                         blocked = true;
                         // Open door and simulate an attack move on door
-                        mapController.OpenDoor(wallCell, direction);
+                        OpenDoor(wallCell, direction);
                         attacking = true;
                         highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                         highPoint = targetPosition;
@@ -278,6 +294,7 @@ public class PlayerController : MonoBehaviour
                 Die();
             }
         }
+        uiController.UpdateHP(hp, maxhp);
     }
 
     private void Die() {

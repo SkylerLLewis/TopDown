@@ -3,27 +3,27 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class VillageInitilaizer : MonoBehaviour
+public class VillageController : MonoBehaviour
 {
     public Dictionary<string,Vector3Int> notableCells;
+    public System.Action<string> NotableActionsRef;
 
     void Awake()
     {
         notableCells = new Dictionary<string, Vector3Int>();
         notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
+        NotableActionsRef = gameObject.GetComponent<GreenVillageInit>().NotableActions;
     }
 
-    public void notableCollide(Vector3Int cell) {
+    public void NotableCollide(Vector3Int cell) {
         foreach (KeyValuePair<string,Vector3Int> n in notableCells) {
             if (cell == n.Value) {
-                notableActions(n.Key);
+                NotableActionsRef(n.Key);
             }
         }
     }
-    private void notableActions(string key) {
-        if (key == "stairsDown") {
-            SceneManager.LoadScene("BasicDungeon");
-        }
-    }
 
+    public void OpenDoor(Vector3Int cell, int dir) {
+        
+    }
 }

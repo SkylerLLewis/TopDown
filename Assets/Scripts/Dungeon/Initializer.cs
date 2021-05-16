@@ -14,27 +14,20 @@ public class Initializer : MonoBehaviour
     Vector3Int cellLoc;
     private GameObject enemies;
     private PlayerController player;
+    private DungeonController dungeonController;
     private Dictionary<string, GameObject> enemyFabs;
     private Dictionary<string, int> enemyWheel;
     private List<Room> rooms;
+    private PersistentData data;
     
     void Awake() {
+        data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         enemies = GameObject.FindWithTag("EntityList");
+        dungeonController = gameObject.GetComponent<DungeonController>();
 
         notableCells = new Dictionary<string, Vector3Int>();
 
-        // Load tile resources
-        /*floor = Resources.Load<Tile>("DungeonMap/floor");
-        leftWall = Resources.Load<Tile>("Tiles/DungeonMap/leftWall");
-        rightWall = Resources.Load<Tile>("Tiles/DungeonMap/rightWall");
-        leftRightWall = Resources.Load<Tile>("Tiles/DungeonMap/leftRightWall");
-        leftDoor = Resources.Load<Tile>("Tiles/DungeonMap/leftDoor");
-        leftDoorOpen = Resources.Load<Tile>("Tiles/DungeonMap/leftDoorOpen");
-        leftClearWall = Resources.Load<Tile>("Tiles/DungeonMap/leftClearWall");
-        rightClearWall = Resources.Load<Tile>("Tiles/DungeonMap/rightClearWall");
-        leftRightClearWall = Resources.Load<Tile>("Tiles/DungeonMap/leftRightClearWall");
-        */
         // Load tile Resources into dictionaries
         tiles = new Dictionary<string,Tile>();
         tiles.Add("floor", Resources.Load<Tile>("Tiles/DungeonMap/floor"));
@@ -82,20 +75,39 @@ public class Initializer : MonoBehaviour
         // Gen Dungeon
         // Create core room
         rooms = new List<Room>();
-        Room core = new Room(new Vector3Int(1,1,0), new Vector3Int(-3,-3,0));
+        Room core = new Room(new Vector3Int(2,2,0), new Vector3Int(-2,-2,0));
         rooms.Add(core);
         // Create 4 Neighbors
-        rooms.Add(new Room(new Vector3Int(2,4,0), new Vector3Int(-1,2,0), core, 2));
+        rooms.Add(new Room(new Vector3Int(3,5,0), new Vector3Int(0,3,0), core, 2));
         core.neighbors[0] = rooms[1];
-        rooms.Add(new Room(new Vector3Int(5,1,0), new Vector3Int(2,-2,0), core, 3));
+        rooms.Add(new Room(new Vector3Int(6,2,0), new Vector3Int(3,-1,0), core, 3));
         core.neighbors[1] = rooms[2];
-        rooms.Add(new Room(new Vector3Int(-1,-4,0), new Vector3Int(-3,-6,0), core, 0));
+        rooms.Add(new Room(new Vector3Int(0,-3,0), new Vector3Int(-2,-5,0), core, 0));
         core.neighbors[2] = rooms[3];
-        rooms.Add(new Room(new Vector3Int(-4,1,0), new Vector3Int(-8,-4,0), core, 1));
+        rooms.Add(new Room(new Vector3Int(-3,2,0), new Vector3Int(-7,-3,0), core, 1));
         core.neighbors[3] = rooms[4];
         GenExits();
         // Draw core rom
         core.Draw();
+
+        dungeonController.UpdateNotables(notableCells);
+    }
+
+    // Actions on collisions
+    public void NotableActions(string key) {
+        if (key == "stairsUp") {
+            data.depth--;
+            data.direction = "up";
+            if (data.depth == 0) {
+                SceneManager.LoadScene("GreenVillage");
+            } else {
+                SceneManager.LoadScene("BasicDungeon");
+            }
+        } else if (key == "stairsDown") {
+            data.depth++;
+            data.direction = "down";
+            SceneManager.LoadScene("BasicDungeon");
+        }
     }
 
     // Creates a map of rooms 
@@ -257,32 +269,24 @@ public class Initializer : MonoBehaviour
     }
 
     void GenExits() {
-        notableCells.Add("stairsUp", new Vector3Int(-1,0,0));
-        int rand = Random.Range(0, rooms.Count);
+        string entrance = "stairsUp", exit = "stairsDown";
+        if (data.direction == "up") {
+            entrance = "stairsDown";
+            exit = "stairsUp";
+        }
+        notableCells.Add(entrance, new Vector3Int(0,1,0));
+        int rand = Random.Range(1, rooms.Count);
         int i = 0;
         foreach(Room r in rooms) {
             if (i == rand) {
                 Vector3Int cell = new Vector3Int(
-                    r.tail.x+Random.Range(0,r.width),
-                    r.tail.y+Random.Range(0,r.height),
+                    r.tail.x+Random.Range(1,r.width-1),
+                    r.tail.y+Random.Range(1,r.height-1),
                     0);
-                notableCells.Add("stairsDown", cell);
+                notableCells.Add(exit, cell);
                 break;
             }
             i++;
-        }
-    }
-
-    public void notableCollide(Vector3Int cell) {
-        foreach (KeyValuePair<string,Vector3Int> n in notableCells) {
-            if (cell == n.Value) {
-                notableActions(n.Key);
-            }
-        }
-    }
-    private void notableActions(string key) {
-        if (key == "stairsUp") {
-            SceneManager.LoadScene("GreenVillage");
         }
     }
 
@@ -333,7 +337,11 @@ public class Initializer : MonoBehaviour
     public void GenEnemies(Room r) {
         // Generate spawn points
         List<Vector3Int> vectors = new List<Vector3Int>();
+        // Add player and notables as occupied
         vectors.Add(player.tilePosition);
+        foreach (KeyValuePair<string,Vector3Int> v in notableCells) {
+            vectors.Add(v.Value);
+        }
         for (int i=0; i<r.enemies.Count; i++) {
             Vector3Int v;
             bool valid;
@@ -355,7 +363,8 @@ public class Initializer : MonoBehaviour
             } while (!valid);
             vectors.Add(v);
         }
-        vectors.RemoveAt(0);
+        // Remove player and notables from spawn options
+        vectors.RemoveRange(0, notableCells.Count+1);
         int ei = 0;
         foreach (string e in r.enemies) {
             Vector3 pos = floorMap.CellToWorld(vectors[ei]);
