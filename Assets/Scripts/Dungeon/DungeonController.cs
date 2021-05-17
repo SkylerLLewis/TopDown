@@ -8,11 +8,13 @@ public class DungeonController : MonoBehaviour
     public Dictionary<string,Vector3Int> notableCells;
     public System.Action<Vector3Int,int> OpenDoorRef;
     public System.Action<string> NotableActionsRef;
+    private PersistentData data;
 
     void Awake()
     {
         OpenDoorRef = gameObject.GetComponent<Initializer>().OpenDoor;
         NotableActionsRef = gameObject.GetComponent<Initializer>().NotableActions;
+        data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
     }
 
     public void NotableCollide(Vector3Int cell) {

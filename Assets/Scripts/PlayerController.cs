@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     private Dictionary<string,Tilemap> maps;
+    private PersistentData data;
     private DungeonController dungeonController;
     private VillageController villageController;
     System.Action<Vector3Int> NotableCollide;
@@ -26,6 +27,7 @@ public class PlayerController : MonoBehaviour
     private GameObject mainCamera;
     private GameObject canvas;
     private UIController uiController;
+    private GameObject textFab;
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
@@ -35,10 +37,10 @@ public class PlayerController : MonoBehaviour
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
 
     void Start() {
+        // Load Controllers
+        data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         animator = gameObject.GetComponent<Animator>();
-        walkNames = new string[4] {"walkUp", "walkRight", "walkDown", "walkLeft"};
-        attackNames = new string[4] {"attackUp", "attackRight", "attackDown", "attackLeft"};
-        targetPosition = this.transform.position;
+        // Load Map Controllers
         Grid grid = FindObjectOfType<Grid>();
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -51,10 +53,6 @@ public class PlayerController : MonoBehaviour
                 blockMap = map;
             }
         }
-        maps = new Dictionary<string, Tilemap>();
-        maps.Add("left", leftWallMap);
-        maps.Add("right", rightWallMap);
-        // Get local map controller
         dungeonController = floorMap.GetComponent<DungeonController>();
         if (dungeonController != null) {
             NotableCollide = dungeonController.NotableCollide;
@@ -65,9 +63,19 @@ public class PlayerController : MonoBehaviour
             NotableCollide = villageController.NotableCollide;
             OpenDoor = villageController.OpenDoor;
         }
-
+        maps = new Dictionary<string, Tilemap>();
+        maps.Add("left", leftWallMap);
+        maps.Add("right", rightWallMap);
         uiController = GameObject.Find("UICanvas").GetComponent<UIController>();
         canvas = GameObject.FindWithTag("WorldCanvas");
+
+        // Load Resources
+        walkNames = new string[4] {"walkUp", "walkRight", "walkDown", "walkLeft"};
+        attackNames = new string[4] {"attackUp", "attackRight", "attackDown", "attackLeft"};
+        targetPosition = this.transform.position;
+        textFab = Resources.Load("Prefabs/DamageText") as GameObject;
+
+        // Set Attributes
         tilePosition = new Vector3Int(0,0,0);
         entities = GameObject.FindWithTag("EntityList");
         entityController = entities.GetComponent<EntityController>();
@@ -77,8 +85,12 @@ public class PlayerController : MonoBehaviour
         mainCamera.transform.position = camVec;
         facing = new string[2];
         maxhp = 20;
-        hp = maxhp;
-        attack = 5;
+        hp = data.playerHp;
+        if (hp == 0) {
+            hp = maxhp;
+        }
+        uiController.UpdateHP(hp, maxhp);
+        attack = 10;
         defense = 5;
         mindmg = 1;
         maxdmg = 4;
@@ -97,7 +109,7 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("Can't, enemy's turn!");
             }
         }
-        if (Input.GetMouseButtonDown(0) && !moving && !entityController.enemyTurn && !dying) {
+        if (Input.GetMouseButtonDown(0) && !moving && !attacking && !entityController.enemyTurn && !dying) {
 
             // Determine screen position
             Vector2 pos = new Vector2(
@@ -105,8 +117,8 @@ public class PlayerController : MonoBehaviour
                 Input.mousePosition.y/Screen.height);
             
             // Wait?
-            //Vector3Int click = floorMap.WorldToCell(Input.mousePosition);
-            if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.5f)<0.05f) {
+            if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.55f)<0.05f) {
+                FloatText("wait");
                 EndTurn();
                 return;
             }
@@ -141,12 +153,7 @@ public class PlayerController : MonoBehaviour
             }
 
             // Find target tile/wall
-            NotableCollide(targetCell);
             bool blocked = false;
-            TileBase targetTile = blockMap.GetTile(targetCell);
-            if (targetTile != null) {
-                blocked = true;
-            }
             Vector3Int wallCell = tilePosition;
             TileBase targetWall = null;
             string face = "";
@@ -181,6 +188,13 @@ public class PlayerController : MonoBehaviour
                 } else if (targetWall.name.ToLower().IndexOf(face) >= 0) {
                     blocked = true;
                 }
+            }
+            if (!blocked) {
+                NotableCollide(targetCell);
+            }
+            TileBase targetTile = blockMap.GetTile(targetCell);
+            if (targetTile != null) {
+                blocked = true;
             }
 
             // Attack enemy in front?
@@ -279,22 +293,38 @@ public class PlayerController : MonoBehaviour
     }
     
     public void Damage(int dmg) {
-        GameObject dmgTextFab = Resources.Load("Prefabs/DamageText") as GameObject;
-        GameObject text = Instantiate(dmgTextFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
-        DmgTextController textCont = text.GetComponent<DmgTextController>();
-        textCont.Init(this.transform.position);
-        TextMeshProUGUI textMesh = text.GetComponent<TextMeshProUGUI>();
-        if (dmg == 0) {
-            textMesh.color = new Color32(255,255,0,255);
-            textMesh.text = "miss";
-        } else {
-            textMesh.text = dmg.ToString();
+        if (dmg != 0) {
+            FloatText("dmg", dmg.ToString());
             hp -= dmg;
             if (hp <= 0) {
                 Die();
             }
+        } else {
+            FloatText("miss");
         }
         uiController.UpdateHP(hp, maxhp);
+    }
+
+    private void FloatText(string type, string msg="") {
+        GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
+        DmgTextController textCont = text.GetComponent<DmgTextController>();
+        textCont.Init(this.transform.position);
+        TextMeshProUGUI textMesh = text.GetComponent<TextMeshProUGUI>();
+        if (type == "dmg") {
+            textMesh.text = msg;
+        } else if (type == "miss") {
+            textMesh.color = new Color32(255,255,0,255);
+            textMesh.text = "miss";
+        } else if (type == "heal") {
+            textMesh.text = msg;
+            textMesh.color = new Color32(0,255,0,255);
+        } else if (type == "wait") {
+            textMesh.color = new Color32(255,255,255,255);
+            textMesh.text = "wait";
+        } else {
+            textMesh.text = "AHHH";
+            textMesh.color = new Color32(0,0,255,255);
+        }
     }
 
     private void Die() {
@@ -311,6 +341,15 @@ public class PlayerController : MonoBehaviour
     }
 
     void EndTurn() {
+        if (hp != maxhp && Random.Range(0,5) == 0) {
+            hp++;
+            FloatText("heal", "1");
+            uiController.UpdateHP(hp, maxhp);
+        }
         entities.BroadcastMessage("turnStart", speed);
+    }
+
+    void OnDestroy() {
+        data.playerHp = hp;
     }
 }

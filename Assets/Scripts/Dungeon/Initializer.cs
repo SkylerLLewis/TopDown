@@ -72,23 +72,17 @@ public class Initializer : MonoBehaviour
 
         }
 
+        // Room collision testing
+        Room test1 = new Room(new Vector3Int(1,1,0), new Vector3Int(-1,-1,0));
+        Room test2 = new Room(new Vector3Int(0,0,0), new Vector3Int(0,0,0));
+        if (test1.Collides(test2)) {
+            Debug.Log("They Collide!!");
+        } else {
+            Debug.Log("They don't collide.");
+        }
+
         // Gen Dungeon
-        // Create core room
-        rooms = new List<Room>();
-        Room core = new Room(new Vector3Int(2,2,0), new Vector3Int(-2,-2,0));
-        rooms.Add(core);
-        // Create 4 Neighbors
-        rooms.Add(new Room(new Vector3Int(3,5,0), new Vector3Int(0,3,0), core, 2));
-        core.neighbors[0] = rooms[1];
-        rooms.Add(new Room(new Vector3Int(6,2,0), new Vector3Int(3,-1,0), core, 3));
-        core.neighbors[1] = rooms[2];
-        rooms.Add(new Room(new Vector3Int(0,-3,0), new Vector3Int(-2,-5,0), core, 0));
-        core.neighbors[2] = rooms[3];
-        rooms.Add(new Room(new Vector3Int(-3,2,0), new Vector3Int(-7,-3,0), core, 1));
-        core.neighbors[3] = rooms[4];
-        GenExits();
-        // Draw core rom
-        core.Draw();
+        GenerateDungeon();
 
         dungeonController.UpdateNotables(notableCells);
     }
@@ -111,7 +105,50 @@ public class Initializer : MonoBehaviour
     }
 
     // Creates a map of rooms 
-    void CreateRooms() {
+    void GenerateDungeon() {
+        // Create core room
+        rooms = new List<Room>();
+        int width, height;
+        Vector3Int head= new Vector3Int();
+        Vector3Int tail= new Vector3Int();
+        head.x = Random.Range(1, 4);
+        head.y = Random.Range(1, 4);
+        tail.x = Random.Range(-3, 0);
+        tail.y = Random.Range(-3, 0);
+        Room core = new Room(head, tail);
+        rooms.Add(core);
+        // Create 4 Neighbors
+        for (int i=0; i<4; i++) {
+            width = Random.Range(3, core.width+1);
+            height = Random.Range(3, core.height+1);
+            if (i == 0) {
+                tail.x = core.tail.x+Mathf.RoundToInt((core.width-width)/2);
+                tail.y = core.head.y+1;
+                head.x = tail.x + width-1;
+                head.y = tail.y + height-1;
+            } else if (i == 1) {
+                tail.x = core.head.x+1;
+                tail.y = core.tail.y-Mathf.RoundToInt((core.width-width)/2);
+                head.x = tail.x + width-1;
+                head.y = tail.y + height-1;
+            } else if (i == 2) {
+                head.x = core.head.x-Mathf.RoundToInt((core.width-width)/2);
+                head.y = core.tail.y-1;
+                tail.x = head.x - width+1;
+                tail.y = head.y - height+1;
+            } else if (i == 3) {
+                head.x = core.tail.x-1;
+                head.y = core.head.y-Mathf.RoundToInt((core.width-width)/2);
+                tail.x = head.x - width+1;
+                tail.y = head.y - height+1;
+            }
+            Room r = new Room(head, tail, core, (i+2)%4);
+            Debug.Log("Room generated: "+r.ToString());
+            rooms.Add(r);
+            core.neighbors[i] = rooms[i+1];
+        }
+        GenExits();
+        core.Draw();
     }
 
     // Creates a floorspace, rooted at top corner

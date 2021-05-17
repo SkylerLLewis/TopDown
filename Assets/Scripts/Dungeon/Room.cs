@@ -44,15 +44,47 @@ public class Room
         mapController.DrawRoom(this);
     }
 
-    /*public bool Collides(in Room r) {
-        bool collide;
-        if (r.head.x > this.head.x && r.head.y > this.head.y) {
-            collide = Abs(r.head.x-this.head.x) < r.width || Abs(r.head.y-this.head.y) < r.height;
-        } else if (r.head.x < this.head.x) {
-            wide = Abs(r.head.x-this.head.x) < this.width;
-        } else if (r.tail.x > this.head.x) {
-            return (Abs(r.head.x-this.head.x) < this.width);
+    public bool Collides(in Room r) {
+        bool collide = false;
+        if (r.head.x > this.head.x && r.head.y > this.head.y) { // top right
+            if (r.tail.x <= this.head.x && r.tail.y <= this.head.y) {
+                collide = true;
+            } else {
+                collide = false;
+            }
+        } else if (r.head.x > this.head.x && r.tail.y < this.tail.y) { // bottom right
+            if (r.tail.x <= this.head.x && r.head.y >= this.tail.y) {
+                collide = true;
+            } else {
+                collide = false;
+            }
+        } else if (r.tail.x < this.tail.x && r.tail.y < this.tail.y) { // bottom left
+            if (r.head.x >= this.tail.x && r.head.y >= this.tail.y) {
+                collide = true;
+            } else {
+                collide = false;
+            }
+        } else if (r.tail.x < this.tail.x && r.head.y > this.head.y) { // top left
+            if (r.head.x <= this.tail.x && r.tail.y <= this.head.y) {
+                collide = true;
+            } else {
+                collide = false;
+            }
+        } else { // Contains or parallel with
+            if (r.tail.x > this.head.x || r.tail.y > this.head.y || r.head.y < this.tail.y || r.head.x < this.tail.x) {
+                collide = false;
+            } else {
+                collide = true;
+            }
         }
         return collide;
-    }*/
+    }
+
+    
+    public override string ToString() {
+        string s = "Room: ";
+        s += head.ToString() + ", ";
+        s += tail.ToString();
+        return s;
+    }
 }
