@@ -6,18 +6,28 @@ using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
+    private Animator animator;
+    private string[] walkNames, attackNames;
     public float speed = 1;
     public bool moving = false;
     public bool attacking = false;
     public bool dying = false;
+    public int direction;
     public Vector3Int tilePosition;
     public string[] facing;
-    private Tilemap dungeonMap;
-    private Tilemap wallMap;
+    private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
+    private Dictionary<string,Tilemap> maps;
+    private PersistentData data;
+    private DungeonController dungeonController;
+    private VillageController villageController;
+    System.Action<Vector3Int> NotableCollide;
+    System.Action<Vector3Int, int> OpenDoor;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
     private GameObject canvas;
+    private UIController uiController;
+    private GameObject textFab;
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
@@ -27,26 +37,92 @@ public class PlayerController : MonoBehaviour
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
 
     void Start() {
-        targetPosition = this.transform.position;
+        // Load Controllers
+        data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
+        animator = gameObject.GetComponent<Animator>();
+        // Load Map Controllers
         Grid grid = FindObjectOfType<Grid>();
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
-            if (map.name == "DungeonMap") {
-                dungeonMap = map;
-                break;
+            if (map.name == "FloorMap") {
+                floorMap = map;
+            } else if (map.name == "LeftWallMap") {
+                leftWallMap = map;
+            } else if (map.name == "RightWallMap") {
+                rightWallMap = map;
+            } else if (map.name == "BlockMap") {
+                blockMap = map;
             }
         }
+        dungeonController = floorMap.GetComponent<DungeonController>();
+        if (dungeonController != null) {
+            NotableCollide = dungeonController.NotableCollide;
+            OpenDoor = dungeonController.OpenDoor;
+        }
+        villageController = floorMap.GetComponent<VillageController>();
+        if (villageController != null) {
+            NotableCollide = villageController.NotableCollide;
+            OpenDoor = villageController.OpenDoor;
+        }
+        maps = new Dictionary<string, Tilemap>();
+        maps.Add("left", leftWallMap);
+        maps.Add("right", rightWallMap);
+        uiController = GameObject.Find("UICanvas").GetComponent<UIController>();
         canvas = GameObject.FindWithTag("WorldCanvas");
-        tilePosition = dungeonMap.WorldToCell(this.transform.position);
+
+        // Load Resources
+        walkNames = new string[4] {"walkUp", "walkRight", "walkDown", "walkLeft"};
+        attackNames = new string[4] {"attackUp", "attackRight", "attackDown", "attackLeft"};
+        targetPosition = this.transform.position;
+        textFab = Resources.Load("Prefabs/DamageText") as GameObject;
+
+        // Set Attributes
+        tilePosition = new Vector3Int(0,0,0);
         entities = GameObject.FindWithTag("EntityList");
         entityController = entities.GetComponent<EntityController>();
         mainCamera = GameObject.FindWithTag("MainCamera");
+        Vector3 camVec = this.transform.position;
+        camVec.z = -10;
+        mainCamera.transform.position = camVec;
         facing = new string[2];
         maxhp = 20;
-        hp = maxhp;
+        hp = data.playerHp;
+        if (hp == 0) {
+            hp = maxhp;
+        }
+        uiController.UpdateHP(hp, maxhp);
+        // Temporary solution for weapon stuff!
+        // Stick: 1-4dmg
+        // Dagger: +20% speed, 1-2dmg, +3 atk, -2 def
+        // Axe: 1-5dmg, +2atk
+        // Mace: 2-6dmg, -30% speed
+        // Spear: +3 def
+        // Polearm: +3 def, +3 atk, -50% speed, 2-6 dmg
         attack = 5;
         defense = 5;
         mindmg = 1;
-        maxdmg = 3;
+        maxdmg = 4;
+        speed = 1f;
+        if (data.weapon == "dagger") {
+            attack += 3;
+            speed = 0.8f;
+            maxdmg = 2;
+            defense -= 2;
+        } else if (data.weapon == "axe") {
+            maxdmg = 5;
+            attack += 2;
+        } else if (data.weapon == "mace") {
+            mindmg = 2;
+            maxdmg = 6;
+            speed  = 1.3f;
+        } else if (data.weapon == "spear") {
+            defense += 3;
+        } else if (data.weapon == "polearm") {
+            defense += 3;
+            attack += 3;
+            mindmg = 2;
+            maxdmg = 6;
+            speed = 2f;
+        }
     }
 
 
@@ -54,16 +130,6 @@ public class PlayerController : MonoBehaviour
     public Vector3 pos;
     // Update is called once per frame
     void Update() {
-        /*/ Start new code
-        pos = new Vector3 (transform.position.x, transform.position.y, 0);
-        Vector3Int tilepos = dungeonMap.WorldToCell(pos);
-        Vector3 tileworldpos = dungeonMap.CellToWorld(tilepos);
-        relativePos = pos - tileworldpos;
-        if (relativePos.y < .25)
-            transform.position = new Vector3(transform.position.x, transform.position.y, 1);
-        else
-            transform.position = new Vector3(transform.position.x, transform.position.y, 2);
-        */// End new code
         if (Input.GetMouseButtonDown(0)) {
             if (moving) {
                 Debug.Log("Can't, I'm moving!");
@@ -72,7 +138,7 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("Can't, enemy's turn!");
             }
         }
-        if (Input.GetMouseButtonDown(0) && !moving && !entityController.enemyTurn) {
+        if (Input.GetMouseButtonDown(0) && !moving && !attacking && !entityController.enemyTurn && !dying) {
 
             // Determine screen position
             Vector2 pos = new Vector2(
@@ -80,69 +146,114 @@ public class PlayerController : MonoBehaviour
                 Input.mousePosition.y/Screen.height);
             
             // Wait?
-            //Vector3Int click = dungeonMap.WorldToCell(Input.mousePosition);
-            if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.5f)<0.05f) {
-                endTurn();
+            if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.55f)<0.05f) {
+                FloatText("wait");
+                EndTurn();
                 return;
             }
 
             // A numerical direction that can rotate 0-3
-            int direction = 0;
+            direction = 0;
 
+            Vector3Int targetCell = tilePosition;
             // Calculate target pos
             targetPosition = this.transform.position;
             startPosition = this.transform.position;
             if (pos.x < 0.5 && pos.y >= 0.5) { // y++
                 targetPosition.x = this.transform.position.x - 1f;
                 targetPosition.y = this.transform.position.y + 0.5f;
+                targetCell.y++;
                 direction = 0;
             } else if (pos.x >= 0.5 && pos.y >= 0.5) { // x++
                 targetPosition.x = this.transform.position.x + 1f;
                 targetPosition.y = this.transform.position.y + 0.5f;
+                targetCell.x++;
                 direction = 1;
             } else if (pos.x >= 0.5 && pos.y < 0.5) { // y--
                 targetPosition.x = this.transform.position.x + 1f;
                 targetPosition.y = this.transform.position.y - 0.5f;
+                targetCell.y--;
                 direction = 2;
             } else if (pos.x < 0.5 && pos.y < 0.5) { // x--
                 targetPosition.x = this.transform.position.x - 1f;
                 targetPosition.y = this.transform.position.y - 0.5f;
+                targetCell.x--;
                 direction = 3;
-            } else {
-                Debug.Log("AAAAAAAAAHHHHHHH THIS IS IMPOSSIBLE");
             }
 
-            // Find target tile
-            Vector3Int targetCell = dungeonMap.WorldToCell(targetPosition);
-            targetCell.z = 0;
-            TileBase targetTile =  dungeonMap.GetTile(targetCell);
-
-            // Attack enemy in front?
-            EnemyBehavior target = null;
-            bool enemyFront = false;
-            enemyList = GameObject.FindGameObjectsWithTag("Enemy");
-            foreach (var e in enemyList) {
-                target = e.GetComponent<EnemyBehavior>();
-                if (target.tilePosition == targetCell) {
-                    enemyFront = true;
-                    break;
+            // Find target tile/wall
+            bool blocked = false;
+            Vector3Int wallCell = tilePosition;
+            TileBase targetWall = null;
+            string face = "";
+            if (!blocked) {
+                if (direction == 0) {
+                    face = "left";
+                } else if (direction == 1) {
+                    face = "right";
+                } else if (direction == 2) {
+                    face = "left";
+                    wallCell.y--;
+                } else if (direction == 3) {
+                    face = "right";
+                    wallCell.x--;
+                }
+                targetWall = maps[face].GetTile(wallCell);
+            }
+            if (targetWall != null) {
+                if (targetWall.name.ToLower().IndexOf(face+"door") >= 0) { 
+                    if (targetWall.name.ToLower().IndexOf("open") < 0) {
+                        blocked = true;
+                        // Open door and simulate an attack move on door
+                        OpenDoor(wallCell, direction);
+                        attacking = true;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        highPoint = targetPosition;
+                        targetPosition = startPosition;
+                        count = 0.0f;
+                    } else {
+                        blocked = false;
+                    }
+                } else if (targetWall.name.ToLower().IndexOf(face) >= 0) {
+                    blocked = true;
                 }
             }
+            if (!blocked) {
+                NotableCollide(targetCell);
+            }
+            TileBase targetTile = blockMap.GetTile(targetCell);
+            if (targetTile != null) {
+                blocked = true;
+            }
 
-            if (enemyFront && !target.dying) {
-                attacking = true;
-                highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                highPoint = targetPosition;
-                targetPosition = startPosition;
-                count = 0.0f;
-                Attack(target);
-            // Point is valid?
-            } else if (targetTile != null && targetTile.name == "floor") {
-                // Init bezier curve
-                moving = true;
-                tilePosition = dungeonMap.WorldToCell(targetPosition);
-                highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                count = 0.0f;
+            if (!blocked) {
+                // Attack enemy in front?
+                EnemyBehavior target = null;
+                bool enemyFront = false;
+                enemyList = GameObject.FindGameObjectsWithTag("Enemy");
+                foreach (var e in enemyList) {
+                    target = e.GetComponent<EnemyBehavior>();
+                    if (target.tilePosition == targetCell) {
+                        enemyFront = true;
+                        break;
+                    }
+                }
+
+                if (enemyFront && !target.dying) {
+                    attacking = true;
+                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                    highPoint = targetPosition;
+                    targetPosition = startPosition;
+                    count = 0.0f;
+                    Attack(target);
+                // Point is valid?
+                } else if (!blocked) {//targetTile != null && targetTile.name == "floor") {
+                    // Init bezier curve
+                    moving = true;
+                    tilePosition = targetCell; //floorMap.WorldToCell(targetPosition);
+                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                    count = 0.0f;
+            }
             }
             // Face player in new direction
             if (attacking || moving) {
@@ -155,6 +266,11 @@ public class PlayerController : MonoBehaviour
                     facing [1] = "left";
                 } else {
                     facing[1] = "right";
+                }
+                if (moving) {
+                    animator.CrossFade(walkNames[direction], 0f);
+                } else {
+                    animator.CrossFade(attackNames[direction], 0f);
                 }
             }
         }
@@ -172,7 +288,7 @@ public class PlayerController : MonoBehaviour
             } else {
                 // Turn over, activate entities
                 moving = false;
-                endTurn();
+                EndTurn();
             }
         } else if (attacking) {
             if (count < 1.0f) {
@@ -181,62 +297,97 @@ public class PlayerController : MonoBehaviour
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
                 this.transform.position = Vector3.Lerp(m1, m2, count);
             } else {
+                animator.CrossFade(walkNames[direction], 0f);
                 // Turn over, activate entities
                 attacking = false;
-                endTurn();
+                EndTurn();
             }
         } else if (dying) {
-            if (count < 1.0f) {
+            /*if (count < 1.0f) {
                 count += 1.0f * 2.5f * Time.deltaTime;
                 float t = Mathf.Sin(count * Mathf.PI * 0.5f);
                 this.transform.rotation = Quaternion.Lerp(startAngle, targetAngle, t);
             } else {
-                Destroy(this.gameObject, 0.5f);
-            }
+                Destroy(this.gameObject, 10f);
+            }*/
         }
     }
 
     void Attack(EnemyBehavior target) {
-        int roll = Mathf.RoundToInt(Random.Range(1,20));
+        int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
         if (roll >= 10) {
-            target.Damage(Mathf.RoundToInt(Random.Range(mindmg,maxdmg)));
+            target.Damage(Random.Range(mindmg,maxdmg+1));
         } else {
             target.Damage(0);
         }
     }
     
     public void Damage(int dmg) {
-        GameObject dmgTextFab = Resources.Load("Prefabs/DamageText") as GameObject;
-        GameObject text = Instantiate(dmgTextFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
-        DmgTextController textCont = text.GetComponent<DmgTextController>();
-        textCont.Init(this.transform.position);
-        TextMeshProUGUI textMesh = text.GetComponent<TextMeshProUGUI>();
-        if (dmg == 0) {
-            textMesh.color = new Color32(255,255,0,255);
-            textMesh.text = "miss";
-        } else {
-            textMesh.text = dmg.ToString();
+        if (dmg != 0) {
+            FloatText("dmg", dmg.ToString());
             hp -= dmg;
             if (hp <= 0) {
                 Die();
             }
+        } else {
+            FloatText("miss");
+        }
+        uiController.UpdateHP(hp, maxhp);
+    }
+
+    public void EquipWeapon(string weapon) {
+        FloatText("msg", weapon);
+    }
+
+    private void FloatText(string type, string msg="") {
+        GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
+        DmgTextController textCont = text.GetComponent<DmgTextController>();
+        textCont.Init(this.transform.position);
+        TextMeshProUGUI textMesh = text.GetComponent<TextMeshProUGUI>();
+        if (type == "dmg") {
+            textMesh.text = msg;
+        } else if (type == "miss") {
+            textMesh.color = new Color32(255,255,0,255);
+            textMesh.text = "miss";
+        } else if (type == "heal") {
+            textMesh.text = msg;
+            textMesh.color = new Color32(0,255,0,255);
+        } else if (type == "wait") {
+            textMesh.color = new Color32(255,255,255,255);
+            textMesh.text = "wait";
+        } else if (type == "msg") {
+            textMesh.color = new Color32(255,255,255,255);
+            textMesh.text = msg;
+        } else {
+            textMesh.text = "AHHH";
+            textMesh.color = new Color32(0,0,255,255);
         }
     }
 
     private void Die() {
         dying = true;
-        count = 0f;
+        /*count = 0f;
         startAngle = this.transform.rotation;
         targetAngle = startAngle;
         if (facing[1] == "left") {
             targetAngle.z -= 1;
         } else {
             targetAngle.z += 1;
-        }
+        }*/
+        animator.CrossFade("die", 0f);
     }
 
-    void endTurn() {
+    void EndTurn() {
+        if (hp != maxhp && Random.Range(0f,4f) < speed) {
+            hp++;
+            FloatText("heal", "1");
+            uiController.UpdateHP(hp, maxhp);
+        }
         entities.BroadcastMessage("turnStart", speed);
+    }
+
+    void OnDestroy() {
+        data.playerHp = hp;
     }
 }

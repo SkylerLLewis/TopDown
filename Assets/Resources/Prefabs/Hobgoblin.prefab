@@ -124,9 +124,9 @@ MonoBehaviour:
   dying: 0
   tilePosition: {x: 0, y: 0, z: 0}
   facing: []
-  maxhp: 5
-  hp: 5
+  maxhp: 10
+  hp: 10
   attack: 5
-  defense: 5
-  mindmg: 1
-  maxdmg: 5
+  defense: 0
+  mindmg: 3
+  maxdmg: 6
