@@ -10,8 +10,6 @@ public class VillageController : MonoBehaviour
 
     void Awake()
     {
-        notableCells = new Dictionary<string, Vector3Int>();
-        notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
         NotableActionsRef = gameObject.GetComponent<GreenVillageInit>().NotableActions;
     }
 
@@ -21,6 +19,10 @@ public class VillageController : MonoBehaviour
                 NotableActionsRef(n.Key);
             }
         }
+    }
+
+    public void UpdateNotables(Dictionary<string,Vector3Int> n) {
+        notableCells = n;
     }
 
     public void OpenDoor(Vector3Int cell, int dir) {

@@ -51,12 +51,18 @@ public class Initializer : MonoBehaviour
         // Load Enemy prefabs and likelyhood
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
+        enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
+        enemyWheel.Add("Skeleton", 10);
         enemyFabs.Add("Goblin", Resources.Load("Prefabs/Goblin") as GameObject);
-        enemyWheel.Add("Goblin", 2);
+        enemyWheel.Add("Goblin", 1);
         enemyFabs.Add("Hobgoblin", Resources.Load("Prefabs/Hobgoblin") as GameObject);
-        enemyWheel.Add("Hobgoblin", 1);
+        enemyWheel.Add("Hobgoblin", 1+data.depth);
         enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
-        enemyWheel.Add("Spider", 1);
+        enemyWheel.Add("Spider", 1+data.depth);
+        if (data.depth > 1 && data.depth < 4) {
+            enemyWheel["Skeleton"] = 1;
+            enemyWheel["Goblin"] = 15;
+        }
 
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
@@ -260,7 +266,8 @@ public class Initializer : MonoBehaviour
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y+1,cell.z))) {
+                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y+1,cell.z))
+                && !notableCells.ContainsValue(cell)) {
                     leftWallMap.SetTile(cell, tiles["leftDoor"]);
                     break;
                 }

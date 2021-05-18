@@ -6,9 +6,24 @@ using UnityEngine.SceneManagement;
 public class GreenVillageInit : MonoBehaviour
 {
     private PersistentData data;
-    void Start()
+    private VillageController villageController;
+    private Dictionary<string,Vector3Int> notableCells;
+    private PlayerController player; 
+    void Awake()
     {
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
+        villageController = gameObject.GetComponent<VillageController>();
+        player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
+
+        notableCells = new Dictionary<string, Vector3Int>();
+        notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
+        notableCells.Add("dagger", new Vector3Int(1,0,0));
+        notableCells.Add("axe", new Vector3Int(1,-1,0));
+        notableCells.Add("mace", new Vector3Int(1,-2,0));
+        notableCells.Add("spear", new Vector3Int(1,-3,0));
+        notableCells.Add("polearm", new Vector3Int(1,-4,0));
+
+        villageController.UpdateNotables(notableCells);
     }
 
     public Vector3Int GetEntrance() {
@@ -20,6 +35,9 @@ public class GreenVillageInit : MonoBehaviour
             data.depth++;
             data.direction = "down";
             SceneManager.LoadScene("BasicDungeon");
+        } else if (key == "dagger" || key == "axe" || key == "mace" || key == "spear" || key == "polearm") {
+            data.weapon = key;
+            player.EquipWeapon(key);
         }
     }
 }
