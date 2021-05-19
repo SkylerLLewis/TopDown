@@ -136,6 +136,7 @@ GameObject:
   - component: {fileID: 15958016}
   - component: {fileID: 15958018}
   - component: {fileID: 15958019}
+  - component: {fileID: 15958020}
   m_Layer: 0
   m_Name: FloorMap
   m_TagString: FloorMap
@@ -315,6 +316,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa0be1b4cbacba8a9bfe923b623c018f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &15958020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 15958014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe26ddeab96a2bc9db14844d0d4a5551, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  start: {x: 0, y: 0, z: 0}
+  end: {x: 0, y: 0, z: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0

@@ -355,7 +355,7 @@ public class Initializer : MonoBehaviour
 
     // Give a room its list of enemies
     public void RetrieveEnemies(Room r) {
-        int numEnemies = Mathf.RoundToInt(Mathf.Pow(Random.Range(1f,2f), 2));
+        int numEnemies = 1;// ! Mathf.RoundToInt(Mathf.Pow(Random.Range(1f,2f), 2));
         float wheelTotal = 0f;
         foreach (KeyValuePair<string,int> e in enemyWheel) {
             wheelTotal += e.Value;
