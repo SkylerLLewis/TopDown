@@ -31,6 +31,9 @@ public class Initializer : MonoBehaviour
         // Load tile Resources into dictionaries
         tiles = new Dictionary<string,Tile>();
         tiles.Add("floor", Resources.Load<Tile>("Tiles/DungeonMap/floor"));
+        tiles.Add("floor1", Resources.Load<Tile>("Tiles/DungeonMap/floor1"));
+        tiles.Add("floor2", Resources.Load<Tile>("Tiles/DungeonMap/floor2"));
+        tiles.Add("floor3", Resources.Load<Tile>("Tiles/DungeonMap/floor3"));
         tiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftWall"));
         tiles.Add("rightWall", Resources.Load<Tile>("Tiles/DungeonMap/rightWall"));
         tiles.Add("leftDoor", Resources.Load<Tile>("Tiles/DungeonMap/leftDoor"));
@@ -79,8 +82,8 @@ public class Initializer : MonoBehaviour
         }
 
         // Room collision testing
-        Room test1 = new Room(new Vector3Int(1,1,0), new Vector3Int(-1,-1,0));
-        Room test2 = new Room(new Vector3Int(0,0,0), new Vector3Int(0,0,0));
+        Room test1 = new Room(new Vector3Int(-2,-4,0), new Vector3Int(-5,-9,0));
+        Room test2 = new Room(new Vector3Int(-3,-3,0), new Vector3Int(-8,-6,0));
         if (test1.Collides(test2)) {
             Debug.Log("They Collide!!");
         } else {
@@ -114,9 +117,8 @@ public class Initializer : MonoBehaviour
     void GenerateDungeon() {
         // Create core room
         rooms = new List<Room>();
-        int width, height;
-        Vector3Int head= new Vector3Int();
-        Vector3Int tail= new Vector3Int();
+        Vector3Int head = new Vector3Int();
+        Vector3Int tail = new Vector3Int();
         head.x = Random.Range(1, 4);
         head.y = Random.Range(1, 4);
         tail.x = Random.Range(-3, 0);
@@ -125,36 +127,83 @@ public class Initializer : MonoBehaviour
         rooms.Add(core);
         // Create 4 Neighbors
         for (int i=0; i<4; i++) {
-            width = Random.Range(3, core.width+1);
-            height = Random.Range(3, core.height+1);
-            if (i == 0) {
-                tail.x = core.tail.x+Mathf.RoundToInt((core.width-width)/2);
-                tail.y = core.head.y+1;
-                head.x = tail.x + width-1;
-                head.y = tail.y + height-1;
-            } else if (i == 1) {
-                tail.x = core.head.x+1;
-                tail.y = core.tail.y-Mathf.RoundToInt((core.width-width)/2);
-                head.x = tail.x + width-1;
-                head.y = tail.y + height-1;
-            } else if (i == 2) {
-                head.x = core.head.x-Mathf.RoundToInt((core.width-width)/2);
-                head.y = core.tail.y-1;
-                tail.x = head.x - width+1;
-                tail.y = head.y - height+1;
-            } else if (i == 3) {
-                head.x = core.tail.x-1;
-                head.y = core.head.y-Mathf.RoundToInt((core.width-width)/2);
-                tail.x = head.x - width+1;
-                tail.y = head.y - height+1;
+            GenerateRoom(core, i);
+        }
+        // Create string of rooms
+        int direction = Random.Range(0, 4);
+        Room branch = core.neighbors[direction];
+        for (int i=0; i<4; i++) {
+            GenerateRoom(branch, direction);
+            branch = branch.neighbors[direction];
+        }
+        // Add Random Rooms
+        for (int i=0; i<10; i++) {
+            branch = rooms[Random.Range(0, rooms.Count)];
+            direction = Random.Range(0, 4);
+            int j = 0;
+            while (branch.neighbors[direction] != null) {
+                direction = (direction+1)%4;
+                j++;
+                if (j >= 4) { break; }
             }
-            Room r = new Room(head, tail, core, (i+2)%4);
-            Debug.Log("Room generated: "+r.ToString());
-            rooms.Add(r);
-            core.neighbors[i] = rooms[i+1];
+            if (branch.neighbors[direction] == null) {
+                GenerateRoom(branch, direction);
+            }
         }
         GenExits();
         core.Draw();
+    }
+
+    private bool GenerateRoom(Room parent, int direction) {
+        int width, height;
+        Vector3Int head = new Vector3Int();
+        Vector3Int tail = new Vector3Int();
+        bool valid;
+        Room newRoom;
+        int tries = 0;
+        do {
+            width = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
+            height = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
+            tries++;
+            // Generate room to test
+            if (direction == 0) {
+                tail.x = Random.Range(parent.tail.x-width+1, parent.head.x+1);
+                tail.y = parent.head.y+1;
+                head.x = tail.x + width-1;
+                head.y = tail.y + height-1;
+            } else if (direction == 1) {
+                tail.x = parent.head.x+1;
+                tail.y = Random.Range(parent.tail.y-height+1, parent.head.y+1);
+                head.x = tail.x + width-1;
+                head.y = tail.y + height-1;
+            } else if (direction == 2) {
+                head.x = Random.Range(parent.tail.x, parent.head.x+width);
+                head.y = parent.tail.y-1;
+                tail.x = head.x - width+1;
+                tail.y = head.y - height+1;
+            } else if (direction == 3) {
+                head.x = parent.tail.x-1;
+                head.y = Random.Range(parent.tail.y, parent.head.y+height);
+                tail.x = head.x - width+1;
+                tail.y = head.y - height+1;
+            }
+            newRoom = new Room(head, tail);
+            valid = true;
+            foreach (Room r in rooms) {
+                if (r.Collides(newRoom)) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (tries > 20) {
+                Debug.Log("Room ("+newRoom.ToString()+") with width:"+width+" and height:"+height+" impossible to make");
+                return false;
+            }
+        } while (!valid);
+        newRoom.SetNeighbors(parent, rooms);
+        rooms.Add(newRoom);
+        parent.neighbors[direction] = rooms[rooms.Count-1];
+        return true;
     }
 
     // Creates a floorspace, rooted at top corner
@@ -167,7 +216,18 @@ public class Initializer : MonoBehaviour
             for (int y=0; y>-yLen; y--) {
                 placement.x = r.head.x + x;
                 placement.y = r.head.y + y;
-                Tile clone = Instantiate(tiles["floor"]);
+                Tile clone = null;
+                clone = Instantiate(tiles["floor"]);
+                int rand = Random.Range(0, 20);
+                if (rand < 10) {
+                    clone = Instantiate(tiles["floor"]);
+                } else if (rand < 18) {
+                    clone = Instantiate(tiles["floor1"]);
+                } else if (rand == 18) {
+                    clone = Instantiate(tiles["floor2"]);
+                } else if (rand == 19) {
+                    clone = Instantiate(tiles["floor3"]);
+                }
                 clone.name = clone.name.Split('(')[0];
                 floorMap.SetTile(placement, clone);
             }
@@ -355,7 +415,7 @@ public class Initializer : MonoBehaviour
 
     // Give a room its list of enemies
     public void RetrieveEnemies(Room r) {
-        int numEnemies = 1;// ! Mathf.RoundToInt(Mathf.Pow(Random.Range(1f,2f), 2));
+        int numEnemies = Mathf.RoundToInt(Mathf.Pow(Random.Range(1f,2f), 2));
         float wheelTotal = 0f;
         foreach (KeyValuePair<string,int> e in enemyWheel) {
             wheelTotal += e.Value;
@@ -371,11 +431,6 @@ public class Initializer : MonoBehaviour
                 }
             }
         }
-        string o = "Enemies generated: ";
-        foreach (string s in r.enemies) {
-            o += s + " ";
-        }
-        Debug.Log(o);
     }
 
     public void GenEnemies(Room r) {
@@ -414,7 +469,6 @@ public class Initializer : MonoBehaviour
             Vector3 pos = floorMap.CellToWorld(vectors[ei]);
             pos.y += 0.25f;
             pos.z = 0;
-            Debug.Log("Creating enemy at cell: "+vectors[ei]+"\nAnd pos: "+pos);
             GameObject clone = Instantiate(
                 enemyFabs[e],
                 pos,

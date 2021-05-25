@@ -176,7 +176,6 @@ public class PathFinder : MonoBehaviour
         if (maps[face].HasTile(wallCell)) {
             string targetWall = maps[face].GetTile(wallCell).name.ToLower();
             if (targetWall.IndexOf(face) >= 0 && targetWall.IndexOf("wall") >= 0) {
-                Debug.Log("        "+face+" wall ("+targetWall+") at "+wallCell.ToString());
                 return false;
             }
         }

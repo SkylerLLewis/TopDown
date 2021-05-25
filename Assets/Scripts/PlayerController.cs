@@ -365,16 +365,12 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void Ability(string abilityName) {
+        Debug.Log("Ability "+abilityName+" activated!");
+    }
+
     private void Die() {
         dying = true;
-        /*count = 0f;
-        startAngle = this.transform.rotation;
-        targetAngle = startAngle;
-        if (facing[1] == "left") {
-            targetAngle.z -= 1;
-        } else {
-            targetAngle.z += 1;
-        }*/
         animator.CrossFade("die", 0f);
     }
 

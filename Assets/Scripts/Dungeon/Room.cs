@@ -13,7 +13,7 @@ public class Room
     Initializer mapController;
     public List<string> enemies;
 
-    public Room(Vector3Int h, Vector3Int t, Room parent=null, int dir=0) {
+    public Room(Vector3Int h, Vector3Int t, Room parent=null, List<Room> rooms=null) {
         Grid grid = GameObject.FindObjectOfType<Grid>();
         foreach (Tilemap map in GameObject.FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -29,9 +29,31 @@ public class Room
         height = head.y - tail.y + 1;
         center = (head + tail) / 2;
         neighbors = new Room[4];
-        neighbors[dir] = parent;
+        if (parent != null) {
+            SetNeighbors(parent, rooms);
+        }
         enemies = new List<string>();
         mapController.RetrieveEnemies(this);
+    }
+
+    // Draws the room into existence
+    public void Draw() {
+        active = true;
+        mapController.DrawRoom(this);
+    }
+
+    public void SetNeighbors(Room parent, List<Room> rooms) {
+        int dir = Neighboring(parent);
+        neighbors[dir] = parent;
+        parent.neighbors[(dir+2)%4] = this;
+        foreach (Room r in rooms) {
+            dir = Neighboring(r);
+            if (dir != -1 && neighbors[dir] == null && r.neighbors[(dir+2)%4] == null) {
+                Debug.Log("Extra neighbor added at "+ToString()+" "+dir);
+                neighbors[dir] = r;
+                r.neighbors[(dir+2)%4] = this;
+            }
+        }
     }
 
     public bool Contains(Vector3Int cell) {
@@ -39,9 +61,21 @@ public class Room
                 cell.y <= head.y && cell.y >= tail.y);
     }
 
-    // Draws the room into existence
-    public void Draw() {
-        mapController.DrawRoom(this);
+    public int Neighboring(in Room r) {
+        if (this.head.y == r.tail.y-1 && 
+        (Mathf.Abs(this.head.x-r.head.x) <= this.width || Mathf.Abs(this.head.x-r.head.x) <= r.width-1)) {
+            return 0;
+        } else if (this.head.x == r.tail.x-1 && 
+        (Mathf.Abs(this.head.y-r.head.y) <= this.height || Mathf.Abs(this.head.y-r.head.y) <= r.height-1)) {
+            return 1;
+        } else if (this.tail.y == r.head.y+1 && 
+        (Mathf.Abs(this.head.x-r.head.x) <= this.width || Mathf.Abs(this.head.x-r.head.x) <= r.width-1)) {
+            return 2;
+        } else if (this.tail.x == r.head.x+1 && 
+        (Mathf.Abs(this.head.y-r.head.y) <= this.height || Mathf.Abs(this.head.y-r.head.y) <= r.height-1)) {
+            return 3;
+        }
+        return -1;
     }
 
     public bool Collides(in Room r) {
@@ -65,7 +99,7 @@ public class Room
                 collide = false;
             }
         } else if (r.tail.x < this.tail.x && r.head.y > this.head.y) { // top left
-            if (r.head.x <= this.tail.x && r.tail.y <= this.head.y) {
+            if (r.head.x >= this.tail.x && r.tail.y <= this.head.y) {
                 collide = true;
             } else {
                 collide = false;
