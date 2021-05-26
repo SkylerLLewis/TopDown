@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class UIController : MonoBehaviour
 {
@@ -21,6 +22,12 @@ public class UIController : MonoBehaviour
 
     public void UpdateHP(int hp, int maxhp) {
         hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*((hp*1.0f)/maxhp));
+    }
+
+    public void OpenInventory() {
+        Scene scene = SceneManager.GetSceneByName("Inventory");
+        Debug.Log("Inventory is: "+scene.ToString());
+        SceneManager.SetActiveScene(SceneManager.GetSceneByName("Inventory"));
     }
 
     public void AbilityActivate(string name) {

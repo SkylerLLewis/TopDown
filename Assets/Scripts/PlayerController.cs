@@ -130,14 +130,14 @@ public class PlayerController : MonoBehaviour
     public Vector3 pos;
     // Update is called once per frame
     void Update() {
-        if (Input.GetMouseButtonDown(0)) {
+        /*if (Input.GetMouseButtonDown(0)) {
             if (moving) {
                 Debug.Log("Can't, I'm moving!");
             }
             if (entityController.enemyTurn) {
                 Debug.Log("Can't, enemy's turn!");
             }
-        }
+        }*/
         if (Input.GetMouseButtonDown(0) && !moving && !attacking && !entityController.enemyTurn && !dying) {
 
             // Determine screen position
@@ -145,6 +145,11 @@ public class PlayerController : MonoBehaviour
                 Input.mousePosition.x/Screen.width,
                 Input.mousePosition.y/Screen.height);
             
+            // Using interface?
+            if (pos.x<0.2 || pos.x>0.8) {
+                return;
+            }
+
             // Wait?
             if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.55f)<0.05f) {
                 FloatText("wait");
@@ -247,13 +252,13 @@ public class PlayerController : MonoBehaviour
                     count = 0.0f;
                     Attack(target);
                 // Point is valid?
-                } else if (!blocked) {//targetTile != null && targetTile.name == "floor") {
+                } else {//targetTile != null && targetTile.name == "floor") {
                     // Init bezier curve
                     moving = true;
                     tilePosition = targetCell; //floorMap.WorldToCell(targetPosition);
                     highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                     count = 0.0f;
-            }
+                }
             }
             // Face player in new direction
             if (attacking || moving) {

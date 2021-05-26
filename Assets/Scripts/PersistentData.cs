@@ -17,6 +17,9 @@ public class PersistentData : MonoBehaviour
         playerHp = 0;
         direction = "down";
         weapon = "stick";
+        //AsyncOperation inv = SceneManager.LoadSceneAsync("Inventory", LoadSceneMode.Single);
+        //inv.allowSceneActivation = true;
+        SceneManager.LoadScene("Inventory");
         SceneManager.LoadScene("GreenVillage");
     }
 }

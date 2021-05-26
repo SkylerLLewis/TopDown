@@ -6,7 +6,7 @@ using TMPro;
 
 public class EnemyBehavior : MonoBehaviour
 {
-    public float speed;
+    public float speed, moveSpeed;
     public float timer;
     public bool moving=false, attacking=false, dying=false, waiting=false, last=false;
     public Vector3Int tilePosition;
@@ -53,6 +53,7 @@ public class EnemyBehavior : MonoBehaviour
         entityController = GameObject.FindObjectOfType<EntityController>();
         timer = Random.Range(0, speed);
         facing = new string[2];
+        moveSpeed = 6-2*speed;
         Debug.Log("Enemy "+name+" with speed: "+speed+" and timer: "+timer);
     }
 
@@ -169,100 +170,13 @@ public class EnemyBehavior : MonoBehaviour
                 waiting = true;
                 count = 0f;
             }
-
-            /*Vector3Int targetCell = tilePosition;
-            if (direction == 0) {
-                targetPosition.x = this.transform.position.x - 1f;
-                targetPosition.y = this.transform.position.y + 0.5f;
-                targetCell.y++;
-            } else if (direction == 1) {
-                targetPosition.x = this.transform.position.x + 1f;
-                targetPosition.y = this.transform.position.y + 0.5f;
-                targetCell.x++;
-            } else if (direction == 2) {
-                targetPosition.x = this.transform.position.x + 1f;
-                targetPosition.y = this.transform.position.y - 0.5f;
-                targetCell.y--;
-            } else if (direction == 3) {
-                targetPosition.x = this.transform.position.x - 1f;
-                targetPosition.y = this.transform.position.y - 0.5f;
-                targetCell.x--;
-            }
-
-            // Find target tile/wall
-            bool blocked = false;
-            TileBase targetTile = blockMap.GetTile(targetCell);
-            if (targetTile != null) {
-                blocked = true;
-            }
-            TileBase targetWall;
-            Vector3Int wallCell = tilePosition;
-            string face = "";
-            if (direction == 0) {
-                face = "left";
-            } else if (direction == 1) {
-                face = "right";
-            } else if (direction == 2) {
-                face = "left";
-                wallCell.y--;
-            } else if (direction == 3) {
-                face = "right";
-                wallCell.x--;
-            }
-
-            targetWall = maps[face].GetTile(wallCell);
-            if (targetWall != null) {
-                if (targetWall.name.ToLower().IndexOf(face) >= 0) {
-                    if (targetWall.name.ToLower().IndexOf("open") >= 0) {
-                        blocked = false;
-                    } else {
-                        blocked = true;
-                    }
-                }
-            }
-            
-            // Tile clear of friends?
-            bool friend = false;
-            entities = GameObject.FindGameObjectsWithTag("Enemy");
-            foreach (var e in entities) {
-                EnemyBehavior es = e.GetComponent<EnemyBehavior>();
-                if (es.tilePosition == targetCell) {
-                    friend = true;
-                    break;
-                }
-            }
-            
-            if (targetCell == player.tilePosition && !blocked) { // ATTACK!
-                
-            } else if (!blocked && !friend) { // Move
-                // Init bezier curve
-                moving = true;
-                highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                count = 0.0f;
-                tilePosition = targetCell;
-                break;
-            } else { // Try again
-                if (i == 0) { // First, turn left or right
-                    if (Random.Range(-1,1) < 0 ) {
-                        direction = (direction+3) % 4;
-                    } else {
-                        direction = (direction+1) % 4;
-                    }
-                } else if (i == 1) { // Then, try the other way
-                    direction = (direction+2) % 4;
-                } else if (i == 2 && last) {
-                    //Debug.Log(name+" Designated reporter reporting from uselessness.");
-                    entityController.doubleTurn();
-                }
-                continue;
-            }*/
         }
     }
 
     void Update() {
         if (moving) {
             if (count < 1.0f) {
-                count += 1.0f * 5 * Time.deltaTime;
+                count += 1.0f * moveSpeed * Time.deltaTime;
 
                 Vector3 m1 = Vector3.Lerp(startPosition, highPoint, count);
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
@@ -276,7 +190,7 @@ public class EnemyBehavior : MonoBehaviour
             }
         } else if (attacking) {
             if (count < 1.0f) {
-                count += 1.0f * 5 * Time.deltaTime;
+                count += 1.0f * moveSpeed * Time.deltaTime;
 
                 Vector3 m1 = Vector3.Lerp(startPosition, highPoint, count);
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);

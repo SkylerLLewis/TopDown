@@ -175,7 +175,7 @@ public class PathFinder : MonoBehaviour
         }
         if (maps[face].HasTile(wallCell)) {
             string targetWall = maps[face].GetTile(wallCell).name.ToLower();
-            if (targetWall.IndexOf(face) >= 0 && targetWall.IndexOf("wall") >= 0) {
+            if (targetWall.IndexOf(face) >= 0 && targetWall.IndexOf("open") < 0) {
                 return false;
             }
         }
@@ -183,7 +183,7 @@ public class PathFinder : MonoBehaviour
             GameObject [] entities = GameObject.FindGameObjectsWithTag("Enemy");
             foreach (var e in entities) {
                 EnemyBehavior es = e.GetComponent<EnemyBehavior>();
-                if (es.tilePosition == to) {
+                if (es.tilePosition == to && !es.dying) {
                     return false;
                 }
             }
