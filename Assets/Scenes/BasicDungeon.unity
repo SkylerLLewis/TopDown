@@ -1132,6 +1132,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UICanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 5277282168570013596, guid: 4f8049ca4f7afb792852c8607fd03adb, type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 519420031}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4f8049ca4f7afb792852c8607fd03adb, type: 3}
 --- !u!1001 &607988753021981209

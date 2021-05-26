@@ -125,29 +125,60 @@ public class Initializer : MonoBehaviour
         tail.y = Random.Range(-3, 0);
         Room core = new Room(head, tail);
         rooms.Add(core);
-        // Create 4 Neighbors
-        for (int i=0; i<4; i++) {
-            GenerateRoom(core, i);
-        }
-        // Create string of rooms
-        int direction = Random.Range(0, 4);
-        Room branch = core.neighbors[direction];
-        for (int i=0; i<4; i++) {
-            GenerateRoom(branch, direction);
-            branch = branch.neighbors[direction];
-        }
-        // Add Random Rooms
-        for (int i=0; i<10; i++) {
-            branch = rooms[Random.Range(0, rooms.Count)];
-            direction = Random.Range(0, 4);
-            int j = 0;
-            while (branch.neighbors[direction] != null) {
-                direction = (direction+1)%4;
-                j++;
-                if (j >= 4) { break; }
+        int rand = Random.Range(0,2);
+        if (rand == 0) {// String shape Dungeon
+            // Create 4 Neighbors
+            for (int i=0; i<4; i++) {
+                GenerateRoom(core, i);
             }
-            if (branch.neighbors[direction] == null) {
+            // Create string of rooms
+            int direction = Random.Range(0, 4);
+            Room branch = core.neighbors[direction];
+            for (int i=0; i<4; i++) {
                 GenerateRoom(branch, direction);
+                branch = branch.neighbors[direction];
+            }
+            // Add Random Rooms
+            for (int i=0; i<10; i++) {
+                branch = rooms[Random.Range(0, rooms.Count)];
+                direction = Random.Range(0, 4);
+                int j = 0;
+                while (branch.neighbors[direction] != null) {
+                    direction = (direction+1)%4;
+                    j++;
+                    if (j >= 4) { break; }
+                }
+                if (branch.neighbors[direction] == null) {
+                    GenerateRoom(branch, direction);
+                }
+            }
+        } else if (rand == 1) { // Loop shape Dungeon
+            Room branch = core;
+            int direction = Random.Range(0, 4);
+            // Create loop of rooms
+            for (int i=0; i<4; i++) {
+                int dir = (direction+i)%4;
+                for (int j=0; j<3; j++) {
+                    if (!GenerateRoom(branch, dir)) {
+                        break; // Break if room creation fails
+                    }
+                    branch = branch.neighbors[dir];
+                }
+            }
+            GenerateRoom(branch, (direction+3)%4);
+            // Add Random Rooms
+            for (int i=0; i<6; i++) {
+                branch = rooms[Random.Range(0, rooms.Count)];
+                direction = Random.Range(0, 4);
+                int j = 0;
+                while (branch.neighbors[direction] != null) {
+                    direction = (direction+1)%4;
+                    j++;
+                    if (j >= 4) { break; }
+                }
+                if (branch.neighbors[direction] == null) {
+                    GenerateRoom(branch, direction);
+                }
             }
         }
         GenExits();
@@ -339,7 +370,8 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))) {
+                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))
+                && !notableCells.ContainsValue(cell)) {
                     rightWallMap.SetTile(cell, tiles["rightDoor"]);
                     break;
                 }
@@ -351,7 +383,8 @@ public class Initializer : MonoBehaviour
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))) {
+                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))
+                && !notableCells.ContainsValue(cell)) {
                     leftWallMap.SetTile(new Vector3Int(cell.x,cell.y-1,cell.z), clearTiles["leftDoor"]);
                     break;
                 }
@@ -363,7 +396,8 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))) {
+                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))
+                && !notableCells.ContainsValue(cell)) {
                     rightWallMap.SetTile(new Vector3Int(cell.x-1,cell.y,cell.z), clearTiles["rightDoor"]);
                     break;
                 }
