@@ -36,8 +36,8 @@ public class GreenVillageInit : MonoBehaviour
             data.direction = "down";
             SceneManager.LoadScene("BasicDungeon");
         } else if (key == "dagger" || key == "axe" || key == "mace" || key == "spear" || key == "polearm") {
-            data.weapon = key;
-            player.EquipWeapon(key);
+            //data.weapon = key;
+            //player.EquipWeapon(key);
         }
     }
 }

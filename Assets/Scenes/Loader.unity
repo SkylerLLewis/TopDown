@@ -156,7 +156,7 @@ MonoBehaviour:
   entrance: 0
   direction: 
   playerHp: 0
-  weapon: 
+  root: {fileID: 0}
 --- !u!4 &476949126
 Transform:
   m_ObjectHideFlags: 0

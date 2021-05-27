@@ -34,6 +34,7 @@ public class PlayerController : MonoBehaviour
     private float count = 1.0f;
     
     // Combat Stats
+    public Weapon weapon;
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
 
     void Start() {
@@ -97,12 +98,8 @@ public class PlayerController : MonoBehaviour
         // Mace: 2-6dmg, -30% speed
         // Spear: +3 def
         // Polearm: +3 def, +3 atk, -50% speed, 2-6 dmg
-        attack = 5;
-        defense = 5;
-        mindmg = 1;
-        maxdmg = 4;
-        speed = 1f;
-        if (data.weapon == "dagger") {
+        EquipWeapon(data.weapon);
+        /*if (data.weapon == "dagger") {
             attack += 3;
             speed = 0.8f;
             maxdmg = 2;
@@ -122,7 +119,7 @@ public class PlayerController : MonoBehaviour
             mindmg = 2;
             maxdmg = 6;
             speed = 2f;
-        }
+        }*/
     }
 
 
@@ -341,8 +338,13 @@ public class PlayerController : MonoBehaviour
         uiController.UpdateHP(hp, maxhp);
     }
 
-    public void EquipWeapon(string weapon) {
-        FloatText("msg", weapon);
+    public void EquipWeapon(Weapon w) {
+        weapon = w;
+        attack = 5+weapon.atk;
+        defense = 5+weapon.def;
+        mindmg = weapon.mindmg;
+        maxdmg = weapon.maxdmg;
+        speed = weapon.speed;
     }
 
     private void FloatText(string type, string msg="") {

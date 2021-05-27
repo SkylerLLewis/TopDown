@@ -15,6 +15,7 @@ public class DungeonController : MonoBehaviour
         OpenDoorRef = gameObject.GetComponent<Initializer>().OpenDoor;
         NotableActionsRef = gameObject.GetComponent<Initializer>().NotableActions;
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
+        data.root = GameObject.FindWithTag("Root");
     }
 
     public void NotableCollide(Vector3Int cell) {

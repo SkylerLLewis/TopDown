@@ -53,7 +53,7 @@ public class EnemyBehavior : MonoBehaviour
         entityController = GameObject.FindObjectOfType<EntityController>();
         timer = Random.Range(0, speed);
         facing = new string[2];
-        moveSpeed = 6-2*speed;
+        moveSpeed = 8-2*speed;
         Debug.Log("Enemy "+name+" with speed: "+speed+" and timer: "+timer);
     }
 

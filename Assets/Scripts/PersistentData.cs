@@ -9,17 +9,23 @@ public class PersistentData : MonoBehaviour
     public int entrance;
     public string direction;
     public int playerHp;
-    public string weapon;
+    public Weapon weapon;
+    public GameObject root;
+    public List<InventoryItem> inventory;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
         depth = 0;
         entrance = 0;
         playerHp = 0;
         direction = "down";
-        weapon = "stick";
-        //AsyncOperation inv = SceneManager.LoadSceneAsync("Inventory", LoadSceneMode.Single);
-        //inv.allowSceneActivation = true;
-        SceneManager.LoadScene("Inventory");
+        inventory = new List<InventoryItem>();
+        weapon = new Weapon("Twig");
+        inventory.Add(weapon);
+        inventory.Add(new Weapon("Sharp Twig"));
+        inventory.Add(new Weapon("Plank with a Nail"));
+        inventory.Add(new Weapon("Club"));
+        inventory.Add(new Weapon("Long Stick"));
+        inventory.Add(new Weapon("Log"));
         SceneManager.LoadScene("GreenVillage");
     }
 }
