@@ -16,7 +16,7 @@ public class InventoryItemController : MonoBehaviour {
 
     public void SelectItem() {
         Debug.Log("The Item "+data.inventory[itemIndex].name+" has been selected!");
-        controller.EquipWeapon(itemIndex);
+        controller.DisplayItem(itemIndex);
     }
 
     public void SetItemIndex(int index) {

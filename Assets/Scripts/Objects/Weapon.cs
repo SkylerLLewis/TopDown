@@ -29,7 +29,7 @@ public class Weapon : InventoryItem {
             speed = 0.8f;
             atk = 3;
             def = -2;
-            description = "A particularly spiky twig. Fast and quiet, but you have to get close.";
+            description = "A particularly spiky twig. Fast and quiet, but you'll have to get close.";
         } else if (name == "Plank with a Nail") { // Axe type
             mindmg = 1;
             maxdmg = 5;
@@ -38,7 +38,7 @@ public class Weapon : InventoryItem {
         } else if (name == "Club") { // Mace Type
             mindmg = 2;
             maxdmg = 6;
-            speed = 1.3f;
+            speed = 1.25f;
             description = "It's slow, but it hits hard.";
         } else if (name == "Long Stick") { // Spear type
             mindmg = 1;
