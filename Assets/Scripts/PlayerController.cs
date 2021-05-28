@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
     public bool moving = false;
     public bool attacking = false;
     public bool dying = false;
+    private string saySomething;
     public int direction;
     public Vector3Int tilePosition;
     public string[] facing;
@@ -91,35 +92,8 @@ public class PlayerController : MonoBehaviour
             hp = maxhp;
         }
         uiController.UpdateHP(hp, maxhp);
-        // Temporary solution for weapon stuff!
-        // Stick: 1-4dmg
-        // Dagger: +20% speed, 1-2dmg, +3 atk, -2 def
-        // Axe: 1-5dmg, +2atk
-        // Mace: 2-6dmg, -30% speed
-        // Spear: +3 def
-        // Polearm: +3 def, +3 atk, -50% speed, 2-6 dmg
         EquipWeapon(data.weapon);
-        /*if (data.weapon == "dagger") {
-            attack += 3;
-            speed = 0.8f;
-            maxdmg = 2;
-            defense -= 2;
-        } else if (data.weapon == "axe") {
-            maxdmg = 5;
-            attack += 2;
-        } else if (data.weapon == "mace") {
-            mindmg = 2;
-            maxdmg = 6;
-            speed  = 1.3f;
-        } else if (data.weapon == "spear") {
-            defense += 3;
-        } else if (data.weapon == "polearm") {
-            defense += 3;
-            attack += 3;
-            mindmg = 2;
-            maxdmg = 6;
-            speed = 2f;
-        }*/
+        saySomething = "";
     }
 
 
@@ -289,6 +263,10 @@ public class PlayerController : MonoBehaviour
                 mainCamera.transform.position = camVec;
             } else {
                 // Turn over, activate entities
+                if (saySomething != "") {
+                    FloatText("msg", saySomething);
+                    saySomething = "";
+                }
                 moving = false;
                 EndTurn();
             }
@@ -364,7 +342,7 @@ public class PlayerController : MonoBehaviour
             textMesh.color = new Color32(255,255,255,255);
             textMesh.text = "wait";
         } else if (type == "msg") {
-            textMesh.color = new Color32(255,255,255,255);
+            textMesh.color = new Color32(0,0,0,255);
             textMesh.text = msg;
         } else {
             textMesh.text = "AHHH";
