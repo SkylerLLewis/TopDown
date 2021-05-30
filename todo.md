@@ -2,14 +2,14 @@
 
 ## Functionality
 
-- [ ] Create inventory
-- [ ] Implement loot system
+- [x] Create inventory
+- [x] Implement loot system
 - [ ] Create basic ranged abilities
 - [ ] Create skill tree and XP system
 
 ## Dungeons
 
-- [ ] Add loot drops
+- [x] Add loot drops
 - [ ] Add dynamic door opening
 - [ ] Add ranged enemies
 - [ ] Add sneaking mechanic

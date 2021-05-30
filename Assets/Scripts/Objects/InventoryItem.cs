@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 public class InventoryItem {
     
-    public string itemType, name, description;
+    public string itemType, name, displayName, description;
     public Sprite sprite;
     public InventoryItem() {
 

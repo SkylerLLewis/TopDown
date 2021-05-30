@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Initializer : MonoBehaviour
 {
@@ -12,11 +13,11 @@ public class Initializer : MonoBehaviour
     Dictionary<string,Tile> tiles, clearTiles;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     Vector3Int cellLoc;
-    private GameObject enemies;
+    private GameObject enemies, loot, lootFab;
     private PlayerController player;
     private DungeonController dungeonController;
     private Dictionary<string, GameObject> enemyFabs;
-    private Dictionary<string, int> enemyWheel;
+    private Dictionary<string, int> enemyWheel, lootWheel;
     private List<Room> rooms;
     private PersistentData data;
     
@@ -25,6 +26,7 @@ public class Initializer : MonoBehaviour
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         enemies = GameObject.FindWithTag("EntityList");
         dungeonController = gameObject.GetComponent<DungeonController>();
+        loot = GameObject.FindWithTag("Loot");
 
         notableCells = new Dictionary<string, Vector3Int>();
 
@@ -55,18 +57,32 @@ public class Initializer : MonoBehaviour
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
-        enemyWheel.Add("Skeleton", 10);
         enemyFabs.Add("Goblin", Resources.Load("Prefabs/Goblin") as GameObject);
-        enemyWheel.Add("Goblin", 1);
         enemyFabs.Add("Hobgoblin", Resources.Load("Prefabs/Hobgoblin") as GameObject);
-        enemyWheel.Add("Hobgoblin", 1+data.depth);
         enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
+        enemyWheel.Add("Skeleton", 10);
+        enemyWheel.Add("Goblin", 1);
+        enemyWheel.Add("Hobgoblin", 1+data.depth);
         enemyWheel.Add("Spider", 1+data.depth);
         if (data.depth > 1 && data.depth < 4) {
             enemyWheel["Skeleton"] = 1;
             enemyWheel["Goblin"] = 15;
         }
 
+        // Loot drop chance!
+        lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
+        lootWheel = new Dictionary<string, int>();
+        lootWheel.Add("Sharp Twig", 10);
+        lootWheel.Add("Plank with a Nail", 10);
+        lootWheel.Add("Club", 10);
+        lootWheel.Add("Long Stick", 10);
+        lootWheel.Add("Log", 10);
+        lootWheel.Add("Rusty Shortsword", 1+data.depth);
+        lootWheel.Add("Half a Scissor", 1+data.depth);
+        lootWheel.Add("Copper Hatchet", 1+data.depth);
+        lootWheel.Add("Mallet", 1+data.depth);
+        lootWheel.Add("Flint Spear", 1+data.depth);
+        lootWheel.Add("Grain Scythe", 1+data.depth);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -79,15 +95,6 @@ public class Initializer : MonoBehaviour
                 blockMap = map;
             }
 
-        }
-
-        // Room collision testing
-        Room test1 = new Room(new Vector3Int(-2,-4,0), new Vector3Int(-5,-9,0));
-        Room test2 = new Room(new Vector3Int(-3,-3,0), new Vector3Int(-8,-6,0));
-        if (test1.Collides(test2)) {
-            Debug.Log("They Collide!!");
-        } else {
-            Debug.Log("They don't collide.");
         }
 
         // Gen Dungeon
@@ -110,7 +117,31 @@ public class Initializer : MonoBehaviour
             data.depth++;
             data.direction = "down";
             SceneManager.LoadScene("BasicDungeon");
-        }
+        } else if (key.IndexOf("Loot") >= 0) {
+            Vector3 pos = floorMap.CellToWorld(notableCells[key]);
+            if (pos.z != 0) { // Account for floor z diff
+                pos.y += 0.75f;
+                pos.z = 0;
+            }
+            Vector3 diff;
+            Transform target = null;
+            foreach (Transform child in loot.transform) {
+                diff = pos - child.position;
+                if (diff.magnitude < 0.5) {
+                    target = child;
+                    break;
+                }
+            }
+            if (target != null) {
+                // ! Will not work for other item types - type finding needed
+                Weapon wep = new Weapon(target.name);
+                data.inventory.Add(wep);
+                player.saySomething = wep.displayName;
+                Destroy(target.gameObject);
+                notableCells.Remove(key);
+                dungeonController.UpdateNotables(notableCells);
+            }
+        } 
     }
 
     // Creates a map of rooms 
@@ -279,6 +310,9 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
+        //if (Random.Range(0, 6) == 0) {
+            DropLoot(r);
+        //}
         GenEnemies(r);
     }
 
@@ -456,7 +490,7 @@ public class Initializer : MonoBehaviour
         }
         for (int _=0; _<numEnemies; _++) {
             int total = 0;
-            float roll = Random.Range(0, wheelTotal);
+            float roll = Random.Range(0, wheelTotal+1);
             foreach (KeyValuePair<string,int> e in enemyWheel) {
                 total += e.Value;
                 if (roll <= total) {
@@ -512,5 +546,50 @@ public class Initializer : MonoBehaviour
             clone.GetComponent<EnemyBehavior>().SetCoords(vectors[ei]);
             ei++;
         }
+    }
+
+    public void DropLoot(Room r) {
+        Vector3Int cell;
+        do {
+            cell = new Vector3Int(
+                    r.tail.x+Random.Range(1,r.width-1),
+                    r.tail.y+Random.Range(1,r.height-1),
+                    0);
+        } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
+
+        // Spin the wheel!
+        float wheelTotal = 0f;
+        foreach (KeyValuePair<string,int> item in lootWheel) {
+            wheelTotal += item.Value;
+        }
+        int total = 0;
+        float roll = Random.Range(0, wheelTotal+1);
+        foreach (KeyValuePair<string,int> item in lootWheel) {
+            total += item.Value;
+            if (roll <= total) {
+                Vector3 pos = floorMap.CellToWorld(cell);
+                pos.y += 0.75f;
+                pos.z = 0;
+                GameObject clone = Instantiate(
+                    lootFab,
+                    pos,
+                    Quaternion.identity,
+                    loot.transform);
+                clone.name = item.Key;
+                clone.GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("Weapons/"+item.Key);
+                break;
+            }
+        }
+        // Find new loot number to add
+        int last = 0;
+        foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+            if (item.Key.IndexOf("Loot") >= 0) {
+                int x = System.Convert.ToInt32(item.Key.Split('t')[1]);
+                if (x > last) {
+                    last = x; 
+                }
+            }
+        }
+        notableCells.Add("Loot"+(last+1), cell);
     }
 }

@@ -22,6 +22,7 @@ public class DungeonController : MonoBehaviour
         foreach (KeyValuePair<string,Vector3Int> n in notableCells) {
             if (cell == n.Value) {
                 NotableActionsRef(n.Key);
+                break;
             }
         }
     }

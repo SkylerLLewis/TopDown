@@ -51,6 +51,7 @@ public class InventoryController : MonoBehaviour
         float x, y;
         GameObject clone;
         RectTransform rt;
+        // Add all inventory items
         foreach (InventoryItem item in data.inventory) {
             x = -7.5f + (i%11)*1.25f;
             y = 4f - j*1.25f;
@@ -61,10 +62,10 @@ public class InventoryController : MonoBehaviour
             rt.anchoredPosition = new Vector3(x, y, 0);
             clone.GetComponent<Image>().overrideSprite =  item.sprite;
             clone.GetComponent<InventoryItemController>().SetItemIndex(i);
-            Debug.Log("Added item "+item.name+" to inventory display.");
             i++;
             if (i%11 == 0) { j++; }
         }
+        // Display Equipped
         clone = Instantiate(
             itemButton,
             itemArray.transform);
@@ -83,7 +84,7 @@ public class InventoryController : MonoBehaviour
         } else {
             item = data.inventory[index];
         }
-        title.text = item.name;
+        title.text = item.displayName;
         description.text = item.description;
         if (item.itemType == "Weapon") {
             Weapon wep = item as Weapon;
@@ -114,6 +115,8 @@ public class InventoryController : MonoBehaviour
         if (item.itemType == "Weapon" && item != data.weapon) {
             EquipWeapon();
         }
+        BackToScene();
+        player.EndTurn();
     }
 
     public void EquipWeapon() {

@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour
     public bool moving = false;
     public bool attacking = false;
     public bool dying = false;
-    private string saySomething;
+    public string saySomething;
     public int direction;
     public Vector3Int tilePosition;
     public string[] facing;
@@ -194,11 +194,10 @@ public class PlayerController : MonoBehaviour
                     blocked = true;
                 }
             }
-            if (!blocked) {
-                NotableCollide(targetCell);
-            }
             TileBase targetTile = blockMap.GetTile(targetCell);
             if (targetTile != null) {
+                // Check for important blocks
+                NotableCollide(targetCell);
                 blocked = true;
             }
 
@@ -209,7 +208,7 @@ public class PlayerController : MonoBehaviour
                 enemyList = GameObject.FindGameObjectsWithTag("Enemy");
                 foreach (var e in enemyList) {
                     target = e.GetComponent<EnemyBehavior>();
-                    if (target.tilePosition == targetCell) {
+                    if (target.tilePosition == targetCell && !target.dying) {
                         enemyFront = true;
                         break;
                     }
@@ -224,6 +223,8 @@ public class PlayerController : MonoBehaviour
                     Attack(target);
                 // Point is valid?
                 } else {//targetTile != null && targetTile.name == "floor") {
+                    // Check if I'm walking onto something important
+                    NotableCollide(targetCell);
                     // Init bezier curve
                     moving = true;
                     tilePosition = targetCell; //floorMap.WorldToCell(targetPosition);
@@ -342,7 +343,7 @@ public class PlayerController : MonoBehaviour
             textMesh.color = new Color32(255,255,255,255);
             textMesh.text = "wait";
         } else if (type == "msg") {
-            textMesh.color = new Color32(0,0,0,255);
+            textMesh.color = new Color32(200,200,200,255);
             textMesh.text = msg;
         } else {
             textMesh.text = "AHHH";
@@ -359,7 +360,7 @@ public class PlayerController : MonoBehaviour
         animator.CrossFade("die", 0f);
     }
 
-    void EndTurn() {
+    public void EndTurn() {
         if (hp != maxhp && Random.Range(0f,4f) < speed) {
             hp++;
             FloatText("heal", "1");

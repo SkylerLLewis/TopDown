@@ -54,7 +54,6 @@ public class EnemyBehavior : MonoBehaviour
         timer = Random.Range(0, speed);
         facing = new string[2];
         moveSpeed = 8-2*speed;
-        Debug.Log("Enemy "+name+" with speed: "+speed+" and timer: "+timer);
     }
 
     public void MyTurn(bool last=false) {

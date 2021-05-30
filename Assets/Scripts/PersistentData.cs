@@ -20,7 +20,7 @@ public class PersistentData : MonoBehaviour
         direction = "down";
         inventory = new List<InventoryItem>();
         weapon = new Weapon("Twig");
-        inventory.Add(new Weapon("Sharp Twig"));
+        /*inventory.Add(new Weapon("Sharp Twig"));
         inventory.Add(new Weapon("Plank with a Nail"));
         inventory.Add(new Weapon("Club"));
         inventory.Add(new Weapon("Long Stick"));
@@ -30,7 +30,7 @@ public class PersistentData : MonoBehaviour
         inventory.Add(new Weapon("Copper Hatchet"));
         inventory.Add(new Weapon("Mallet"));
         inventory.Add(new Weapon("Flint Spear"));
-        inventory.Add(new Weapon("Grain Scythe"));
+        inventory.Add(new Weapon("Grain Scythe"));*/
         SceneManager.LoadScene("GreenVillage");
     }
 }
