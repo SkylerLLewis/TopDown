@@ -6,12 +6,9 @@ using TMPro;
 
 public class EnemyBehavior : MonoBehaviour
 {
-    public float speed;
+    public float speed, moveSpeed;
     public float timer;
-    public bool moving = false;
-    public bool attacking = false;
-    public bool dying = false;
-    private bool last = false;
+    public bool moving=false, attacking=false, dying=false, waiting=false, last=false;
     public Vector3Int tilePosition;
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
@@ -19,6 +16,7 @@ public class EnemyBehavior : MonoBehaviour
     private GameObject plObj;
     private PlayerController player;
     private EntityController entityController;
+    private PathFinder pathFinder;
     private GameObject[] entities;
     private GameObject canvas;
     private Vector3 targetPosition, startPosition, highPoint;
@@ -46,6 +44,7 @@ public class EnemyBehavior : MonoBehaviour
         maps = new Dictionary<string, Tilemap>();
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
+        pathFinder = floorMap.GetComponent<PathFinder>();
         canvas = GameObject.FindWithTag("WorldCanvas");
         //tilePosition = floorMap.WorldToCell(this.transform.position);
         //tilePosition.z = 0;
@@ -54,13 +53,7 @@ public class EnemyBehavior : MonoBehaviour
         entityController = GameObject.FindObjectOfType<EntityController>();
         timer = Random.Range(0, speed);
         facing = new string[2];
-        Debug.Log("Enemy "+name+" with speed: "+speed+" and timer: "+timer);
-        /*maxhp = 2;
-        hp = maxhp;
-        attack = 1;
-        defense = 0;
-        mindmg = 1;
-        maxdmg = 2;*/
+        moveSpeed = 8-2*speed;
     }
 
     public void MyTurn(bool last=false) {
@@ -69,127 +62,120 @@ public class EnemyBehavior : MonoBehaviour
         startPosition = this.transform.position;
         // A numerical direction that can rotate 0-3
         int direction = 0;
+        int [] directions = new int[3];
+        Vector3Int targetCell;
 
-        // What direction is best?
-        if (player.tilePosition.y > tilePosition.y) { // y++
+        int deltax = player.tilePosition.x - tilePosition.x;
+        int deltay = player.tilePosition.y - tilePosition.y;
+
+        // Get uninformed direction
+        if (deltay > 0) {
             direction = 0;
-        } else if (player.tilePosition.x > tilePosition.x) { // x++
+        } else if (deltax > 0) {
             direction = 1;
-        } else if (player.tilePosition.y < tilePosition.y) { // y--
+        } else if (deltay < 0) {
             direction = 2;
-        } else if (player.tilePosition.x < tilePosition.x) { // x--
+        } else if (deltax < 0) {
             direction = 3;
         }
         
-        for (int i=0; i<3; i++) { // Broken when action executed
-            Vector3Int targetCell = tilePosition;
-            if (direction == 0) {
-                targetPosition.x = this.transform.position.x - 1f;
-                targetPosition.y = this.transform.position.y + 0.5f;
-                targetCell.y++;
-            } else if (direction == 1) {
-                targetPosition.x = this.transform.position.x + 1f;
-                targetPosition.y = this.transform.position.y + 0.5f;
-                targetCell.x++;
-            } else if (direction == 2) {
-                targetPosition.x = this.transform.position.x + 1f;
-                targetPosition.y = this.transform.position.y - 0.5f;
-                targetCell.y--;
-            } else if (direction == 3) {
-                targetPosition.x = this.transform.position.x - 1f;
-                targetPosition.y = this.transform.position.y - 0.5f;
-                targetCell.x--;
-            }
-
-            // Find target tile/wall
-            bool blocked = false;
-            TileBase targetTile = blockMap.GetTile(targetCell);
-            if (targetTile != null) {
-                blocked = true;
-            }
-            TileBase targetWall;
-            Vector3Int wallCell = tilePosition;
-            string face = "";
-            if (direction == 0) {
-                face = "left";
-            } else if (direction == 1) {
-                face = "right";
-            } else if (direction == 2) {
-                face = "left";
-                wallCell.y--;
-            } else if (direction == 3) {
-                face = "right";
-                wallCell.x--;
-            }
-
-            targetWall = maps[face].GetTile(wallCell);
-            if (targetWall != null) {
-                if (targetWall.name.ToLower().IndexOf(face) >= 0) {
-                    if (targetWall.name.ToLower().IndexOf("open") >= 0) {
-                        blocked = false;
-                    } else 
-                        blocked = true;
-                    }
-            }
+        if (Mathf.Abs(deltax) + Mathf.Abs(deltay) == 1 &&
+        pathFinder.DirectionWalkable(tilePosition, direction)) {
+            // Player in range, ATTACK!
             
-            // Tile clear of friends?
-            bool friend = false;
-            entities = GameObject.FindGameObjectsWithTag("Enemy");
-            foreach (var e in entities) {
-                EnemyBehavior es = e.GetComponent<EnemyBehavior>();
-                if (es.tilePosition == targetCell) {
-                    friend = true;
-                    break;
+            targetCell = pathFinder.DirectionToCell(direction, tilePosition);attacking = true;
+            targetPosition = startPosition;
+            highPoint = player.transform.position;
+            count = 0.0f;
+            Attack(player);
+            // Face enemy in new direction
+            if (direction < 2) {
+                facing[0] = "up";
+            } else {
+                facing[0] = "down";
+            }
+            if (direction == 0 || direction == 3) {
+                facing [1] = "left";
+            } else {
+                facing[1] = "right";
+            }
+        } else {
+            // Try to move
+            // Decide best direction for moving
+            if (Mathf.Abs(deltay) >= Mathf.Abs(deltax)) {
+                if (deltay >= 0) {
+                    direction = 0;
+                } else {
+                    direction = 2;
+                }
+                if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                    if (deltax >= 0) {
+                        direction = 1;
+                    } else {
+                        direction = 3;
+                    }
+                    if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                        direction = (direction + 2) % 4;
+                        if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                            direction = -1;
+                        }
+                    }
+                }
+            } else if (Mathf.Abs(deltax) >= Mathf.Abs(deltay)) {
+                if (deltax >= 0) {
+                    direction = 1;
+                } else {
+                    direction = 3;
+                }
+                if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                    if (deltay >= 0) {
+                        direction = 0;
+                    } else {
+                        direction = 2;
+                    }
+                    if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                        direction = (direction + 2) % 4;
+                        if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                            direction = -1;
+                        }
+                    }
                 }
             }
             
-            if (targetCell == player.tilePosition && !blocked) { // ATTACK!
-                attacking = true;
-                targetPosition = startPosition;
-                highPoint = player.transform.position;
-                count = 0.0f;
-                Attack(player);
-                break;
-            } else if (!blocked && !friend) { // Move
-                // Init bezier curve
+            if (direction != -1) {
+                // Move!
+                targetCell = pathFinder.DirectionToCell(direction, tilePosition);
+                targetPosition = floorMap.CellToWorld(targetCell);
+                targetPosition.y += 0.25f;
+                targetPosition.z = 0;
+                
                 moving = true;
                 highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                 count = 0.0f;
                 tilePosition = targetCell;
-                break;
-            } else { // Try again
-                if (i == 0) { // First, turn left or right
-                    if (Random.Range(-1,1) < 0 ) {
-                        direction = (direction+3) % 4;
-                    } else {
-                        direction = (direction+1) % 4;
-                    }
-                } else if (i == 1) { // Then, try the other way
-                    direction = (direction+2) % 4;
-                } else if (i == 2 && last) {
-                    //Debug.Log(name+" Designated reporter reporting from uselessness.");
-                    entityController.doubleTurn();
+                // Face enemy in new direction
+                if (direction < 2) {
+                    facing[0] = "up";
+                } else {
+                    facing[0] = "down";
                 }
-                continue;
+                if (direction == 0 || direction == 3) {
+                    facing [1] = "left";
+                } else {
+                    facing[1] = "right";
+                }
+            } else {
+                // Not doing jack, report back
+                waiting = true;
+                count = 0f;
             }
-        }
-        // Face enemy in new direction
-        if (direction < 2) {
-            facing[0] = "up";
-        } else {
-            facing[0] = "down";
-        }
-        if (direction == 0 || direction == 3) {
-            facing [1] = "left";
-        } else {
-            facing[1] = "right";
         }
     }
 
     void Update() {
         if (moving) {
             if (count < 1.0f) {
-                count += 1.0f * 5 * Time.deltaTime;
+                count += 1.0f * moveSpeed * Time.deltaTime;
 
                 Vector3 m1 = Vector3.Lerp(startPosition, highPoint, count);
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
@@ -203,7 +189,7 @@ public class EnemyBehavior : MonoBehaviour
             }
         } else if (attacking) {
             if (count < 1.0f) {
-                count += 1.0f * 5 * Time.deltaTime;
+                count += 1.0f * moveSpeed * Time.deltaTime;
 
                 Vector3 m1 = Vector3.Lerp(startPosition, highPoint, count);
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
@@ -223,12 +209,19 @@ public class EnemyBehavior : MonoBehaviour
             } else {
                 Destroy(this.gameObject, 0.5f);
             }
+        } else if (waiting) {
+            if (count < 1.0f) {
+                count += 1.0f * 2.5f * Time.deltaTime;
+            } else {
+                waiting = false;
+                if (last) { entityController.doubleTurn(); }
+            }
         }
     }
     void Attack(PlayerController target) {
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
-        if (roll >= 10) {
+        if (roll >= 8) {
             target.Damage(Random.Range(mindmg,maxdmg+1));
         } else {
             target.Damage(0);

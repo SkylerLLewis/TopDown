@@ -13,6 +13,8 @@ TagManager:
   - FloorMap
   - UICanvas
   - Data
+  - Root
+  - Loot
   layers:
   - Default
   - TransparentFX
@@ -20,7 +22,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Menu
   - 
   - 
   - 
@@ -58,4 +60,7 @@ TagManager:
     locked: 0
   - name: UI
     uniqueID: 3201863539
+    locked: 0
+  - name: Menu
+    uniqueID: 2280074239
     locked: 0

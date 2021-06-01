@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Initializer : MonoBehaviour
 {
@@ -12,11 +13,11 @@ public class Initializer : MonoBehaviour
     Dictionary<string,Tile> tiles, clearTiles;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     Vector3Int cellLoc;
-    private GameObject enemies;
+    private GameObject enemies, loot, lootFab;
     private PlayerController player;
     private DungeonController dungeonController;
     private Dictionary<string, GameObject> enemyFabs;
-    private Dictionary<string, int> enemyWheel;
+    private Dictionary<string, int> enemyWheel, lootWheel;
     private List<Room> rooms;
     private PersistentData data;
     
@@ -25,12 +26,16 @@ public class Initializer : MonoBehaviour
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         enemies = GameObject.FindWithTag("EntityList");
         dungeonController = gameObject.GetComponent<DungeonController>();
+        loot = GameObject.FindWithTag("Loot");
 
         notableCells = new Dictionary<string, Vector3Int>();
 
         // Load tile Resources into dictionaries
         tiles = new Dictionary<string,Tile>();
         tiles.Add("floor", Resources.Load<Tile>("Tiles/DungeonMap/floor"));
+        tiles.Add("floor1", Resources.Load<Tile>("Tiles/DungeonMap/floor1"));
+        tiles.Add("floor2", Resources.Load<Tile>("Tiles/DungeonMap/floor2"));
+        tiles.Add("floor3", Resources.Load<Tile>("Tiles/DungeonMap/floor3"));
         tiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftWall"));
         tiles.Add("rightWall", Resources.Load<Tile>("Tiles/DungeonMap/rightWall"));
         tiles.Add("leftDoor", Resources.Load<Tile>("Tiles/DungeonMap/leftDoor"));
@@ -52,18 +57,39 @@ public class Initializer : MonoBehaviour
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
-        enemyWheel.Add("Skeleton", 10);
         enemyFabs.Add("Goblin", Resources.Load("Prefabs/Goblin") as GameObject);
-        enemyWheel.Add("Goblin", 1);
         enemyFabs.Add("Hobgoblin", Resources.Load("Prefabs/Hobgoblin") as GameObject);
-        enemyWheel.Add("Hobgoblin", 1+data.depth);
         enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
-        enemyWheel.Add("Spider", 1+data.depth);
+        enemyWheel.Add("Skeleton", 10);
+        enemyWheel.Add("Goblin", 1);
+        enemyWheel.Add("Hobgoblin", data.depth-1);
+        enemyWheel.Add("Spider", data.depth-1);
         if (data.depth > 1 && data.depth < 4) {
             enemyWheel["Skeleton"] = 1;
             enemyWheel["Goblin"] = 15;
         }
 
+        // Loot drop chance!
+        lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
+        lootWheel = new Dictionary<string, int>();
+
+        lootWheel.Add("Sharp Twig", 10);
+        lootWheel.Add("Plank with a Nail", 10);
+        lootWheel.Add("Club", 10);
+        lootWheel.Add("Long Stick", 10);
+        lootWheel.Add("Log", 10);
+        lootWheel.Add("Rusty Shortsword", data.depth-1);
+        lootWheel.Add("Half a Scissor", data.depth-1);
+        lootWheel.Add("Copper Hatchet", data.depth-1);
+        lootWheel.Add("Mallet", data.depth-1);
+        lootWheel.Add("Flint Spear", data.depth-1);
+        lootWheel.Add("Grain Scythe", data.depth-1);
+        
+        lootWheel.Add("Leather Tunic", 10);
+        lootWheel.Add("Cast Iron Plates", 10);
+        lootWheel.Add("Patchy Brigandine", (data.depth-1)*2);
+
+        lootWheel.Add("Healing Potion", 30);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -76,15 +102,6 @@ public class Initializer : MonoBehaviour
                 blockMap = map;
             }
 
-        }
-
-        // Room collision testing
-        Room test1 = new Room(new Vector3Int(1,1,0), new Vector3Int(-1,-1,0));
-        Room test2 = new Room(new Vector3Int(0,0,0), new Vector3Int(0,0,0));
-        if (test1.Collides(test2)) {
-            Debug.Log("They Collide!!");
-        } else {
-            Debug.Log("They don't collide.");
         }
 
         // Gen Dungeon
@@ -107,54 +124,165 @@ public class Initializer : MonoBehaviour
             data.depth++;
             data.direction = "down";
             SceneManager.LoadScene("BasicDungeon");
-        }
+        } else if (key.IndexOf("Loot") >= 0) {
+            Vector3 pos = floorMap.CellToWorld(notableCells[key]);
+            if (pos.z != 0) { // Account for floor z diff
+                pos.y += 0.75f;
+                pos.z = 0;
+            }
+            Vector3 diff;
+            Transform target = null;
+            foreach (Transform child in loot.transform) {
+                diff = pos - child.position;
+                if (diff.magnitude < 0.5) {
+                    target = child;
+                    break;
+                }
+            }
+            if (target != null) {
+                // ! Will not work for other item types - type finding needed
+                if (Weapon.IsWeapon(target.name)) {
+                    Weapon wep = new Weapon(target.name);
+                    data.inventory.Add(wep);
+                    player.saySomething = wep.displayName;
+                } else if (Armor.IsArmor(target.name)) {
+                    Armor arm = new Armor(target.name);
+                    data.inventory.Add(arm);
+                    player.saySomething = arm.displayName;
+                } else if (Potion.IsPotion(target.name)) {
+                    Potion pot = new Potion(target.name);
+                    data.inventory.Add(pot);
+                    player.saySomething = pot.displayName;
+                }
+                Destroy(target.gameObject);
+                notableCells.Remove(key);
+                dungeonController.UpdateNotables(notableCells);
+            }
+        } 
     }
 
     // Creates a map of rooms 
     void GenerateDungeon() {
         // Create core room
         rooms = new List<Room>();
-        int width, height;
-        Vector3Int head= new Vector3Int();
-        Vector3Int tail= new Vector3Int();
+        Vector3Int head = new Vector3Int();
+        Vector3Int tail = new Vector3Int();
         head.x = Random.Range(1, 4);
         head.y = Random.Range(1, 4);
         tail.x = Random.Range(-3, 0);
         tail.y = Random.Range(-3, 0);
         Room core = new Room(head, tail);
         rooms.Add(core);
-        // Create 4 Neighbors
-        for (int i=0; i<4; i++) {
-            width = Random.Range(3, core.width+1);
-            height = Random.Range(3, core.height+1);
-            if (i == 0) {
-                tail.x = core.tail.x+Mathf.RoundToInt((core.width-width)/2);
-                tail.y = core.head.y+1;
-                head.x = tail.x + width-1;
-                head.y = tail.y + height-1;
-            } else if (i == 1) {
-                tail.x = core.head.x+1;
-                tail.y = core.tail.y-Mathf.RoundToInt((core.width-width)/2);
-                head.x = tail.x + width-1;
-                head.y = tail.y + height-1;
-            } else if (i == 2) {
-                head.x = core.head.x-Mathf.RoundToInt((core.width-width)/2);
-                head.y = core.tail.y-1;
-                tail.x = head.x - width+1;
-                tail.y = head.y - height+1;
-            } else if (i == 3) {
-                head.x = core.tail.x-1;
-                head.y = core.head.y-Mathf.RoundToInt((core.width-width)/2);
-                tail.x = head.x - width+1;
-                tail.y = head.y - height+1;
+        int rand = Random.Range(0,2);
+        if (rand == 0) {// String shape Dungeon
+            // Create 4 Neighbors
+            for (int i=0; i<4; i++) {
+                GenerateRoom(core, i);
             }
-            Room r = new Room(head, tail, core, (i+2)%4);
-            Debug.Log("Room generated: "+r.ToString());
-            rooms.Add(r);
-            core.neighbors[i] = rooms[i+1];
+            // Create string of rooms
+            int direction = Random.Range(0, 4);
+            Room branch = core.neighbors[direction];
+            for (int i=0; i<4; i++) {
+                GenerateRoom(branch, direction);
+                branch = branch.neighbors[direction];
+            }
+            // Add Random Rooms
+            for (int i=0; i<10; i++) {
+                branch = rooms[Random.Range(0, rooms.Count)];
+                direction = Random.Range(0, 4);
+                int j = 0;
+                while (branch.neighbors[direction] != null) {
+                    direction = (direction+1)%4;
+                    j++;
+                    if (j >= 4) { break; }
+                }
+                if (branch.neighbors[direction] == null) {
+                    GenerateRoom(branch, direction);
+                }
+            }
+        } else if (rand == 1) { // Loop shape Dungeon
+            Room branch = core;
+            int direction = Random.Range(0, 4);
+            // Create loop of rooms
+            for (int i=0; i<4; i++) {
+                int dir = (direction+i)%4;
+                for (int j=0; j<3; j++) {
+                    if (!GenerateRoom(branch, dir)) {
+                        break; // Break if room creation fails
+                    }
+                    branch = branch.neighbors[dir];
+                }
+            }
+            GenerateRoom(branch, (direction+3)%4);
+            // Add Random Rooms
+            for (int i=0; i<6; i++) {
+                branch = rooms[Random.Range(0, rooms.Count)];
+                direction = Random.Range(0, 4);
+                int j = 0;
+                while (branch.neighbors[direction] != null) {
+                    direction = (direction+1)%4;
+                    j++;
+                    if (j >= 4) { break; }
+                }
+                if (branch.neighbors[direction] == null) {
+                    GenerateRoom(branch, direction);
+                }
+            }
         }
         GenExits();
         core.Draw();
+    }
+
+    private bool GenerateRoom(Room parent, int direction) {
+        int width, height;
+        Vector3Int head = new Vector3Int();
+        Vector3Int tail = new Vector3Int();
+        bool valid;
+        Room newRoom;
+        int tries = 0;
+        do {
+            width = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
+            height = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
+            tries++;
+            // Generate room to test
+            if (direction == 0) {
+                tail.x = Random.Range(parent.tail.x-width+1, parent.head.x+1);
+                tail.y = parent.head.y+1;
+                head.x = tail.x + width-1;
+                head.y = tail.y + height-1;
+            } else if (direction == 1) {
+                tail.x = parent.head.x+1;
+                tail.y = Random.Range(parent.tail.y-height+1, parent.head.y+1);
+                head.x = tail.x + width-1;
+                head.y = tail.y + height-1;
+            } else if (direction == 2) {
+                head.x = Random.Range(parent.tail.x, parent.head.x+width);
+                head.y = parent.tail.y-1;
+                tail.x = head.x - width+1;
+                tail.y = head.y - height+1;
+            } else if (direction == 3) {
+                head.x = parent.tail.x-1;
+                head.y = Random.Range(parent.tail.y, parent.head.y+height);
+                tail.x = head.x - width+1;
+                tail.y = head.y - height+1;
+            }
+            newRoom = new Room(head, tail);
+            valid = true;
+            foreach (Room r in rooms) {
+                if (r.Collides(newRoom)) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (tries > 20) {
+                Debug.Log("Room ("+newRoom.ToString()+") with width:"+width+" and height:"+height+" impossible to make");
+                return false;
+            }
+        } while (!valid);
+        newRoom.SetNeighbors(parent, rooms);
+        rooms.Add(newRoom);
+        parent.neighbors[direction] = rooms[rooms.Count-1];
+        return true;
     }
 
     // Creates a floorspace, rooted at top corner
@@ -167,7 +295,18 @@ public class Initializer : MonoBehaviour
             for (int y=0; y>-yLen; y--) {
                 placement.x = r.head.x + x;
                 placement.y = r.head.y + y;
-                Tile clone = Instantiate(tiles["floor"]);
+                Tile clone = null;
+                clone = Instantiate(tiles["floor"]);
+                int rand = Random.Range(0, 20);
+                if (rand < 10) {
+                    clone = Instantiate(tiles["floor"]);
+                } else if (rand < 18) {
+                    clone = Instantiate(tiles["floor1"]);
+                } else if (rand == 18) {
+                    clone = Instantiate(tiles["floor2"]);
+                } else if (rand == 19) {
+                    clone = Instantiate(tiles["floor3"]);
+                }
                 clone.name = clone.name.Split('(')[0];
                 floorMap.SetTile(placement, clone);
             }
@@ -188,6 +327,9 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
+        if (Random.Range(0, 4) == 0) {
+            DropLoot(r);
+        }
         GenEnemies(r);
     }
 
@@ -279,7 +421,8 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))) {
+                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))
+                && !notableCells.ContainsValue(cell)) {
                     rightWallMap.SetTile(cell, tiles["rightDoor"]);
                     break;
                 }
@@ -291,7 +434,8 @@ public class Initializer : MonoBehaviour
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))) {
+                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))
+                && !notableCells.ContainsValue(cell)) {
                     leftWallMap.SetTile(new Vector3Int(cell.x,cell.y-1,cell.z), clearTiles["leftDoor"]);
                     break;
                 }
@@ -303,7 +447,8 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))) {
+                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))
+                && !notableCells.ContainsValue(cell)) {
                     rightWallMap.SetTile(new Vector3Int(cell.x-1,cell.y,cell.z), clearTiles["rightDoor"]);
                     break;
                 }
@@ -362,7 +507,7 @@ public class Initializer : MonoBehaviour
         }
         for (int _=0; _<numEnemies; _++) {
             int total = 0;
-            float roll = Random.Range(0, wheelTotal);
+            float roll = Random.Range(0, wheelTotal+1);
             foreach (KeyValuePair<string,int> e in enemyWheel) {
                 total += e.Value;
                 if (roll <= total) {
@@ -371,11 +516,6 @@ public class Initializer : MonoBehaviour
                 }
             }
         }
-        string o = "Enemies generated: ";
-        foreach (string s in r.enemies) {
-            o += s + " ";
-        }
-        Debug.Log(o);
     }
 
     public void GenEnemies(Room r) {
@@ -414,7 +554,6 @@ public class Initializer : MonoBehaviour
             Vector3 pos = floorMap.CellToWorld(vectors[ei]);
             pos.y += 0.25f;
             pos.z = 0;
-            Debug.Log("Creating enemy at cell: "+vectors[ei]+"\nAnd pos: "+pos);
             GameObject clone = Instantiate(
                 enemyFabs[e],
                 pos,
@@ -424,5 +563,58 @@ public class Initializer : MonoBehaviour
             clone.GetComponent<EnemyBehavior>().SetCoords(vectors[ei]);
             ei++;
         }
+    }
+
+    public void DropLoot(Room r) {
+        Vector3Int cell;
+        do {
+            cell = new Vector3Int(
+                    r.tail.x+Random.Range(1,r.width-1),
+                    r.tail.y+Random.Range(1,r.height-1),
+                    0);
+        } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
+
+        // Spin the wheel!
+        float wheelTotal = 0f;
+        foreach (KeyValuePair<string,int> item in lootWheel) {
+            wheelTotal += item.Value;
+        }
+        int total = 0;
+        float roll = Random.Range(0, wheelTotal+1);
+        foreach (KeyValuePair<string,int> item in lootWheel) {
+            total += item.Value;
+            if (roll <= total) {
+                Vector3 pos = floorMap.CellToWorld(cell);
+                pos.y += 0.75f;
+                pos.z = 0;
+                GameObject clone = Instantiate(
+                    lootFab,
+                    pos,
+                    Quaternion.identity,
+                    loot.transform);
+                clone.name = item.Key;
+                Sprite sprite = null;
+                if (Weapon.IsWeapon(item.Key)) {
+                    sprite = Resources.Load<Sprite>("Weapons/"+item.Key);
+                } else if (Armor.IsArmor(item.Key)) {
+                    sprite = Resources.Load<Sprite>("Armors/"+item.Key);
+                } else if (Potion.IsPotion(item.Key)) {
+                    sprite = Resources.Load<Sprite>("Potions/"+item.Key);
+                }
+                clone.GetComponent<SpriteRenderer>().sprite = sprite;
+                break;
+            }
+        }
+        // Find new loot number to add
+        int last = 0;
+        foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+            if (item.Key.IndexOf("Loot") >= 0) {
+                int x = System.Convert.ToInt32(item.Key.Split('t')[1]);
+                if (x > last) {
+                    last = x; 
+                }
+            }
+        }
+        notableCells.Add("Loot"+(last+1), cell);
     }
 }

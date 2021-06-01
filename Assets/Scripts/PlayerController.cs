@@ -8,10 +8,11 @@ public class PlayerController : MonoBehaviour
 {
     private Animator animator;
     private string[] walkNames, attackNames;
-    public float speed = 1;
+    public float speed, food;
     public bool moving = false;
     public bool attacking = false;
     public bool dying = false;
+    public string saySomething;
     public int direction;
     public Vector3Int tilePosition;
     public string[] facing;
@@ -34,6 +35,8 @@ public class PlayerController : MonoBehaviour
     private float count = 1.0f;
     
     // Combat Stats
+    public Weapon weapon;
+    public Armor armor;
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
 
     void Start() {
@@ -89,40 +92,16 @@ public class PlayerController : MonoBehaviour
         if (hp == 0) {
             hp = maxhp;
         }
-        uiController.UpdateHP(hp, maxhp);
-        // Temporary solution for weapon stuff!
-        // Stick: 1-4dmg
-        // Dagger: +20% speed, 1-2dmg, +3 atk, -2 def
-        // Axe: 1-5dmg, +2atk
-        // Mace: 2-6dmg, -30% speed
-        // Spear: +3 def
-        // Polearm: +3 def, +3 atk, -50% speed, 2-6 dmg
+        food = data.food;
+        uiController.UpdateBars();
         attack = 5;
         defense = 5;
-        mindmg = 1;
-        maxdmg = 4;
-        speed = 1f;
-        if (data.weapon == "dagger") {
-            attack += 3;
-            speed = 0.8f;
-            maxdmg = 2;
-            defense -= 2;
-        } else if (data.weapon == "axe") {
-            maxdmg = 5;
-            attack += 2;
-        } else if (data.weapon == "mace") {
-            mindmg = 2;
-            maxdmg = 6;
-            speed  = 1.3f;
-        } else if (data.weapon == "spear") {
-            defense += 3;
-        } else if (data.weapon == "polearm") {
-            defense += 3;
-            attack += 3;
-            mindmg = 2;
-            maxdmg = 6;
-            speed = 2f;
+        speed = 1;
+        EquipWeapon(data.weapon);
+        if (data.armor != null) {
+            EquipArmor(data.armor);
         }
+        saySomething = "";
     }
 
 
@@ -130,14 +109,14 @@ public class PlayerController : MonoBehaviour
     public Vector3 pos;
     // Update is called once per frame
     void Update() {
-        if (Input.GetMouseButtonDown(0)) {
+        /*if (Input.GetMouseButtonDown(0)) {
             if (moving) {
                 Debug.Log("Can't, I'm moving!");
             }
             if (entityController.enemyTurn) {
                 Debug.Log("Can't, enemy's turn!");
             }
-        }
+        }*/
         if (Input.GetMouseButtonDown(0) && !moving && !attacking && !entityController.enemyTurn && !dying) {
 
             // Determine screen position
@@ -145,6 +124,11 @@ public class PlayerController : MonoBehaviour
                 Input.mousePosition.x/Screen.width,
                 Input.mousePosition.y/Screen.height);
             
+            // Using interface?
+            if (pos.x<0.2 || pos.x>0.8) {
+                return;
+            }
+
             // Wait?
             if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.55f)<0.05f) {
                 FloatText("wait");
@@ -218,11 +202,10 @@ public class PlayerController : MonoBehaviour
                     blocked = true;
                 }
             }
-            if (!blocked) {
-                NotableCollide(targetCell);
-            }
             TileBase targetTile = blockMap.GetTile(targetCell);
             if (targetTile != null) {
+                // Check for important blocks
+                NotableCollide(targetCell);
                 blocked = true;
             }
 
@@ -233,7 +216,7 @@ public class PlayerController : MonoBehaviour
                 enemyList = GameObject.FindGameObjectsWithTag("Enemy");
                 foreach (var e in enemyList) {
                     target = e.GetComponent<EnemyBehavior>();
-                    if (target.tilePosition == targetCell) {
+                    if (target.tilePosition == targetCell && !target.dying) {
                         enemyFront = true;
                         break;
                     }
@@ -247,13 +230,15 @@ public class PlayerController : MonoBehaviour
                     count = 0.0f;
                     Attack(target);
                 // Point is valid?
-                } else if (!blocked) {//targetTile != null && targetTile.name == "floor") {
+                } else {//targetTile != null && targetTile.name == "floor") {
+                    // Check if I'm walking onto something important
+                    NotableCollide(targetCell);
                     // Init bezier curve
                     moving = true;
                     tilePosition = targetCell; //floorMap.WorldToCell(targetPosition);
                     highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                     count = 0.0f;
-            }
+                }
             }
             // Face player in new direction
             if (attacking || moving) {
@@ -287,6 +272,10 @@ public class PlayerController : MonoBehaviour
                 mainCamera.transform.position = camVec;
             } else {
                 // Turn over, activate entities
+                if (saySomething != "") {
+                    FloatText("msg", saySomething);
+                    saySomething = "";
+                }
                 moving = false;
                 EndTurn();
             }
@@ -316,7 +305,7 @@ public class PlayerController : MonoBehaviour
     void Attack(EnemyBehavior target) {
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
-        if (roll >= 10) {
+        if (roll >= 8) { // 65% baseline chance to hit, missing sucks.
             target.Damage(Random.Range(mindmg,maxdmg+1));
         } else {
             target.Damage(0);
@@ -333,14 +322,34 @@ public class PlayerController : MonoBehaviour
         } else {
             FloatText("miss");
         }
-        uiController.UpdateHP(hp, maxhp);
+        uiController.UpdateBars();
     }
 
-    public void EquipWeapon(string weapon) {
-        FloatText("msg", weapon);
+    public void EquipWeapon(Weapon w) {
+        if (weapon != null) { // Unequip old weapon
+            attack -= weapon.atk;
+            defense -= weapon.def;
+            speed /= (1/weapon.speed);
+        }
+        weapon = w;
+        attack += weapon.atk;
+        defense += weapon.def;
+        mindmg = weapon.mindmg;
+        maxdmg = weapon.maxdmg;
+        speed *= (1/weapon.speed);
     }
 
-    private void FloatText(string type, string msg="") {
+    public void EquipArmor(Armor a) {
+        if (armor != null) { // Unequip old armor
+            defense -= armor.def;
+            speed /= (1/armor.speed);
+        }
+        armor = a;
+        defense += armor.def;
+        speed *= (1/armor.speed);
+    }
+
+    public void FloatText(string type, string msg="") {
         GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
         DmgTextController textCont = text.GetComponent<DmgTextController>();
         textCont.Init(this.transform.position);
@@ -357,7 +366,7 @@ public class PlayerController : MonoBehaviour
             textMesh.color = new Color32(255,255,255,255);
             textMesh.text = "wait";
         } else if (type == "msg") {
-            textMesh.color = new Color32(255,255,255,255);
+            textMesh.color = new Color32(200,200,200,255);
             textMesh.text = msg;
         } else {
             textMesh.text = "AHHH";
@@ -365,29 +374,29 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void Ability(string abilityName) {
+        Debug.Log("Ability "+abilityName+" activated!");
+    }
+
     private void Die() {
         dying = true;
-        /*count = 0f;
-        startAngle = this.transform.rotation;
-        targetAngle = startAngle;
-        if (facing[1] == "left") {
-            targetAngle.z -= 1;
-        } else {
-            targetAngle.z += 1;
-        }*/
         animator.CrossFade("die", 0f);
     }
 
-    void EndTurn() {
-        if (hp != maxhp && Random.Range(0f,4f) < speed) {
-            hp++;
-            FloatText("heal", "1");
-            uiController.UpdateHP(hp, maxhp);
+    public void EndTurn() {
+        if (food > 0) {
+            if (hp != maxhp && Random.Range(0f,4f) < speed) {
+                hp++;
+                FloatText("heal", "1");
+            }
+            food -= speed;
         }
+        uiController.UpdateBars();
         entities.BroadcastMessage("turnStart", speed);
     }
 
     void OnDestroy() {
         data.playerHp = hp;
+        data.food = food;
     }
 }

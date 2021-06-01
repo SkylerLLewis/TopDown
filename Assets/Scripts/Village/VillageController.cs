@@ -7,9 +7,11 @@ public class VillageController : MonoBehaviour
 {
     public Dictionary<string,Vector3Int> notableCells;
     public System.Action<string> NotableActionsRef;
+    PersistentData data;
 
-    void Awake()
-    {
+    void Awake() {
+        data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
+        data.root = GameObject.FindWithTag("Root");
         NotableActionsRef = gameObject.GetComponent<GreenVillageInit>().NotableActions;
     }
 
