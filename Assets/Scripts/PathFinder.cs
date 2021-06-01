@@ -191,6 +191,42 @@ public class PathFinder : MonoBehaviour
         return true;
     }
 
+    public bool LineOfSight(Vector3Int from, Vector3Int to) {
+        string s = "PATHFINDING: Line of sight";
+        int deltax;
+        int deltay;
+        int direction = 0;
+        
+        s += "\n    Starting at: "+from;
+        Vector3Int walk = from;
+        while (walk != to) {
+            deltax = to.x - walk.x;
+            deltay = to.y - walk.y;
+            if (Mathf.Abs(deltay) < Mathf.Abs(deltax)) {
+                if (deltax >= 0) {
+                    direction = 1;
+                } else {
+                    direction = 3;
+                }
+            } else {
+                if (deltay >= 0) {
+                    direction = 0;
+                } else {
+                    direction = 2;
+                }
+            }
+            s += "\n    Walking to: "+DirectionToCell(direction, walk);
+            if (IsWalkable(walk, DirectionToCell(direction, walk))) {
+                walk = DirectionToCell(direction, walk);
+            } else {
+                Debug.Log(s+"\nFailed.");
+                return false;
+            }
+        }
+        Debug.Log(s+"\nSuccess!");
+        return true;
+    }
+
     public Vector3Int DirectionToCell(int direction, Vector3Int currentCell) {
         Vector3Int cell = currentCell;
         if (direction == 0) {

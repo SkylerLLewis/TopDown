@@ -6,14 +6,14 @@ using TMPro;
 
 public class EnemyBehavior : MonoBehaviour
 {
-    public float speed, moveSpeed;
+    public float moveSpeed, attackSpeed, visualSpeed;
     public float timer;
-    public bool moving=false, attacking=false, dying=false, waiting=false, last=false;
+    public bool moving=false, attacking=false, dying=false, waiting=false;
     public Vector3Int tilePosition;
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     private Dictionary<string,Tilemap> maps;
-    private GameObject plObj;
+    private GameObject arrow;
     private PlayerController player;
     private EntityController entityController;
     private PathFinder pathFinder;
@@ -25,6 +25,7 @@ public class EnemyBehavior : MonoBehaviour
     
     // Combat Stats
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
+    public string enemyType;
 
     public void SetCoords(Vector3Int cell) {
         tilePosition = cell;
@@ -48,16 +49,16 @@ public class EnemyBehavior : MonoBehaviour
         canvas = GameObject.FindWithTag("WorldCanvas");
         //tilePosition = floorMap.WorldToCell(this.transform.position);
         //tilePosition.z = 0;
-        plObj = GameObject.FindWithTag("Player");
-        player = plObj.GetComponent<PlayerController>();
+        player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         entityController = GameObject.FindObjectOfType<EntityController>();
-        timer = Random.Range(0, speed);
+        arrow = Resources.Load<GameObject>("Prefabs/Arrow");
+
+        timer = Random.Range(0, moveSpeed);
         facing = new string[2];
-        moveSpeed = 8-2*speed;
+        visualSpeed = 8-2*moveSpeed;
     }
 
-    public void MyTurn(bool last=false) {
-        this.last = last;
+    public void MyTurn() {
         targetPosition = this.transform.position;
         startPosition = this.transform.position;
         // A numerical direction that can rotate 0-3
@@ -67,6 +68,16 @@ public class EnemyBehavior : MonoBehaviour
 
         int deltax = player.tilePosition.x - tilePosition.x;
         int deltay = player.tilePosition.y - tilePosition.y;
+        // Manhattan distance
+        int distance = Mathf.Abs(deltax) + Mathf.Abs(deltay);
+
+        // Ranged? Run away!
+        if (enemyType == "Ranged") {
+            if (distance < 4) {
+                deltax *= -1;
+                deltay *= -1;
+            }
+        }
 
         // Get uninformed direction
         if (deltay > 0) {
@@ -79,80 +90,16 @@ public class EnemyBehavior : MonoBehaviour
             direction = 3;
         }
         
-        if (Mathf.Abs(deltax) + Mathf.Abs(deltay) == 1 &&
-        pathFinder.DirectionWalkable(tilePosition, direction)) {
-            // Player in range, ATTACK!
-            
-            targetCell = pathFinder.DirectionToCell(direction, tilePosition);attacking = true;
-            targetPosition = startPosition;
-            highPoint = player.transform.position;
-            count = 0.0f;
-            Attack(player);
-            // Face enemy in new direction
-            if (direction < 2) {
-                facing[0] = "up";
-            } else {
-                facing[0] = "down";
-            }
-            if (direction == 0 || direction == 3) {
-                facing [1] = "left";
-            } else {
-                facing[1] = "right";
-            }
-        } else {
-            // Try to move
-            // Decide best direction for moving
-            if (Mathf.Abs(deltay) >= Mathf.Abs(deltax)) {
-                if (deltay >= 0) {
-                    direction = 0;
-                } else {
-                    direction = 2;
-                }
-                if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                    if (deltax >= 0) {
-                        direction = 1;
-                    } else {
-                        direction = 3;
-                    }
-                    if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                        direction = (direction + 2) % 4;
-                        if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                            direction = -1;
-                        }
-                    }
-                }
-            } else if (Mathf.Abs(deltax) >= Mathf.Abs(deltay)) {
-                if (deltax >= 0) {
-                    direction = 1;
-                } else {
-                    direction = 3;
-                }
-                if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                    if (deltay >= 0) {
-                        direction = 0;
-                    } else {
-                        direction = 2;
-                    }
-                    if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                        direction = (direction + 2) % 4;
-                        if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                            direction = -1;
-                        }
-                    }
-                }
-            }
-            
-            if (direction != -1) {
-                // Move!
-                targetCell = pathFinder.DirectionToCell(direction, tilePosition);
-                targetPosition = floorMap.CellToWorld(targetCell);
-                targetPosition.y += 0.25f;
-                targetPosition.z = 0;
+        if (enemyType == "Melee") {
+            if (distance == 1 &&
+            pathFinder.DirectionWalkable(tilePosition, direction)) {
+                // Player in range, ATTACK!
                 
-                moving = true;
-                highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                targetCell = pathFinder.DirectionToCell(direction, tilePosition);attacking = true;
+                targetPosition = startPosition;
+                highPoint = player.transform.position;
                 count = 0.0f;
-                tilePosition = targetCell;
+                Attack(player);
                 // Face enemy in new direction
                 if (direction < 2) {
                     facing[0] = "up";
@@ -164,46 +111,132 @@ public class EnemyBehavior : MonoBehaviour
                 } else {
                     facing[1] = "right";
                 }
-            } else {
-                // Not doing jack, report back
-                waiting = true;
-                count = 0f;
+                EndTurn(attackSpeed);
+                return; // Attack successful, turn over.
             }
+        } else if (enemyType == "Ranged" && (distance > 2 || distance == 1)) {
+            if (pathFinder.LineOfSight(tilePosition, player.tilePosition)) {
+                // Player in line of sight, ATTACK!
+
+                waiting = true;
+                count = 1.0f;
+                RangedAttack(player);
+
+                // Face enemy in new direction
+                if (direction < 2) {
+                    facing[0] = "up";
+                } else {
+                    facing[0] = "down";
+                }
+                if (direction == 0 || direction == 3) {
+                    facing [1] = "left";
+                } else {
+                    facing[1] = "right";
+                }
+                EndTurn(attackSpeed);
+                return; // Attack successful, turn over.
+            }
+        }
+
+        // Try to move
+        // Decide best direction for moving
+        if (Mathf.Abs(deltay) >= Mathf.Abs(deltax)) {
+            if (deltay >= 0) {
+                direction = 0;
+            } else {
+                direction = 2;
+            }
+            if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                if (deltax >= 0) {
+                    direction = 1;
+                } else {
+                    direction = 3;
+                }
+                if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                    direction = (direction + 2) % 4;
+                    if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                        direction = -1;
+                    }
+                }
+            }
+        } else if (Mathf.Abs(deltax) >= Mathf.Abs(deltay)) {
+            if (deltax >= 0) {
+                direction = 1;
+            } else {
+                direction = 3;
+            }
+            if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                if (deltay >= 0) {
+                    direction = 0;
+                } else {
+                    direction = 2;
+                }
+                if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                    direction = (direction + 2) % 4;
+                    if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
+                        direction = -1;
+                    }
+                }
+            }
+        }
+        
+        if (direction != -1) {
+            // Move!
+            targetCell = pathFinder.DirectionToCell(direction, tilePosition);
+            targetPosition = floorMap.CellToWorld(targetCell);
+            targetPosition.y += 0.25f;
+            targetPosition.z = 0;
+            
+            moving = true;
+            highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+            count = 0.0f;
+            tilePosition = targetCell;
+            // Face enemy in new direction
+            if (direction < 2) {
+                facing[0] = "up";
+            } else {
+                facing[0] = "down";
+            }
+            if (direction == 0 || direction == 3) {
+                facing [1] = "left";
+            } else {
+                facing[1] = "right";
+            }
+            EndTurn(moveSpeed);
+        } else {
+            // Not doing jack, report back
+            waiting = true;
+            count = 0f;
+            EndTurn(moveSpeed);
         }
     }
 
     void Update() {
         if (moving) {
             if (count < 1.0f) {
-                count += 1.0f * moveSpeed * Time.deltaTime;
+                count += 1.0f * visualSpeed * Time.deltaTime;
 
                 Vector3 m1 = Vector3.Lerp(startPosition, highPoint, count);
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
                 this.transform.position = Vector3.Lerp(m1, m2, count);
             } else {
                 moving = false;
-                if (last) {
-                    //Debug.Log(name+" Designated reporter reporting from move.");
-                }
-                if (last) { entityController.doubleTurn(); }
+                entityController.Report();
             }
         } else if (attacking) {
             if (count < 1.0f) {
-                count += 1.0f * moveSpeed * Time.deltaTime;
+                count += 1.0f * visualSpeed * Time.deltaTime;
 
                 Vector3 m1 = Vector3.Lerp(startPosition, highPoint, count);
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
                 this.transform.position = Vector3.Lerp(m1, m2, count);
             } else {
                 attacking = false;
-                if (last) {
-                    //Debug.Log(name+" Designated reporter reporting from attack.");
-                }
-                if (last) { entityController.doubleTurn(); }
+                entityController.Report();
             }
         } else if (dying) {
             if (count < 1.0f) {
-                count += 1.0f * 2.5f * Time.deltaTime;
+                count += 1.0f * visualSpeed * Time.deltaTime;
                 float t = Mathf.Sin(count * Mathf.PI * 0.5f);
                 this.transform.rotation = Quaternion.Lerp(startAngle, targetAngle, t);
             } else {
@@ -211,10 +244,10 @@ public class EnemyBehavior : MonoBehaviour
             }
         } else if (waiting) {
             if (count < 1.0f) {
-                count += 1.0f * 2.5f * Time.deltaTime;
+                count += 1.0f * visualSpeed * Time.deltaTime;
             } else {
                 waiting = false;
-                if (last) { entityController.doubleTurn(); }
+                entityController.Report();
             }
         }
     }
@@ -226,6 +259,23 @@ public class EnemyBehavior : MonoBehaviour
         } else {
             target.Damage(0);
         }
+    }
+
+    void RangedAttack(PlayerController target) {
+        int damage;
+        int roll = Mathf.RoundToInt(Random.Range(1,20+1));
+        roll += attack - target.defense;
+        if (roll >= 8) {
+            damage = Random.Range(mindmg,maxdmg+1);
+        } else {
+            damage = 0;
+        }
+        GameObject clone = Instantiate(
+            arrow,
+            transform.position,
+            Quaternion.identity);
+        clone.name = clone.name.Split('(')[0];
+        clone.GetComponent<ArrowController>().Shoot(player, damage);
     }
 
     public void Damage(int dmg) {
@@ -244,6 +294,10 @@ public class EnemyBehavior : MonoBehaviour
                 Die();
             }
         }
+    }
+
+    private void EndTurn(float time) {
+        timer += time;
     }
 
     private void Die() {

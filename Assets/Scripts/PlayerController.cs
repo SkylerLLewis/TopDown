@@ -370,7 +370,7 @@ public class PlayerController : MonoBehaviour
             textMesh.text = msg;
         } else {
             textMesh.text = "AHHH";
-            textMesh.color = new Color32(0,0,255,255);
+            textMesh.color = new Color32(255,0,0,255);
         }
     }
 

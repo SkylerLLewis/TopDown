@@ -161,7 +161,6 @@ public class InventoryController : MonoBehaviour
         } else if (item.itemType == "Potion") {
             item.Activate(player);
             data.inventory.RemoveAt(selected);
-            RefreshItems();
         }
         BackToScene();
         player.EndTurn();
@@ -173,7 +172,7 @@ public class InventoryController : MonoBehaviour
         data.weapon = data.inventory[selected] as Weapon;
         data.inventory.RemoveAt(selected);
         data.inventory.Add(old);
-        RefreshItems();
+        player.FloatText("msg", "Equipped "+data.weapon.displayName);
     }
 
     public void EquipArmor() {
@@ -184,7 +183,7 @@ public class InventoryController : MonoBehaviour
         if (old != null) {
             data.inventory.Add(old);
         }
-        RefreshItems();
+        player.FloatText("msg", "Equipped "+data.armor.displayName);
     }
 
     public void BackToScene() {

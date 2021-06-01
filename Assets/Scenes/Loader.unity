@@ -156,6 +156,7 @@ MonoBehaviour:
   entrance: 0
   direction: 
   playerHp: 0
+  food: 0
   root: {fileID: 0}
 --- !u!4 &476949126
 Transform:

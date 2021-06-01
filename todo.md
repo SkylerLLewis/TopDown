@@ -4,14 +4,16 @@
 
 - [x] Create inventory
 - [x] Implement loot system
+- [ ] Add stats screen
 - [ ] Create basic ranged abilities
 - [ ] Create skill tree and XP system
+- [ ] Add save functionality
 
 ## Dungeons
 
 - [x] Add loot drops
 - [ ] Add dynamic door opening
-- [ ] Add ranged enemies
+- [x] Add ranged enemies
 - [ ] Add sneaking mechanic
 - [ ] Add complex room generation
 - [ ] Implement prefab rooms

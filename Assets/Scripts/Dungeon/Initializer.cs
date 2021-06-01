@@ -57,10 +57,12 @@ public class Initializer : MonoBehaviour
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
+        enemyFabs.Add("Skeleton Archer", Resources.Load("Prefabs/Skeleton Archer") as GameObject);
         enemyFabs.Add("Goblin", Resources.Load("Prefabs/Goblin") as GameObject);
         enemyFabs.Add("Hobgoblin", Resources.Load("Prefabs/Hobgoblin") as GameObject);
         enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
         enemyWheel.Add("Skeleton", 10);
+        enemyWheel.Add("Skeleton Archer", 4);
         enemyWheel.Add("Goblin", 1);
         enemyWheel.Add("Hobgoblin", data.depth-1);
         enemyWheel.Add("Spider", data.depth-1);
@@ -140,7 +142,6 @@ public class Initializer : MonoBehaviour
                 }
             }
             if (target != null) {
-                // ! Will not work for other item types - type finding needed
                 if (Weapon.IsWeapon(target.name)) {
                     Weapon wep = new Weapon(target.name);
                     data.inventory.Add(wep);
@@ -567,11 +568,14 @@ public class Initializer : MonoBehaviour
 
     public void DropLoot(Room r) {
         Vector3Int cell;
+        int sentinel = 0;
         do {
             cell = new Vector3Int(
-                    r.tail.x+Random.Range(1,r.width-1),
-                    r.tail.y+Random.Range(1,r.height-1),
+                    r.tail.x+Random.Range(0,r.width-1),
+                    r.tail.y+Random.Range(0,r.height-1),
                     0);
+            sentinel++;
+            if (sentinel > 100) { break; }
         } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
 
         // Spin the wheel!
@@ -580,7 +584,7 @@ public class Initializer : MonoBehaviour
             wheelTotal += item.Value;
         }
         int total = 0;
-        float roll = Random.Range(0, wheelTotal+1);
+        float roll = Random.Range(0f, wheelTotal);
         foreach (KeyValuePair<string,int> item in lootWheel) {
             total += item.Value;
             if (roll <= total) {
