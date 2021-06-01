@@ -221,7 +221,7 @@ public class EnemyBehavior : MonoBehaviour
     void Attack(PlayerController target) {
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
-        if (roll >= 10) {
+        if (roll >= 8) {
             target.Damage(Random.Range(mindmg,maxdmg+1));
         } else {
             target.Damage(0);

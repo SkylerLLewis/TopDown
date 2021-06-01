@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviour
 {
     private Animator animator;
     private string[] walkNames, attackNames;
-    public float speed = 1;
+    public float speed, food;
     public bool moving = false;
     public bool attacking = false;
     public bool dying = false;
@@ -36,6 +36,7 @@ public class PlayerController : MonoBehaviour
     
     // Combat Stats
     public Weapon weapon;
+    public Armor armor;
     public int maxhp, hp, attack, defense, mindmg, maxdmg;
 
     void Start() {
@@ -91,8 +92,15 @@ public class PlayerController : MonoBehaviour
         if (hp == 0) {
             hp = maxhp;
         }
-        uiController.UpdateHP(hp, maxhp);
+        food = data.food;
+        uiController.UpdateBars();
+        attack = 5;
+        defense = 5;
+        speed = 1;
         EquipWeapon(data.weapon);
+        if (data.armor != null) {
+            EquipArmor(data.armor);
+        }
         saySomething = "";
     }
 
@@ -297,7 +305,7 @@ public class PlayerController : MonoBehaviour
     void Attack(EnemyBehavior target) {
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
-        if (roll >= 10) {
+        if (roll >= 8) { // 65% baseline chance to hit, missing sucks.
             target.Damage(Random.Range(mindmg,maxdmg+1));
         } else {
             target.Damage(0);
@@ -314,19 +322,34 @@ public class PlayerController : MonoBehaviour
         } else {
             FloatText("miss");
         }
-        uiController.UpdateHP(hp, maxhp);
+        uiController.UpdateBars();
     }
 
     public void EquipWeapon(Weapon w) {
+        if (weapon != null) { // Unequip old weapon
+            attack -= weapon.atk;
+            defense -= weapon.def;
+            speed /= (1/weapon.speed);
+        }
         weapon = w;
-        attack = 5+weapon.atk;
-        defense = 5+weapon.def;
+        attack += weapon.atk;
+        defense += weapon.def;
         mindmg = weapon.mindmg;
         maxdmg = weapon.maxdmg;
-        speed = weapon.speed;
+        speed *= (1/weapon.speed);
     }
 
-    private void FloatText(string type, string msg="") {
+    public void EquipArmor(Armor a) {
+        if (armor != null) { // Unequip old armor
+            defense -= armor.def;
+            speed /= (1/armor.speed);
+        }
+        armor = a;
+        defense += armor.def;
+        speed *= (1/armor.speed);
+    }
+
+    public void FloatText(string type, string msg="") {
         GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
         DmgTextController textCont = text.GetComponent<DmgTextController>();
         textCont.Init(this.transform.position);
@@ -361,15 +384,19 @@ public class PlayerController : MonoBehaviour
     }
 
     public void EndTurn() {
-        if (hp != maxhp && Random.Range(0f,4f) < speed) {
-            hp++;
-            FloatText("heal", "1");
-            uiController.UpdateHP(hp, maxhp);
+        if (food > 0) {
+            if (hp != maxhp && Random.Range(0f,4f) < speed) {
+                hp++;
+                FloatText("heal", "1");
+            }
+            food -= speed;
         }
+        uiController.UpdateBars();
         entities.BroadcastMessage("turnStart", speed);
     }
 
     void OnDestroy() {
         data.playerHp = hp;
+        data.food = food;
     }
 }

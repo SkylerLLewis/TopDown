@@ -9,7 +9,9 @@ public class PersistentData : MonoBehaviour
     public int entrance;
     public string direction;
     public int playerHp;
+    public float food;
     public Weapon weapon;
+    public Armor armor;
     public GameObject root;
     public List<InventoryItem> inventory;
     void Awake() {
@@ -17,9 +19,12 @@ public class PersistentData : MonoBehaviour
         depth = 0;
         entrance = 0;
         playerHp = 0;
+        food = 500;
         direction = "down";
         inventory = new List<InventoryItem>();
         weapon = new Weapon("Twig");
+        armor = null;
+        inventory.Add(new Potion("Healing Potion"));
         /*inventory.Add(new Weapon("Sharp Twig"));
         inventory.Add(new Weapon("Plank with a Nail"));
         inventory.Add(new Weapon("Club"));

@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class UIController : MonoBehaviour
 {
-    RectTransform hpBar;
+    RectTransform hpBar, foodBar;
     TextMeshProUGUI depthText;
     private PersistentData data;
     private PlayerController player;
@@ -15,14 +15,16 @@ public class UIController : MonoBehaviour
     {
         root = GameObject.FindWithTag("Root");
         hpBar = GameObject.Find("HP Bar").GetComponent<RectTransform>();
+        foodBar = GameObject.Find("Food Bar").GetComponent<RectTransform>();
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         depthText = GameObject.Find("Depth Text").GetComponent<TextMeshProUGUI>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         depthText.text = data.depth.ToString();
     }
 
-    public void UpdateHP(int hp, int maxhp) {
-        hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*((hp*1.0f)/maxhp));
+    public void UpdateBars() {
+        hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*((player.hp*1.0f)/player.maxhp));
+        foodBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*(player.food/1000));
     }
 
     public void OpenInventory() {

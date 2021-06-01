@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Weapon : InventoryItem {
-    public int mindmg, maxdmg, atk, def, quality;
+    public int mindmg, maxdmg, atk, def, crit, quality;
     public float speed;
     public static List<List<string>> WeaponTiers = new List<List<string>>() {
         new List<string>() {"Twig", "Sharp Twig", "Plank with a Nail", "Club", "Long Stick", "Log"},
@@ -14,6 +14,9 @@ public class Weapon : InventoryItem {
         itemType = "Weapon";
         name = n;
         sprite = Resources.Load<Sprite>("Weapons/"+name);
+        if (sprite == null) {
+            Debug.Log("Weapon name \""+name+"\" does not exist.");
+        }
         int rand = Random.Range(1,21);
         if (rand <= 2) {
             quality = -1; // Shitty (10%)
@@ -30,49 +33,54 @@ public class Weapon : InventoryItem {
     }
 
     private void Classify() {
-        // Note - speed value is multiplicitive (Lower is better)
+        // Note - speed value is multiplicitive (Higher is better)
         speed = 1f;
         atk = 0;
         def = 0;
+        crit = 1;
         // -- Tier 0 Starter Weapons -- //
+        // Tier 0s have an average of 2 dmg and +10% effect
         if (WeaponTiers[0].Contains(name)) {
             // Tier 0s have no quality, they're all shit
             if (quality != 0) { quality = 0; }
             if (name == "Twig") {
                 description = "It's a twig. This is a terrible idea.";
                 mindmg = 1;
-                maxdmg = 2;
+                maxdmg = 3;
             } else if (name == "Sharp Twig") { // Dagger type
                 description = "A particularly spiky twig. Fast and quiet, but you'll have to get close.";
                 mindmg = 1;
-                maxdmg = 1;
-                speed = 0.8f;
-                atk = 2;
-                def = -2;
+                maxdmg = 2;
+                speed = 1.25f;
+                atk = 3;
+                def = -3;
+                crit = 4;
             } else if (name == "Plank with a Nail") { // Axe type
                 description = "This nail should punch through armor at least.";
                 mindmg = 1;
                 maxdmg = 3;
-                atk = 1;
+                atk = 2;
             } else if (name == "Club") { // Mace Type
                 description = "It's slow, but it hits hard.";
-                mindmg = 2;
-                maxdmg = 3;
-                speed = 1.2f;
+                mindmg = 1;
+                maxdmg = 4;
+                speed = 0.8f;
             } else if (name == "Long Stick") { // Spear type
                 description = "Now this should keep them back.";
                 mindmg = 1;
-                maxdmg = 2;
+                maxdmg = 3;
                 def = 2;
             } else if (name == "Log") { // Polearm type
                 description = "What am dex? Me have big bonk! Pathetic weaklings stay back.";
                 mindmg = 2;
                 maxdmg = 3;
-                atk = 2;
-                def = 2;
-                speed = 1.5f;
+                atk = 3;
+                def = 3;
+                speed = 0.60f;
             }
         // -- Tier 1 Weapons -- //
+        // Tier 1s have average 3 dmg  and +25% extra effect
+        // Each tier is 10% effect
         } else if (WeaponTiers[1].Contains(name)) {
             // Tier 1 weapons can only be good or worse
              if (quality > 1) {
@@ -82,24 +90,25 @@ public class Weapon : InventoryItem {
                 description = "Finally, a real weapon! The rust is so thick you can barely see the iron. Probably should avoid hitting anything too hard...";
                 mindmg = 2;
                 maxdmg = 4;
-                speed = 0.9f - 0.1f*quality;
+                speed = 1.2f + 0.1f*quality;
             } else if (name == "Half a Scissor") {
                 description = "You know what, it'll work. It's even got a convenient thumb loop!";
                 mindmg = 1;
                 maxdmg = 3;
-                speed = 0.8f - 0.1f*quality;
+                speed = 1.25f + 0.1f*quality;
                 atk = 3;
-                def = -2;
+                def = -3;
+                crit = 4;
             } else if (name == "Copper Hatchet") {
                 description = "This hatchet should bite deep. It has a nice shine to it. At least it's pretty.";
                 mindmg = 2;
                 maxdmg = 5;
-                atk = 3 + 2*quality;
+                atk = 2 + 2*quality;
             } else if (name == "Mallet") {
                 description = "I'm gettin me mallet!";
-                mindmg = 4 + 2*quality;
+                mindmg = 3 + quality;
                 maxdmg = 6;
-                speed = 1.20f;
+                speed = 0.8f;
             } else if (name == "Flint Spear") {
                 description = "It smells faintly of mammoth blood.";
                 mindmg = 2;
@@ -107,16 +116,17 @@ public class Weapon : InventoryItem {
                 def = 2 + 2*quality;
             } else if (name == "Grain Scythe") {
                 description = "It's big, clunky, and the blade is backwards. But it has a blade!";
-                mindmg = 4;
+                mindmg = 2;
                 maxdmg = 6;
-                speed = 1.5f - 0.2f*quality;
+                speed = 0.67f + 0.11f*quality;
+                atk = 2;
                 def = 3;
-                atk = 3;
             }
         // -- Tier 2 Weapons -- //
+        // Tier 2 weapons have average 4 dmg and + 50% effect
         } else if (WeaponTiers[2].Contains(name)) {
             // Tier 2 weapons can only be fine or worse
-             if (quality > 2) {
+            if (quality > 2) {
                 quality = 2;
             }
             if (name == "Woodcutter's Axe") {
@@ -141,6 +151,15 @@ public class Weapon : InventoryItem {
             displayName = "Masterwork "+name;
             description = description+" Whoever crafted this weapon was a true master.";
         }
+    }
+    
+    public static bool IsWeapon(string s) {
+        foreach (List<string> tier in WeaponTiers) {
+            if (tier.Contains(s)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public override string ToString()

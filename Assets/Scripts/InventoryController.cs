@@ -11,6 +11,7 @@ public class InventoryController : MonoBehaviour
     private PersistentData data;
     private GameObject root, itemArray;
     TextMeshProUGUI title, description, button, stats;
+    Image itemImage;
     PlayerController player;
     void Start() {
         selected = -1;
@@ -31,11 +32,14 @@ public class InventoryController : MonoBehaviour
                 button = child.GetChild(0).gameObject.GetComponent<TextMeshProUGUI>();
             } else if (child.name == "Stats") {
                 stats = child.gameObject.GetComponent<TextMeshProUGUI>();
+            } else if (child.name == "ItemImage") {
+                itemImage = child.gameObject.GetComponent<Image>();
             }
         }
 
         // Display List of Items
         DisplayItems();
+        DisplayItem(-1);
     }
 
     public void RefreshItems() {
@@ -65,30 +69,46 @@ public class InventoryController : MonoBehaviour
             i++;
             if (i%11 == 0) { j++; }
         }
-        // Display Equipped
+        // Display Equipped Weapon
         clone = Instantiate(
             itemButton,
             itemArray.transform);
         rt = clone.GetComponent<RectTransform>();
-        rt.anchoredPosition = new Vector3(7f, 1.75f, 0);
+        rt.anchoredPosition = new Vector3(7.5f, 2f, 0);
         clone.GetComponent<Image>().overrideSprite =  data.weapon.sprite;
         clone.GetComponent<InventoryItemController>().SetItemIndex(-1);
+        // Display Equipped Armor
+        if (data.armor != null) {
+            clone = Instantiate(
+                itemButton,
+                itemArray.transform);
+            rt = clone.GetComponent<RectTransform>();
+            rt.anchoredPosition = new Vector3(6.25f, 2f, 0);
+            clone.GetComponent<Image>().overrideSprite =  data.armor.sprite;
+            clone.GetComponent<InventoryItemController>().SetItemIndex(-2);
+        }
     }
 
     public void DisplayItem(int index) {
         selected = index;
         InventoryItem item;
         if (index == -1) {
-            // ! This will not work for all equipment!
             item = data.weapon;
+        } else if (index == -2) {
+            item = data.armor;
         } else {
             item = data.inventory[index];
         }
         title.text = item.displayName;
         description.text = item.description;
+        itemImage.overrideSprite = item.sprite;
         if (item.itemType == "Weapon") {
             Weapon wep = item as Weapon;
-            button.text = "Equip";
+            if (index >= 0) {
+                button.text = "Equip";
+            } else {
+                button.text = "-";
+            }
             string stat = "Dmg: "+wep.mindmg+"-"+wep.maxdmg;
             if (wep.atk > 0) {
                 stat += "\natk +"+wep.atk;
@@ -100,20 +120,48 @@ public class InventoryController : MonoBehaviour
             } else if (wep.def < 0) {
                 stat += "\ndef "+wep.def;
             }
-            if (wep.speed < 1) {
-                stat += "\nspeed +"+Mathf.RoundToInt((1/wep.speed-1)*100)+"%";
-            } else if (wep.speed > 1) {
-                stat += "\nspeed -"+Mathf.RoundToInt((1-1/wep.speed)*100)+"%";
+            if (wep.speed > 1) {
+                stat += "\nspeed +"+Mathf.RoundToInt((wep.speed - 1)*100)+"%";
+            } else if (wep.speed < 1) {
+                stat += "\nspeed "+Mathf.RoundToInt((wep.speed - 1)*100)+"%";
+            }
+            stats.text = stat;
+        } else if (item.itemType == "Armor") {
+            Armor arm = item as Armor;
+            if (index >= 0) {
+                button.text = "Equip";
+            } else {
+                button.text = "-";
+            }
+            string stat = "Def +"+arm.def;
+            if (arm.speed > 1) {
+                stat += "\nspeed +"+Mathf.RoundToInt((arm.speed - 1)*100)+"%";
+            } else if (arm.speed < 1) {
+                stat += "\nspeed "+Mathf.RoundToInt((arm.speed - 1)*100)+"%";
+            }
+            stats.text = stat;
+        } else if (item.itemType == "Potion") {
+            button.text = "Drink";
+            Potion pot = item as Potion;
+            string stat = "";
+            if (pot.healing > 0) {
+                stat += "+"+pot.healing+" hp";
             }
             stats.text = stat;
         }
     }
 
     public void ActivateButton() {
-        if (selected == -1) { return; }
+        if (selected < 0) { return; }
         InventoryItem item = data.inventory[selected];
-        if (item.itemType == "Weapon" && item != data.weapon) {
+        if (item.itemType == "Weapon") {
             EquipWeapon();
+        } else if (item.itemType == "Armor") {
+            EquipArmor();
+        } else if (item.itemType == "Potion") {
+            item.Activate(player);
+            data.inventory.RemoveAt(selected);
+            RefreshItems();
         }
         BackToScene();
         player.EndTurn();
@@ -125,6 +173,17 @@ public class InventoryController : MonoBehaviour
         data.weapon = data.inventory[selected] as Weapon;
         data.inventory.RemoveAt(selected);
         data.inventory.Add(old);
+        RefreshItems();
+    }
+
+    public void EquipArmor() {
+        player.EquipArmor(data.inventory[selected] as Armor);
+        Armor old = data.armor;
+        data.armor = data.inventory[selected] as Armor;
+        data.inventory.RemoveAt(selected);
+        if (old != null) {
+            data.inventory.Add(old);
+        }
         RefreshItems();
     }
 

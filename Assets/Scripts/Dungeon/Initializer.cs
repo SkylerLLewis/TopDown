@@ -62,8 +62,8 @@ public class Initializer : MonoBehaviour
         enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
         enemyWheel.Add("Skeleton", 10);
         enemyWheel.Add("Goblin", 1);
-        enemyWheel.Add("Hobgoblin", 1+data.depth);
-        enemyWheel.Add("Spider", 1+data.depth);
+        enemyWheel.Add("Hobgoblin", data.depth-1);
+        enemyWheel.Add("Spider", data.depth-1);
         if (data.depth > 1 && data.depth < 4) {
             enemyWheel["Skeleton"] = 1;
             enemyWheel["Goblin"] = 15;
@@ -72,17 +72,24 @@ public class Initializer : MonoBehaviour
         // Loot drop chance!
         lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
         lootWheel = new Dictionary<string, int>();
+
         lootWheel.Add("Sharp Twig", 10);
         lootWheel.Add("Plank with a Nail", 10);
         lootWheel.Add("Club", 10);
         lootWheel.Add("Long Stick", 10);
         lootWheel.Add("Log", 10);
-        lootWheel.Add("Rusty Shortsword", 1+data.depth);
-        lootWheel.Add("Half a Scissor", 1+data.depth);
-        lootWheel.Add("Copper Hatchet", 1+data.depth);
-        lootWheel.Add("Mallet", 1+data.depth);
-        lootWheel.Add("Flint Spear", 1+data.depth);
-        lootWheel.Add("Grain Scythe", 1+data.depth);
+        lootWheel.Add("Rusty Shortsword", data.depth-1);
+        lootWheel.Add("Half a Scissor", data.depth-1);
+        lootWheel.Add("Copper Hatchet", data.depth-1);
+        lootWheel.Add("Mallet", data.depth-1);
+        lootWheel.Add("Flint Spear", data.depth-1);
+        lootWheel.Add("Grain Scythe", data.depth-1);
+        
+        lootWheel.Add("Leather Tunic", 10);
+        lootWheel.Add("Cast Iron Plates", 10);
+        lootWheel.Add("Patchy Brigandine", (data.depth-1)*2);
+
+        lootWheel.Add("Healing Potion", 30);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -134,9 +141,19 @@ public class Initializer : MonoBehaviour
             }
             if (target != null) {
                 // ! Will not work for other item types - type finding needed
-                Weapon wep = new Weapon(target.name);
-                data.inventory.Add(wep);
-                player.saySomething = wep.displayName;
+                if (Weapon.IsWeapon(target.name)) {
+                    Weapon wep = new Weapon(target.name);
+                    data.inventory.Add(wep);
+                    player.saySomething = wep.displayName;
+                } else if (Armor.IsArmor(target.name)) {
+                    Armor arm = new Armor(target.name);
+                    data.inventory.Add(arm);
+                    player.saySomething = arm.displayName;
+                } else if (Potion.IsPotion(target.name)) {
+                    Potion pot = new Potion(target.name);
+                    data.inventory.Add(pot);
+                    player.saySomething = pot.displayName;
+                }
                 Destroy(target.gameObject);
                 notableCells.Remove(key);
                 dungeonController.UpdateNotables(notableCells);
@@ -310,9 +327,9 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
-        //if (Random.Range(0, 6) == 0) {
+        if (Random.Range(0, 4) == 0) {
             DropLoot(r);
-        //}
+        }
         GenEnemies(r);
     }
 
@@ -576,7 +593,15 @@ public class Initializer : MonoBehaviour
                     Quaternion.identity,
                     loot.transform);
                 clone.name = item.Key;
-                clone.GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("Weapons/"+item.Key);
+                Sprite sprite = null;
+                if (Weapon.IsWeapon(item.Key)) {
+                    sprite = Resources.Load<Sprite>("Weapons/"+item.Key);
+                } else if (Armor.IsArmor(item.Key)) {
+                    sprite = Resources.Load<Sprite>("Armors/"+item.Key);
+                } else if (Potion.IsPotion(item.Key)) {
+                    sprite = Resources.Load<Sprite>("Potions/"+item.Key);
+                }
+                clone.GetComponent<SpriteRenderer>().sprite = sprite;
                 break;
             }
         }

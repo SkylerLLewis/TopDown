@@ -14,5 +14,5 @@ public class InventoryItem {
     }
 
     // Used to activate items in inventory, if possible
-    public void Activate() {}
+    public virtual void Activate(PlayerController player) {}
 }
