@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 public class InventoryItem {
     
+    public int count=1;
     public string itemType, name, displayName, description;
     public Sprite sprite;
     public InventoryItem() {

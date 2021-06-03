@@ -114,6 +114,7 @@ public class Initializer : MonoBehaviour
 
     // Actions on collisions
     public void NotableActions(string key) {
+
         if (key == "stairsUp") {
             data.depth--;
             data.direction = "up";
@@ -122,10 +123,12 @@ public class Initializer : MonoBehaviour
             } else {
                 SceneManager.LoadScene("BasicDungeon");
             }
+
         } else if (key == "stairsDown") {
             data.depth++;
             data.direction = "down";
             SceneManager.LoadScene("BasicDungeon");
+
         } else if (key.IndexOf("Loot") >= 0) {
             Vector3 pos = floorMap.CellToWorld(notableCells[key]);
             if (pos.z != 0) { // Account for floor z diff
@@ -144,15 +147,15 @@ public class Initializer : MonoBehaviour
             if (target != null) {
                 if (Weapon.IsWeapon(target.name)) {
                     Weapon wep = new Weapon(target.name);
-                    data.inventory.Add(wep);
+                    data.AddToInventory(wep);
                     player.saySomething = wep.displayName;
                 } else if (Armor.IsArmor(target.name)) {
                     Armor arm = new Armor(target.name);
-                    data.inventory.Add(arm);
+                    data.AddToInventory(arm);
                     player.saySomething = arm.displayName;
                 } else if (Potion.IsPotion(target.name)) {
                     Potion pot = new Potion(target.name);
-                    data.inventory.Add(pot);
+                    data.AddToInventory(pot);
                     player.saySomething = pot.displayName;
                 }
                 Destroy(target.gameObject);
@@ -328,7 +331,7 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
-        if (Random.Range(0, 4) == 0) {
+        if (Random.Range(0, 0) == 0) {
             DropLoot(r);
         }
         GenEnemies(r);

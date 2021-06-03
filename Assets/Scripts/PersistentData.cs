@@ -25,17 +25,27 @@ public class PersistentData : MonoBehaviour
         weapon = new Weapon("Twig");
         armor = null;
         inventory.Add(new Potion("Healing Potion"));
-        /*inventory.Add(new Weapon("Sharp Twig"));
-        inventory.Add(new Weapon("Plank with a Nail"));
-        inventory.Add(new Weapon("Club"));
-        inventory.Add(new Weapon("Long Stick"));
-        inventory.Add(new Weapon("Log"));
-        inventory.Add(new Weapon("Rusty Shortsword"));
-        inventory.Add(new Weapon("Half a Scissor"));
-        inventory.Add(new Weapon("Copper Hatchet"));
-        inventory.Add(new Weapon("Mallet"));
-        inventory.Add(new Weapon("Flint Spear"));
-        inventory.Add(new Weapon("Grain Scythe"));*/
         SceneManager.LoadScene("GreenVillage");
     }
+
+    public void AddToInventory(InventoryItem item) {
+        if (item.itemType == "Weapon" || item.itemType == "Armor") {
+            inventory.Add(item);
+        } else if (item.itemType == "Potion") {
+            bool contains = false;
+            int index = 0;
+            foreach (InventoryItem i in inventory) {
+                if (i.name == item.name) {
+                    contains = true;
+                    break;
+                }
+                index++;
+            }
+            if (contains) {
+                inventory[index].count++;
+            } else {
+                inventory.Add(item);
+            }
+        }
+    } 
 }

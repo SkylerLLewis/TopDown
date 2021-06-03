@@ -7,18 +7,27 @@ public class ArrowController : MonoBehaviour
     Vector3 startPosition, targetPosition;
     float count;
     public float speed;
+    string style;
     PlayerController target;
     int damage;
     bool shot = false;
-    public void Shoot(PlayerController p, int dmg) {
+    public void Shoot(PlayerController p, int dmg, string s) {
         target = p;
         damage = dmg;
+        style = s;
         startPosition = transform.position;
         startPosition.y += 0.5f;
         targetPosition = p.transform.position;
         targetPosition.y += 0.5f;
         count = 0;
         speed = 10/Vector3.Distance(startPosition, targetPosition);
+        // Set rotation of Arrow
+        var angles = transform.rotation.eulerAngles;
+        angles.z = Mathf.Rad2Deg * Mathf.Atan(/*y*/ (targetPosition.y - startPosition.y) / /*x*/(targetPosition.x - startPosition.x));
+        if (targetPosition.x < startPosition.x) {
+            angles.z += 180;
+        }
+        transform.rotation = Quaternion.Euler(angles);
         shot = true;
     }
 
@@ -28,7 +37,7 @@ public class ArrowController : MonoBehaviour
                 count += 1.0f * speed * Time.deltaTime;
                 this.transform.position = Vector3.Lerp(startPosition, targetPosition, count);
             } else {
-                target.Damage(damage);
+                target.Damage(damage, style);
                 Destroy(this.gameObject);
             }
         }

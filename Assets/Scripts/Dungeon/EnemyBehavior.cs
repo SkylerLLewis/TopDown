@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using TMPro;
 
 public class EnemyBehavior : MonoBehaviour
 {
@@ -255,40 +254,37 @@ public class EnemyBehavior : MonoBehaviour
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
         if (roll >= 8) {
-            target.Damage(Random.Range(mindmg,maxdmg+1));
+            target.Damage(Random.Range(mindmg,maxdmg+1), "dmg");
         } else {
-            target.Damage(0);
+            target.Damage(0, "miss");
         }
     }
 
     void RangedAttack(PlayerController target) {
         int damage;
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
+        string style = "dmg";
         roll += attack - target.defense;
         if (roll >= 8) {
             damage = Random.Range(mindmg,maxdmg+1);
         } else {
             damage = 0;
+            style = "miss";
         }
         GameObject clone = Instantiate(
             arrow,
             transform.position,
             Quaternion.identity);
         clone.name = clone.name.Split('(')[0];
-        clone.GetComponent<ArrowController>().Shoot(player, damage);
+        clone.GetComponent<ArrowController>().Shoot(player, damage, style);
     }
 
-    public void Damage(int dmg) {
+    public void Damage(int dmg, string style) {
         GameObject dmgTextFab = Resources.Load("Prefabs/DamageText") as GameObject;
         GameObject text = Instantiate(dmgTextFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
         DmgTextController textCont = text.GetComponent<DmgTextController>();
-        textCont.Init(this.transform.position);
-        TextMeshProUGUI textMesh = text.GetComponent<TextMeshProUGUI>();
-        if (dmg == 0) {
-            textMesh.color = new Color32(255,255,0,255);
-            textMesh.text = "miss";
-        } else {
-            textMesh.text = dmg.ToString();
+        textCont.Init(this.transform.position, style, dmg.ToString());
+        if (dmg > 0) {
             hp -= dmg;
             if (hp <= 0) {
                 Die();

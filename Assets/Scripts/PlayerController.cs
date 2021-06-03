@@ -2,16 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
     private Animator animator;
     private string[] walkNames, attackNames;
     public float speed, food;
-    public bool moving = false;
-    public bool attacking = false;
-    public bool dying = false;
+    public bool moving = false, attacking = false, dying = false, waiting = false;
     public string saySomething;
     public int direction;
     public Vector3Int tilePosition;
@@ -117,7 +114,7 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("Can't, enemy's turn!");
             }
         }*/
-        if (Input.GetMouseButtonDown(0) && !moving && !attacking && !entityController.enemyTurn && !dying) {
+        if (Input.GetMouseButton(0) && !moving && !waiting && !attacking && !entityController.enemyTurn && !dying) {
 
             // Determine screen position
             Vector2 pos = new Vector2(
@@ -132,6 +129,7 @@ public class PlayerController : MonoBehaviour
             // Wait?
             if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.55f)<0.05f) {
                 FloatText("wait");
+                waiting = true;
                 EndTurn();
                 return;
             }
@@ -258,6 +256,8 @@ public class PlayerController : MonoBehaviour
                     animator.CrossFade(attackNames[direction], 0f);
                 }
             }
+        } else if (Input.GetMouseButtonUp(0) && waiting) {
+            waiting = false;
         }
 
         // Continue Bezier curve
@@ -306,21 +306,19 @@ public class PlayerController : MonoBehaviour
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
         if (roll >= 8) { // 65% baseline chance to hit, missing sucks.
-            target.Damage(Random.Range(mindmg,maxdmg+1));
+            target.Damage(Random.Range(mindmg,maxdmg+1), "dmg");
         } else {
-            target.Damage(0);
+            target.Damage(0, "miss");
         }
     }
     
-    public void Damage(int dmg) {
+    public void Damage(int dmg, string style) {
+        FloatText(style, dmg.ToString());
         if (dmg != 0) {
-            FloatText("dmg", dmg.ToString());
             hp -= dmg;
             if (hp <= 0) {
                 Die();
             }
-        } else {
-            FloatText("miss");
         }
         uiController.UpdateBars();
     }
@@ -349,29 +347,10 @@ public class PlayerController : MonoBehaviour
         speed *= (1/armor.speed);
     }
 
-    public void FloatText(string type, string msg="") {
+    public void FloatText(string style, string msg="") {
         GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, canvas.transform);
         DmgTextController textCont = text.GetComponent<DmgTextController>();
-        textCont.Init(this.transform.position);
-        TextMeshProUGUI textMesh = text.GetComponent<TextMeshProUGUI>();
-        if (type == "dmg") {
-            textMesh.text = msg;
-        } else if (type == "miss") {
-            textMesh.color = new Color32(255,255,0,255);
-            textMesh.text = "miss";
-        } else if (type == "heal") {
-            textMesh.text = msg;
-            textMesh.color = new Color32(0,255,0,255);
-        } else if (type == "wait") {
-            textMesh.color = new Color32(255,255,255,255);
-            textMesh.text = "wait";
-        } else if (type == "msg") {
-            textMesh.color = new Color32(200,200,200,255);
-            textMesh.text = msg;
-        } else {
-            textMesh.text = "AHHH";
-            textMesh.color = new Color32(255,0,0,255);
-        }
+        textCont.Init(this.transform.position, style, msg);
     }
 
     public void Ability(string abilityName) {

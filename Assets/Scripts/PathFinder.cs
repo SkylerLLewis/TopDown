@@ -193,9 +193,25 @@ public class PathFinder : MonoBehaviour
 
     public bool LineOfSight(Vector3Int from, Vector3Int to) {
         string s = "PATHFINDING: Line of sight";
-        int deltax;
-        int deltay;
+        int deltax = to.x - from.x;
+        int deltay = to.y - from.y;
         int direction = 0;
+        /*
+        // Slope is deltay/delax; that is what's being walked over
+        int gcd = GCD(deltay, deltax);
+        Vector2Int slope = new Vector2Int(Mathf.Abs(deltax/gcd), Mathf.Abs(deltay/gcd));
+        int ycounter = slope.y;
+        int xcounter = slope.x;
+
+        // What will be walked first, x or y?
+        string move = "";
+        if (Mathf.Abs(deltay) > Mathf.Abs(deltax)) {
+            move = "y";
+            ycounter = Mathf.RoundToInt(ycounter/2);
+        } else {
+            move = "x";
+            xcounter = Mathf.RoundToInt(xcounter/2);
+        }*/
         
         s += "\n    Starting at: "+from;
         Vector3Int walk = from;
@@ -203,17 +219,28 @@ public class PathFinder : MonoBehaviour
             deltax = to.x - walk.x;
             deltay = to.y - walk.y;
             if (Mathf.Abs(deltay) < Mathf.Abs(deltax)) {
+            //if (move == "x") {
                 if (deltax >= 0) {
                     direction = 1;
                 } else {
                     direction = 3;
                 }
+                /*xcounter--;
+                if (xcounter == 0) {
+                    move = "y";
+                    xcounter = slope.x;
+                }*/
             } else {
                 if (deltay >= 0) {
                     direction = 0;
                 } else {
                     direction = 2;
                 }
+                /*ycounter--;
+                if (ycounter == 0) {
+                    move = "x";
+                    ycounter = slope.y;
+                }*/
             }
             s += "\n    Walking to: "+DirectionToCell(direction, walk);
             if (IsWalkable(walk, DirectionToCell(direction, walk))) {
@@ -225,6 +252,17 @@ public class PathFinder : MonoBehaviour
         }
         Debug.Log(s+"\nSuccess!");
         return true;
+    }
+
+    private int GCD(int a, int b) {
+        int greater = a;
+        if (b > a) { greater = b; }
+        for (int i = greater; i>0; i--) {
+            if (a%i == 0 && b%i == 0) {
+                return i;
+            }
+        }
+        return 1;
     }
 
     public Vector3Int DirectionToCell(int direction, Vector3Int currentCell) {

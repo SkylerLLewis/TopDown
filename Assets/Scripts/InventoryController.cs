@@ -141,6 +141,9 @@ public class InventoryController : MonoBehaviour
             }
             stats.text = stat;
         } else if (item.itemType == "Potion") {
+            if (item.count > 1) {
+                title.text = item.displayName+" ("+item.count+")";
+            }
             button.text = "Drink";
             Potion pot = item as Potion;
             string stat = "";
@@ -160,7 +163,9 @@ public class InventoryController : MonoBehaviour
             EquipArmor();
         } else if (item.itemType == "Potion") {
             item.Activate(player);
-            data.inventory.RemoveAt(selected);
+            if (item.count == 0) {
+                data.inventory.RemoveAt(selected);
+            }
         }
         BackToScene();
         player.EndTurn();
