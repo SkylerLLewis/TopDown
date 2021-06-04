@@ -54,6 +54,7 @@ public class Initializer : MonoBehaviour
         clearTiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpenClear"));
 
         // Load Enemy prefabs and likelyhood
+        int twiceDepth = (data.depth-1)*2;
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
@@ -64,8 +65,8 @@ public class Initializer : MonoBehaviour
         enemyWheel.Add("Skeleton", 10);
         enemyWheel.Add("Skeleton Archer", 4);
         enemyWheel.Add("Goblin", 1);
-        enemyWheel.Add("Hobgoblin", data.depth-1);
-        enemyWheel.Add("Spider", data.depth-1);
+        enemyWheel.Add("Hobgoblin", twiceDepth);
+        enemyWheel.Add("Spider", twiceDepth);
         if (data.depth > 1 && data.depth < 4) {
             enemyWheel["Skeleton"] = 1;
             enemyWheel["Goblin"] = 15;
@@ -80,16 +81,17 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Club", 10);
         lootWheel.Add("Long Stick", 10);
         lootWheel.Add("Log", 10);
-        lootWheel.Add("Rusty Shortsword", data.depth-1);
-        lootWheel.Add("Half a Scissor", data.depth-1);
-        lootWheel.Add("Copper Hatchet", data.depth-1);
-        lootWheel.Add("Mallet", data.depth-1);
-        lootWheel.Add("Flint Spear", data.depth-1);
-        lootWheel.Add("Grain Scythe", data.depth-1);
+        lootWheel.Add("Rusty Shortsword", twiceDepth);
+        lootWheel.Add("Half a Scissor", twiceDepth);
+        lootWheel.Add("Copper Hatchet", twiceDepth);
+        lootWheel.Add("Mallet", twiceDepth);
+        lootWheel.Add("Flint Spear", twiceDepth);
+        lootWheel.Add("Grain Scythe", twiceDepth);
+        lootWheel.Add("Woodcutter's Axe", 1);
         
         lootWheel.Add("Leather Tunic", 10);
         lootWheel.Add("Cast Iron Plates", 10);
-        lootWheel.Add("Patchy Brigandine", (data.depth-1)*2);
+        lootWheel.Add("Patchy Brigandine", twiceDepth*2);
 
         lootWheel.Add("Healing Potion", 30);
 

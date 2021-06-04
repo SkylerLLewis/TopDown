@@ -13,6 +13,12 @@ public class InventoryController : MonoBehaviour
     TextMeshProUGUI title, description, button, stats;
     Image itemImage;
     PlayerController player;
+    static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
+        {"Armor", 1},
+        {"Weapon", 2},
+        {"Potion", 3},
+        {"Food", 4}};
+
     void Start() {
         selected = -1;
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
@@ -50,6 +56,7 @@ public class InventoryController : MonoBehaviour
     }
 
     public void DisplayItems() {
+        data.inventory.Sort(CompareItems);
         GameObject itemButton = Resources.Load("Prefabs/InventoryItemButton") as GameObject;
         int i=0, j=0;
         float x, y;
@@ -151,6 +158,19 @@ public class InventoryController : MonoBehaviour
                 stat += "+"+pot.healing+" hp";
             }
             stats.text = stat;
+        } else if (item.itemType == "Food") {
+            if (item.count > 1) {
+                title.text = item.displayName+" ("+item.count+")";
+            }
+            button.text = "Eat";
+            Food food = item as Food;
+            string stat = "Food: "+food.food/10+"%";
+            if (food.damage > 0) {
+                stat += "\n-"+food.damage+" hp";
+            } else if (food.healing > 0) {
+                stat += "\n+"+food.healing+" hp";
+            }
+            stats.text = stat;
         }
     }
 
@@ -162,6 +182,11 @@ public class InventoryController : MonoBehaviour
         } else if (item.itemType == "Armor") {
             EquipArmor();
         } else if (item.itemType == "Potion") {
+            item.Activate(player);
+            if (item.count == 0) {
+                data.inventory.RemoveAt(selected);
+            }
+        } else if (item.itemType == "Food") {
             item.Activate(player);
             if (item.count == 0) {
                 data.inventory.RemoveAt(selected);
@@ -189,6 +214,37 @@ public class InventoryController : MonoBehaviour
             data.inventory.Add(old);
         }
         player.FloatText("msg", "Equipped "+data.armor.displayName);
+    }
+
+    private int CompareItems(InventoryItem left, InventoryItem right) {
+        if (left.displayName == right.displayName) {
+            return 0;
+        }
+        if (ItemTypeOrder[left.itemType] < ItemTypeOrder[right.itemType]) {
+            return -1;
+        } else if (ItemTypeOrder[left.itemType] > ItemTypeOrder[right.itemType]) {
+            return 1;
+        } else {
+            if (left.tier > right.tier) {
+                return -1;
+            } else if (left.tier < right.tier) {
+                return 1;
+            } else {
+                if (string.Compare(left.name, right.name) < 0) {
+                    return -1;
+                } else if (string.Compare(left.name, right.name) > 0) {
+                    return 1;
+                } else {
+                    if (left.quality > right.quality) {
+                        return -1;
+                    } else if (left.quality < right.quality) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+            }
+        }
     }
 
     public void BackToScene() {

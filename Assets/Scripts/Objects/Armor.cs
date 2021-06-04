@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Armor : InventoryItem {
-    public int def, quality;
+    public int def;
     public float speed;
     public static List<List<string>> ArmorTiers = new List<List<string>>() {
         new List<string>() {"Leather Tunic", "Cast Iron Plates"},
@@ -35,9 +35,10 @@ public class Armor : InventoryItem {
     private void Classify() {
         // Note - speed value is multiplicitive (Higher is better)
         speed = 1f;
-        // -- Tier 0 Starter Armor -- //
+        // -- Tier 1 Starter Armor -- //
         if (ArmorTiers[0].Contains(name)) {
-            // Tier 0s have no quality, they're all shit
+            // Tier 1s have no quality, they're all shit
+            tier = 1;
             if (quality != 0) { quality = 0; }
             if (name == "Leather Tunic") {
                 description = "An old, smelly tunic. Hope those blood stains weren't the previous owner's....";
@@ -48,7 +49,8 @@ public class Armor : InventoryItem {
                 speed = 0.7f;
             }
         } else if (ArmorTiers[1].Contains(name)) {
-            // Tier 1s are good or worse
+            // Tier 2s are good or worse
+            tier = 2;
              if (quality > 1) {
                 quality = 1;
             }
@@ -58,7 +60,8 @@ public class Armor : InventoryItem {
                 speed = 0.9f + 0.05f*quality;
             }
         } else if (ArmorTiers[2].Contains(name)) {
-            // Tier 2 Armor can only be fine or worse
+            // Tier 3 Armor can only be fine or worse
+            tier = 3;
             if (quality > 2) {
                 quality = 2;
             }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Weapon : InventoryItem {
-    public int mindmg, maxdmg, atk, def, crit, quality;
+    public int mindmg, maxdmg, atk, def, crit;
     public float speed;
     public static List<List<string>> WeaponTiers = new List<List<string>>() {
         new List<string>() {"Twig", "Sharp Twig", "Plank with a Nail", "Club", "Long Stick", "Log"},
@@ -37,11 +37,12 @@ public class Weapon : InventoryItem {
         speed = 1f;
         atk = 0;
         def = 0;
-        crit = 1;
-        // -- Tier 0 Starter Weapons -- //
-        // Tier 0s have an average of 2 dmg and +10% effect
+        crit = 2;
+        // -- Tier 1 Starter Weapons -- //
+        // Tier 1s have an average of 2 dmg and +10% effect
         if (WeaponTiers[0].Contains(name)) {
             // Tier 0s have no quality, they're all shit
+            tier = 1;
             if (quality != 0) { quality = 0; }
             if (name == "Twig") {
                 description = "It's a twig. This is a terrible idea.";
@@ -78,12 +79,13 @@ public class Weapon : InventoryItem {
                 def = 3;
                 speed = 0.60f;
             }
-        // -- Tier 1 Weapons -- //
-        // Tier 1s have average 3 dmg  and +25% extra effect
+        // -- Tier 2 Weapons -- //
+        // Tier 2s have average 3 dmg  and +25% extra effect
         // Each tier is 10% effect
         } else if (WeaponTiers[1].Contains(name)) {
             // Tier 1 weapons can only be good or worse
-             if (quality > 1) {
+            tier = 2;
+            if (quality > 1) {
                 quality = 1;
             }
             if (name == "Rusty Shortsword") {
@@ -122,20 +124,22 @@ public class Weapon : InventoryItem {
                 atk = 2;
                 def = 3;
             }
-        // -- Tier 2 Weapons -- //
-        // Tier 2 weapons have average 4 dmg and + 50% effect
+        // -- Tier 3 Weapons -- //
+        // Tier 3 weapons have average 4 dmg and + 50% effect
         } else if (WeaponTiers[2].Contains(name)) {
             // Tier 2 weapons can only be fine or worse
+            tier = 3;
             if (quality > 2) {
                 quality = 2;
             }
             if (name == "Woodcutter's Axe") {
                 description = "A solid iron axe, good for cleaving.";
-                mindmg = 3;
+                mindmg = 2;
                 maxdmg = 8;
-                atk = 4 + 2*quality;
+                atk = 5 + 2*quality;
             }
         }
+
         if (quality == -1) {
             displayName = "Shitty "+name;
             description = description+" This one is very poorly made.";

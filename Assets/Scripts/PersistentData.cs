@@ -16,7 +16,7 @@ public class PersistentData : MonoBehaviour
     public List<InventoryItem> inventory;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
-        depth = 0;
+        depth = 10;
         entrance = 0;
         playerHp = 0;
         food = 500;
@@ -24,6 +24,9 @@ public class PersistentData : MonoBehaviour
         inventory = new List<InventoryItem>();
         weapon = new Weapon("Twig");
         armor = null;
+        Food bread = new Food("Moldy Bread");
+        bread.count = 8;
+        inventory.Add(bread);
         inventory.Add(new Potion("Healing Potion"));
         SceneManager.LoadScene("GreenVillage");
     }

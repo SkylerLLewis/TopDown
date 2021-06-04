@@ -22,6 +22,11 @@ public class DmgTextController : MonoBehaviour
 
         if (style == "dmg") {
             textMesh.text = msg;
+        } else if (style == "crit") {
+            textMesh.text = "<b>"+msg+"</b>";
+            textMesh.color = new Color32(150,0,0,255);
+            textMesh.fontSize = 20;
+            yvar *= 0.95f;
         } else if (style == "miss") {
             textMesh.color = new Color32(255,255,0,255);
             textMesh.text = "miss";
