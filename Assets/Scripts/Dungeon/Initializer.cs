@@ -234,6 +234,7 @@ public class Initializer : MonoBehaviour
             }
         }
         GenExits();
+        GenLoot();
         core.Draw();
     }
 
@@ -331,7 +332,7 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
-        if (Random.Range(0, 0) == 0) {
+        for (int i=0; i<r.loot; i++) {
             DropLoot(r);
         }
         GenEnemies(r);
@@ -480,6 +481,15 @@ public class Initializer : MonoBehaviour
                 break;
             }
             i++;
+        }
+    }
+
+    void GenLoot() {
+        // 3-7 (5) loot per floor
+        int loots = Random.Range(4,9);
+        for (int i=0; i<loots; i++) {
+            int rand = Random.Range(1, rooms.Count);
+            rooms[rand].loot++;
         }
     }
 

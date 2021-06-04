@@ -246,11 +246,11 @@ public class PathFinder : MonoBehaviour
             if (IsWalkable(walk, DirectionToCell(direction, walk))) {
                 walk = DirectionToCell(direction, walk);
             } else {
-                Debug.Log(s+"\nFailed.");
+                //Debug.Log(s+"\nFailed.");
                 return false;
             }
         }
-        Debug.Log(s+"\nSuccess!");
+        //Debug.Log(s+"\nSuccess!");
         return true;
     }
 

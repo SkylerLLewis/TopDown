@@ -6,7 +6,7 @@ using UnityEngine.Tilemaps;
 public class Room
 {
     public Vector3Int head, tail, center;
-    public int width, height;
+    public int width, height, loot;
     public Room[] neighbors;
     public bool active;
     Tilemap floorMap;
@@ -34,6 +34,7 @@ public class Room
         }
         enemies = new List<string>();
         mapController.RetrieveEnemies(this);
+        loot = 0;
     }
 
     // Draws the room into existence

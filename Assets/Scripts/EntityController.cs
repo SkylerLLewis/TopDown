@@ -64,15 +64,12 @@ public class EntityController : MonoBehaviour
     }
 
     public void TakeTurns() {
-        string s = "Enemies taking turns:";
         foreach (EnemyBehavior e in entities) {
             if (e.timer < 0) {
-                s += "\n    "+e.gameObject.name;
                 waiting++;
                 e.MyTurn();
             }
         }
-        Debug.Log(s);
         if (waiting == 0) {
             enemyTurn = false;
         }
