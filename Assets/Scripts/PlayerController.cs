@@ -305,8 +305,17 @@ public class PlayerController : MonoBehaviour
     void Attack(EnemyBehavior target) {
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
+        int crit = 5 + attack - target.defense;
         if (roll >= 8) { // 65% baseline chance to hit, missing sucks.
-            target.Damage(Random.Range(mindmg,maxdmg+1), "dmg");
+            int dmg = Random.Range(mindmg,maxdmg+1);
+            if (Random.Range(0, 100) < crit) {
+                for (int i=0; i<(weapon.crit-1); i++) {
+                    dmg += Random.Range(mindmg,maxdmg+1);
+                }
+                target.Damage(dmg, "crit");
+            } else {
+                target.Damage(dmg, "dmg");
+            }
         } else {
             target.Damage(0, "miss");
         }
@@ -321,6 +330,21 @@ public class PlayerController : MonoBehaviour
             }
         }
         uiController.UpdateBars();
+    }
+
+    public void Heal(int heal) {
+        hp += heal;
+        if (hp > maxhp) {
+            hp = maxhp;
+        }
+        FloatText("heal", heal.ToString());
+    }
+
+    public void Feed(int f) {
+        food += f;
+        if (food > 1000) {
+            food = 1000;
+        }
     }
 
     public void EquipWeapon(Weapon w) {

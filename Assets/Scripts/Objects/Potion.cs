@@ -31,12 +31,8 @@ public class Potion : InventoryItem {
 
     public override void Activate(PlayerController player) {
         count--;
-        if (name == "Healing Potion") {
-            player.hp += healing;
-            if (player.hp > player.maxhp) {
-                player.hp = player.maxhp;
-            }
-            player.FloatText("heal", "20");
+        if (healing > 0) {
+            player.Heal(healing);
         }
     }
 
