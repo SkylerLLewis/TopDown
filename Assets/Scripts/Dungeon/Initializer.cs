@@ -59,18 +59,12 @@ public class Initializer : MonoBehaviour
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
         enemyFabs.Add("Skeleton Archer", Resources.Load("Prefabs/Skeleton Archer") as GameObject);
-        enemyFabs.Add("Goblin", Resources.Load("Prefabs/Goblin") as GameObject);
-        enemyFabs.Add("Hobgoblin", Resources.Load("Prefabs/Hobgoblin") as GameObject);
-        enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
+        enemyFabs.Add("Skeleton Brute", Resources.Load("Prefabs/Skeleton Brute") as GameObject);
+        enemyFabs.Add("Skeleton Stabber", Resources.Load("Prefabs/Skeleton Stabber") as GameObject);
         enemyWheel.Add("Skeleton", 10);
         enemyWheel.Add("Skeleton Archer", twiceDepth+1);
-        enemyWheel.Add("Goblin", 1);
-        enemyWheel.Add("Hobgoblin", twiceDepth);
-        enemyWheel.Add("Spider", twiceDepth);
-        if (data.depth > 1 && data.depth < 4) {
-            enemyWheel["Skeleton"] = 1;
-            enemyWheel["Goblin"] = 15;
-        }
+        enemyWheel.Add("Skeleton Brute", twiceDepth);
+        enemyWheel.Add("Skeleton Stabber", twiceDepth);
 
         // Loot drop chances!
         lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;

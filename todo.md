@@ -4,7 +4,7 @@
 
 - [x] Create inventory
 - [x] Implement loot system
-- [ ] Add stats screen
+- [x] Add stats screen
 - [ ] Create basic ranged abilities
 - [ ] Create skill tree and XP system
 - [ ] Add save functionality
@@ -12,6 +12,7 @@
 ## Dungeons
 
 - [x] Add loot drops
+- [ ] Add Gold
 - [ ] Add dynamic door opening
 - [x] Add ranged enemies
 - [ ] Add sneaking mechanic

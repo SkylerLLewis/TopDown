@@ -9,7 +9,7 @@ public class InventoryController : MonoBehaviour
 {
     int selected;
     private PersistentData data;
-    private GameObject root, itemArray;
+    private GameObject root, itemArray, eventSystem;
     TextMeshProUGUI title, description, button, stats;
     Image itemImage;
     PlayerController player;
@@ -42,6 +42,7 @@ public class InventoryController : MonoBehaviour
                 itemImage = child.gameObject.GetComponent<Image>();
             }
         }
+        eventSystem = GameObject.Find("EventSystem");
 
         // Display List of Items
         DisplayItems();
@@ -248,7 +249,7 @@ public class InventoryController : MonoBehaviour
     }
 
     public void BackToScene() {
-        //SceneManager.SetActiveScene(SceneManager.GetSceneByName("GreenVillage"));
+        eventSystem.SetActive(false);
         SceneManager.UnloadSceneAsync("Inventory");
         root.SetActive(true);
     }

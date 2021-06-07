@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2269371277879801697}
   - component: {fileID: 2269371277879801696}
   m_Layer: 0
-  m_Name: Spider
+  m_Name: Skeleton Stabber
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -72,7 +72,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 775a4c9ac579f7ff4905ac3057baead6, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c06f9ace277ea9d57b334bc46477c268, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
