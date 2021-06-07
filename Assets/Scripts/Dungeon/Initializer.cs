@@ -63,7 +63,7 @@ public class Initializer : MonoBehaviour
         enemyFabs.Add("Hobgoblin", Resources.Load("Prefabs/Hobgoblin") as GameObject);
         enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
         enemyWheel.Add("Skeleton", 10);
-        enemyWheel.Add("Skeleton Archer", 4);
+        enemyWheel.Add("Skeleton Archer", twiceDepth+1);
         enemyWheel.Add("Goblin", 1);
         enemyWheel.Add("Hobgoblin", twiceDepth);
         enemyWheel.Add("Spider", twiceDepth);
@@ -72,7 +72,7 @@ public class Initializer : MonoBehaviour
             enemyWheel["Goblin"] = 15;
         }
 
-        // Loot drop chance!
+        // Loot drop chances!
         lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
         lootWheel = new Dictionary<string, int>();
 
@@ -487,7 +487,7 @@ public class Initializer : MonoBehaviour
     }
 
     void GenLoot() {
-        // 3-7 (5) loot per floor
+        // 4-8 (6) loot per floor
         int loots = Random.Range(4,9);
         for (int i=0; i<loots; i++) {
             int rand = Random.Range(1, rooms.Count);

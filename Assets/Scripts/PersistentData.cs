@@ -16,7 +16,7 @@ public class PersistentData : MonoBehaviour
     public List<InventoryItem> inventory;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
-        depth = 10;
+        depth = 0;
         entrance = 0;
         playerHp = 0;
         food = 500;
