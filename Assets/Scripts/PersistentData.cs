@@ -5,10 +5,9 @@ using UnityEngine.SceneManagement;
 
 public class PersistentData : MonoBehaviour
 {
-    public int depth;
-    public int entrance;
+    public int depth, entrance;
     public string direction;
-    public int playerHp;
+    public int playerHp, gold;
     public float food;
     public Weapon weapon;
     public Armor armor;
@@ -18,6 +17,7 @@ public class PersistentData : MonoBehaviour
         DontDestroyOnLoad(transform.gameObject);
         depth = 0;
         entrance = 0;
+        gold = 0;
         playerHp = 0;
         food = 500;
         direction = "down";

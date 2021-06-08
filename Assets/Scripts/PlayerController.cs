@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     private VillageController villageController;
     System.Action<Vector3Int> NotableCollide;
     System.Action<Vector3Int, int> OpenDoor;
+    System.Action<Vector3Int> OpenChest;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
@@ -57,6 +58,7 @@ public class PlayerController : MonoBehaviour
         if (dungeonController != null) {
             NotableCollide = dungeonController.NotableCollide;
             OpenDoor = dungeonController.OpenDoor;
+            OpenChest = dungeonController.OpenChest;
         }
         villageController = floorMap.GetComponent<VillageController>();
         if (villageController != null) {
@@ -200,9 +202,18 @@ public class PlayerController : MonoBehaviour
                     blocked = true;
                 }
             }
+
             TileBase targetTile = blockMap.GetTile(targetCell);
             if (targetTile != null) {
                 // Check for important blocks
+                if (targetTile.name == "chest" && !blocked) {
+                    // simulate attack move on chest
+                    attacking = true;
+                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                    highPoint = targetPosition;
+                    targetPosition = startPosition;
+                    count = 0.0f;
+                }
                 NotableCollide(targetCell);
                 blocked = true;
             }
@@ -228,12 +239,12 @@ public class PlayerController : MonoBehaviour
                     count = 0.0f;
                     Attack(target);
                 // Point is valid?
-                } else {//targetTile != null && targetTile.name == "floor") {
+                } else {
                     // Check if I'm walking onto something important
                     NotableCollide(targetCell);
                     // Init bezier curve
                     moving = true;
-                    tilePosition = targetCell; //floorMap.WorldToCell(targetPosition);
+                    tilePosition = targetCell;
                     highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                     count = 0.0f;
                 }
@@ -292,13 +303,7 @@ public class PlayerController : MonoBehaviour
                 EndTurn();
             }
         } else if (dying) {
-            /*if (count < 1.0f) {
-                count += 1.0f * 2.5f * Time.deltaTime;
-                float t = Mathf.Sin(count * Mathf.PI * 0.5f);
-                this.transform.rotation = Quaternion.Lerp(startAngle, targetAngle, t);
-            } else {
-                Destroy(this.gameObject, 10f);
-            }*/
+            
         }
     }
 

@@ -7,12 +7,14 @@ public class DungeonController : MonoBehaviour
 {
     public Dictionary<string,Vector3Int> notableCells;
     public System.Action<Vector3Int,int> OpenDoorRef;
+    public System.Action<Vector3Int> OpenChestRef;
     public System.Action<string> NotableActionsRef;
     private PersistentData data;
 
     void Awake()
     {
         OpenDoorRef = gameObject.GetComponent<Initializer>().OpenDoor;
+        OpenChestRef = gameObject.GetComponent<Initializer>().OpenChest;
         NotableActionsRef = gameObject.GetComponent<Initializer>().NotableActions;
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         data.root = GameObject.FindWithTag("Root");
@@ -33,5 +35,9 @@ public class DungeonController : MonoBehaviour
 
     public void OpenDoor(Vector3Int cell, int dir) {
         OpenDoorRef(cell, dir);
+    }
+
+    public void OpenChest(Vector3Int cell) {
+        OpenChestRef(cell);
     }
 }

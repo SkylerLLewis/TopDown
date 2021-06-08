@@ -115,6 +115,16 @@ public class Room
         return collide;
     }
 
+    public static Room FindByCell(Vector3Int cell, List<Room> rooms) {
+        foreach (Room r in rooms) {
+            if (r.Contains(cell)) {
+                return r;
+            }
+        }
+        Debug.LogWarning("Room not found containing cell: "+cell);
+        return null;
+    }
+
     
     public override string ToString() {
         string s = "Room: ";

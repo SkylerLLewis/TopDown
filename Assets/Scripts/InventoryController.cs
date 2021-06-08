@@ -10,7 +10,7 @@ public class InventoryController : MonoBehaviour
     int selected;
     private PersistentData data;
     private GameObject root, itemArray, eventSystem;
-    TextMeshProUGUI title, description, button, stats;
+    TextMeshProUGUI title, description, button, stats, gold;
     Image itemImage;
     PlayerController player;
     static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
@@ -40,11 +40,14 @@ public class InventoryController : MonoBehaviour
                 stats = child.gameObject.GetComponent<TextMeshProUGUI>();
             } else if (child.name == "ItemImage") {
                 itemImage = child.gameObject.GetComponent<Image>();
+            } else if (child.name == "Gold") {
+                gold = child.gameObject.GetComponent<TextMeshProUGUI>();
             }
         }
         eventSystem = GameObject.Find("EventSystem");
 
-        // Display List of Items
+        // Display Everything
+        gold.text = data.gold.ToString();
         DisplayItems();
         DisplayItem(-1);
     }
@@ -117,36 +120,34 @@ public class InventoryController : MonoBehaviour
             } else {
                 button.text = "-";
             }
-            string stat = "Dmg: "+wep.mindmg+"-"+wep.maxdmg;
-            if (wep.atk > 0) {
+            //string stat = "Dmg: "+wep.mindmg+"-"+wep.maxdmg+"\n";
+            /*if (wep.atk > 0) {
                 stat += "\natk +"+wep.atk;
             } else if (wep.atk < 0) {
                 stat += "\natk "+wep.atk;
-            }
-            if (wep.def > 0) {
-                stat += "\ndef +"+wep.def;
-            } else if (wep.def < 0) {
-                stat += "\ndef "+wep.def;
-            }
-            if (wep.speed > 1) {
-                stat += "\nspeed +"+Mathf.RoundToInt((wep.speed - 1)*100)+"%";
-            } else if (wep.speed < 1) {
-                stat += "\nspeed "+Mathf.RoundToInt((wep.speed - 1)*100)+"%";
-            }
+            }*/
+            string stat = ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
+                player.weapon.mindmg+player.weapon.maxdmg, wep);
+            stat += ColorStat("atk ", wep.atk, player.weapon.atk);
+            stat += ColorStat("def ", wep.def, player.weapon.def);
+            stat += ColorStat("speed ", wep.speed, player.weapon.speed);
             stats.text = stat;
         } else if (item.itemType == "Armor") {
-            Armor arm = item as Armor;
             if (index >= 0) {
                 button.text = "Equip";
             } else {
                 button.text = "-";
             }
-            string stat = "Def +"+arm.def;
-            if (arm.speed > 1) {
-                stat += "\nspeed +"+Mathf.RoundToInt((arm.speed - 1)*100)+"%";
-            } else if (arm.speed < 1) {
-                stat += "\nspeed "+Mathf.RoundToInt((arm.speed - 1)*100)+"%";
+            Armor arm = item as Armor;
+            string stat = "";
+            if (player.armor != null) {
+                stat = ColorStat("Def: ", arm.def, player.armor.def);
+                stat += ColorStat("speed ", arm.speed, player.armor.speed);
+            } else {
+                stat = ColorStat("Def: ", arm.def, 0);
+                stat += ColorStat("speed ", arm.speed, 1f);
             }
+
             stats.text = stat;
         } else if (item.itemType == "Potion") {
             if (item.count > 1) {
@@ -173,6 +174,44 @@ public class InventoryController : MonoBehaviour
             }
             stats.text = stat;
         }
+    }
+
+    private string ColorStat(string prefix, int stat, int current, Weapon w=null) {
+        string s = "";
+        if (stat != 0 || stat != current) {
+            if (stat > current) {
+                s += "<color=#006000>";
+            } else if (stat < current) {
+                s += "<color=#700000>";
+            } else {
+                s += "<color=black>";
+            }
+            s += prefix;
+            if (w == null) {
+                if (stat > 0) { s += "+"; }
+                s += stat+"\n";
+            } else { // This is a weapon's damage
+                s += w.mindmg+"-"+w.maxdmg+"\n";
+            }
+        }
+        return s;
+    }
+    // float overload
+    private string ColorStat(string prefix, float stat, float current) { 
+        string s = "";
+        if (stat != 1f || stat != current) {
+            if (stat > current) {
+                s += "<color=#006000>";
+            } else if (stat < current) {
+                s += "<color=#700000>";
+            } else {
+                s += "<color=black>";
+            }
+            s += prefix;
+            if (stat > 1f) { s += "+"; }
+            s += Mathf.RoundToInt((stat - 1)*100)+"%"+"\n";
+        }
+        return s;
     }
 
     public void ActivateButton() {
