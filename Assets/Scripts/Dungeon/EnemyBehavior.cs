@@ -23,7 +23,7 @@ public class EnemyBehavior : MonoBehaviour
     private float count = 1.0f;
     
     // Combat Stats
-    public int maxhp, hp, attack, defense, mindmg, maxdmg;
+    public int maxhp, hp, attack, defense, mindmg, maxdmg, moveRatio, actionCounter;
     public string enemyType;
 
     public void SetCoords(Vector3Int cell) {
@@ -55,6 +55,7 @@ public class EnemyBehavior : MonoBehaviour
         timer = Random.Range(0, moveSpeed);
         facing = new string[2];
         visualSpeed = 8-2*moveSpeed;
+        actionCounter = Random.Range(0, moveRatio+1);
     }
 
     public void MyTurn() {
@@ -113,27 +114,33 @@ public class EnemyBehavior : MonoBehaviour
                 EndTurn(attackSpeed);
                 return; // Attack successful, turn over.
             }
-        } else if (enemyType == "Ranged" && (distance > 2 || distance == 1)) {
+        } else if (enemyType == "Ranged") {
             if (pathFinder.LineOfSight(tilePosition, player.tilePosition)) {
-                // Player in line of sight, ATTACK!
+                if (actionCounter == moveRatio) {
+                    actionCounter = 0;
+                    // Player in line of sight, ATTACK!
 
-                waiting = true;
-                count = 1.0f;
-                RangedAttack(player);
+                    waiting = true;
+                    count = 1.0f;
+                    RangedAttack(player);
 
-                // Face enemy in new direction
-                if (direction < 2) {
-                    facing[0] = "up";
+                    // Face enemy in new direction
+                    if (direction < 2) {
+                        facing[0] = "up";
+                    } else {
+                        facing[0] = "down";
+                    }
+                    if (direction == 0 || direction == 3) {
+                        facing [1] = "left";
+                    } else {
+                        facing[1] = "right";
+                    }
+                    EndTurn(attackSpeed);
+                    return; // Attack successful, turn over.
                 } else {
-                    facing[0] = "down";
+                    // Continue with move!
+                    actionCounter++;
                 }
-                if (direction == 0 || direction == 3) {
-                    facing [1] = "left";
-                } else {
-                    facing[1] = "right";
-                }
-                EndTurn(attackSpeed);
-                return; // Attack successful, turn over.
             }
         }
 
