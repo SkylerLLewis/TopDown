@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Tilemaps;
 
 public class GreenVillageInit : MonoBehaviour
 {
@@ -9,16 +10,114 @@ public class GreenVillageInit : MonoBehaviour
     private VillageController villageController;
     private Dictionary<string,Vector3Int> notableCells;
     private PlayerController player; 
+    private Tilemap floorMap, leftWallMap, rightWallMap, blockMap, roofMap;
+    private List<Room> rooms;
+    private Dictionary<string,Tile> tiles;
+    public Dictionary<Vector3Int, WorldTile> roofTiles;
+    private List<Vector3Int> activeRoofCells, activeLeftWallCells, activeRightWallCells;
+    private bool clarifying = false, declarifying = false;
+    private float count = 1.0f;
     void Awake()
     {
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         villageController = gameObject.GetComponent<VillageController>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
 
+        foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
+            if (map.name == "FloorMap") {
+                floorMap = map;
+            } else if (map.name == "LeftWallMap") {
+                leftWallMap = map;
+            } else if (map.name == "RightWallMap") {
+                rightWallMap = map;
+            } else if (map.name == "BlockMap") {
+                blockMap = map;
+            } else if (map.name == "RoofMap") {
+                roofMap = map;
+            }
+        }
+        rooms = new List<Room>();
+        rooms.Add(new Room(new Vector3Int(6,0,0), new Vector3Int(3,-3,0)));
+
+        // -- NEW SHIT! -- //
+        GetWorldTiles();
+        foreach (KeyValuePair<Vector3Int, WorldTile> kv in roofTiles) {
+            //Debug.Log("Tile " + kv.Value.Name + " is at: " + kv.Key);
+        }
+        /*WorldTile _tile;
+        if (roofTiles.TryGetValue(new Vector3Int(4,-2,0), out _tile)) {
+            Debug.Log("Tile " + _tile.Name + " costs: " + _tile.Cost);
+            _tile.TilemapMember.SetTileFlags(_tile.LocalPlace, TileFlags.None);
+            _tile.TilemapMember.SetColor(_tile.LocalPlace, Color.blue);
+        }*/
+        // -- --------- -- //
+
+        activeRoofCells = new List<Vector3Int>();
+        activeLeftWallCells = new List<Vector3Int>();
+        activeRightWallCells = new List<Vector3Int>();
+
+        tiles = new Dictionary<string, Tile>();
+        tiles.Add("leftWall", Resources.Load<Tile>("Tiles/GreenVillage/leftWall"));
+        tiles.Add("rightWall", Resources.Load<Tile>("Tiles/GreenVillage/rightWall"));
+        tiles.Add("leftDoor", Resources.Load<Tile>("Tiles/GreenVillage/leftDoor"));
+        tiles.Add("leftDoorOpen", Resources.Load<Tile>("Tiles/GreenVillage/leftDoorOpen"));
+
         notableCells = new Dictionary<string, Vector3Int>();
         notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
 
         villageController.UpdateNotables(notableCells);
+    }
+
+    void Update() {
+        if (clarifying) {
+            if (count < 1.0f) {
+                count += 2 * Time.deltaTime;
+                foreach (Vector3Int cell in activeRoofCells) {
+                    roofMap.SetColor(cell, new Color(1,1,1,(1-count)));
+                }
+                foreach (Vector3Int cell in activeLeftWallCells) {
+                    leftWallMap.SetColor(cell, new Color(1,1,1,(1-count*0.75f)));
+                }
+                foreach (Vector3Int cell in activeRightWallCells) {
+                    rightWallMap.SetColor(cell, new Color(1,1,1,(1-count*0.75f)));
+                }
+            } else {
+                clarifying = false;
+            }
+        } else if (declarifying) {
+            if (count < 1.0f) {
+                count += 2 * Time.deltaTime;
+                foreach (Vector3Int cell in activeRoofCells) {
+                    roofMap.SetColor(cell, new Color(1,1,1,(count)));
+                }
+                foreach (Vector3Int cell in activeLeftWallCells) {
+                    leftWallMap.SetColor(cell, new Color(1,1,1,(0.25f+count*0.75f)));
+                }
+                foreach (Vector3Int cell in activeRightWallCells) {
+                    rightWallMap.SetColor(cell, new Color(1,1,1,(0.25f+count*0.75f)));
+                }
+            } else {
+                clarifying = false;
+            }
+        }
+    }
+
+    public void GetWorldTiles() {
+        roofTiles = new Dictionary<Vector3Int, WorldTile>();
+        foreach (Vector3Int pos in roofMap.cellBounds.allPositionsWithin) {
+            var localPlace = new Vector3Int(pos.x,pos.y,pos.z);
+
+            if (!roofMap.HasTile(localPlace)) continue;
+            var tile = new WorldTile {
+                LocalPlace = localPlace,
+                WorldLocation = roofMap.CellToWorld(localPlace),
+                TileBase = roofMap.GetTile(localPlace),
+                TilemapMember = roofMap,
+                Name = localPlace.x+","+localPlace.y,
+                Cost = 1
+            };
+            roofTiles.Add(tile.LocalPlace, tile);
+        }
     }
 
     public Vector3Int GetEntrance() {
@@ -30,6 +129,49 @@ public class GreenVillageInit : MonoBehaviour
             data.depth++;
             data.direction = "down";
             SceneManager.LoadScene("BasicDungeon");
+        }
+    }
+
+    public void OpenDoor(Vector3Int cell, int dir) {
+        if (Room.FindByCell(player.tilePosition, rooms) == null) {
+            // Coming in from outside, clarify!
+            if      (dir == 0) { cell.y++; }
+            else if (dir == 1) { cell.x++; }
+            Room r = Room.FindByCell(cell, rooms);
+            WorldTile _tile;
+            activeRoofCells.Clear();
+            foreach (Vector3Int c in r.AllCells()) {
+                Vector3Int roofCell = new Vector3Int(c.x+1, c.y+1, c.z);
+                activeRoofCells.Add(roofCell);
+                roofMap.SetTileFlags(roofCell, TileFlags.None);
+            }
+            SetActiveWalls(r);
+            clarifying = true;
+            count = 0;
+        } else {
+            // Leaving, declarifying!
+            declarifying = true;
+            count = 0;
+        }
+    }
+
+    public void SetActiveWalls(Room r) {
+        activeLeftWallCells.Clear();
+        activeRightWallCells.Clear();
+        Vector3Int cell = r.tail;
+        cell.y--;
+        for (int i=0; i<r.width ;i++) {
+            activeLeftWallCells.Add(new Vector3Int(cell.x, cell.y, cell.z));
+            leftWallMap.SetTileFlags(cell, TileFlags.None);
+            cell.x++;
+        }
+        cell = r.tail;
+        cell.x--;
+        for (int i=0; i<r.height ;i++) {
+            activeRightWallCells.Add(new Vector3Int(cell.x, cell.y, cell.z));
+            rightWallMap.SetTileFlags(cell, TileFlags.None);
+                    Debug.Log(cell);
+            cell.y++;
         }
     }
 }

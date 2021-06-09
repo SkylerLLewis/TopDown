@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     public Vector3Int tilePosition;
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
+    private string mapType;
     private Dictionary<string,Tilemap> maps;
     private PersistentData data;
     private DungeonController dungeonController;
@@ -30,7 +31,7 @@ public class PlayerController : MonoBehaviour
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
-    private float count = 1.0f;
+    private float count = 1.0f, regenCounter = 5.0f;
     
     // Combat Stats
     public Weapon weapon;
@@ -56,12 +57,14 @@ public class PlayerController : MonoBehaviour
         }
         dungeonController = floorMap.GetComponent<DungeonController>();
         if (dungeonController != null) {
+            mapType = "Dungeon";
             NotableCollide = dungeonController.NotableCollide;
             OpenDoor = dungeonController.OpenDoor;
             OpenChest = dungeonController.OpenChest;
         }
         villageController = floorMap.GetComponent<VillageController>();
         if (villageController != null) {
+            mapType = "Village";
             NotableCollide = villageController.NotableCollide;
             OpenDoor = villageController.OpenDoor;
         }
@@ -187,14 +190,20 @@ public class PlayerController : MonoBehaviour
             if (targetWall != null) {
                 if (targetWall.name.ToLower().IndexOf(face+"door") >= 0) { 
                     if (targetWall.name.ToLower().IndexOf("open") < 0) {
-                        blocked = true;
-                        // Open door and simulate an attack move on door
-                        OpenDoor(wallCell, direction);
-                        attacking = true;
-                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                        highPoint = targetPosition;
-                        targetPosition = startPosition;
-                        count = 0.0f;
+                        if (mapType == "Dungeon") {
+                            // Open door and simulate an attack move on door
+                            blocked = true;
+                            OpenDoor(wallCell, direction);
+                            attacking = true;
+                            highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                            highPoint = targetPosition;
+                            targetPosition = startPosition;
+                            count = 0.0f;
+                        } else if (mapType == "Village") {
+                            // It's a village, just walk on in.
+                            OpenDoor(wallCell, direction);
+                            blocked = false;
+                        }
                     } else {
                         blocked = false;
                     }
@@ -204,9 +213,9 @@ public class PlayerController : MonoBehaviour
             }
 
             TileBase targetTile = blockMap.GetTile(targetCell);
-            if (targetTile != null) {
+            if (targetTile != null && !blocked) {
                 // Check for important blocks
-                if (targetTile.name == "chest" && !blocked) {
+                if (targetTile.name == "chest") {
                     // simulate attack move on chest
                     attacking = true;
                     highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
@@ -333,6 +342,7 @@ public class PlayerController : MonoBehaviour
             if (hp <= 0) {
                 Die();
             }
+            regenCounter = 0;
         }
         uiController.UpdateBars();
     }
@@ -393,9 +403,13 @@ public class PlayerController : MonoBehaviour
 
     public void EndTurn() {
         if (food > 0) {
-            if (hp != maxhp && Random.Range(0f,4f) < speed) {
-                hp++;
-                FloatText("heal", "1");
+            if (regenCounter >= 5) {
+                if (hp != maxhp && Random.Range(0f,2f) < speed) {
+                    hp++;
+                    FloatText("heal", "1");
+                }
+            } else if (regenCounter < 5) {
+                regenCounter += speed;
             }
             food -= speed;
         }

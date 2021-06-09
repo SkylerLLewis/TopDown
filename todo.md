@@ -22,7 +22,7 @@
 ## Overworld
 
 - [ ] Implement dynamic start position
-- [ ] Implement buildings
+- [x] Implement buildings
 - [ ] Add shopkeeper
 - [ ] Add talky NPCs
 - [ ] Add Quest #1!

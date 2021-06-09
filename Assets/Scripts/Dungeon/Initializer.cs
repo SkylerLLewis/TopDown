@@ -107,7 +107,6 @@ public class Initializer : MonoBehaviour
             } else if (map.name == "BlockMap") {
                 blockMap = map;
             }
-
         }
 
         // Gen Dungeon
