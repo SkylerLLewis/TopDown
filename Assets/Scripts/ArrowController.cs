@@ -20,7 +20,7 @@ public class ArrowController : MonoBehaviour
         targetPosition = p.transform.position;
         targetPosition.y += 0.5f;
         count = 0;
-        speed = 10/Vector3.Distance(startPosition, targetPosition);
+        speed = 15/Vector3.Distance(startPosition, targetPosition);
         // Set rotation of Arrow
         var angles = transform.rotation.eulerAngles;
         angles.z = Mathf.Rad2Deg * Mathf.Atan(/*y*/ (targetPosition.y - startPosition.y) / /*x*/(targetPosition.x - startPosition.x));

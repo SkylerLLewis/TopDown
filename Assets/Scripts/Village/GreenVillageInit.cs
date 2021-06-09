@@ -10,11 +10,14 @@ public class GreenVillageInit : MonoBehaviour
     private VillageController villageController;
     private Dictionary<string,Vector3Int> notableCells;
     private PlayerController player; 
+    private NPCController npcController;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap, roofMap;
     private List<Room> rooms;
     private Dictionary<string,Tile> tiles;
     public Dictionary<Vector3Int, WorldTile> roofTiles;
     private List<Vector3Int> activeRoofCells, activeLeftWallCells, activeRightWallCells;
+    private Vector3Int doorCell;
+    private string doorFace;
     private bool clarifying = false, declarifying = false;
     private float count = 1.0f;
     void Awake()
@@ -22,6 +25,7 @@ public class GreenVillageInit : MonoBehaviour
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         villageController = gameObject.GetComponent<VillageController>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
+        npcController = GameObject.Find("NPCs").GetComponent<NPCController>();
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -37,7 +41,8 @@ public class GreenVillageInit : MonoBehaviour
             }
         }
         rooms = new List<Room>();
-        rooms.Add(new Room(new Vector3Int(6,0,0), new Vector3Int(3,-3,0)));
+        rooms.Add(new Room(new Vector3Int(5,0,0), new Vector3Int(2,-3,0)));
+        rooms.Add(new Room(new Vector3Int(4,9,0), new Vector3Int(1,4,0)));
 
         // -- NEW SHIT! -- //
         GetWorldTiles();
@@ -61,9 +66,12 @@ public class GreenVillageInit : MonoBehaviour
         tiles.Add("rightWall", Resources.Load<Tile>("Tiles/GreenVillage/rightWall"));
         tiles.Add("leftDoor", Resources.Load<Tile>("Tiles/GreenVillage/leftDoor"));
         tiles.Add("leftDoorOpen", Resources.Load<Tile>("Tiles/GreenVillage/leftDoorOpen"));
+        tiles.Add("rightDoor", Resources.Load<Tile>("Tiles/GreenVillage/rightDoor"));
+        tiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/GreenVillage/rightDoorOpen"));
 
         notableCells = new Dictionary<string, Vector3Int>();
         notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
+        notableCells.Add("shopkeeper", new Vector3Int(5,-2,0));
 
         villageController.UpdateNotables(notableCells);
     }
@@ -71,7 +79,7 @@ public class GreenVillageInit : MonoBehaviour
     void Update() {
         if (clarifying) {
             if (count < 1.0f) {
-                count += 2 * Time.deltaTime;
+                count += 3 * Time.deltaTime;
                 foreach (Vector3Int cell in activeRoofCells) {
                     roofMap.SetColor(cell, new Color(1,1,1,(1-count)));
                 }
@@ -82,11 +90,20 @@ public class GreenVillageInit : MonoBehaviour
                     rightWallMap.SetColor(cell, new Color(1,1,1,(1-count*0.75f)));
                 }
             } else {
+                if (doorFace == "left") {
+                    leftWallMap.SetTile(doorCell, tiles["leftDoor"]);
+                    leftWallMap.SetTileFlags(doorCell, TileFlags.None);
+                    leftWallMap.SetColor(doorCell, new Color(1,1,1,0.25f));
+                } else {
+                    rightWallMap.SetTile(doorCell, tiles["rightDoor"]);
+                    rightWallMap.SetTileFlags(doorCell, TileFlags.None);
+                    rightWallMap.SetColor(doorCell, new Color(1,1,1,0.25f));
+                }
                 clarifying = false;
             }
         } else if (declarifying) {
             if (count < 1.0f) {
-                count += 2 * Time.deltaTime;
+                count += 3 * Time.deltaTime;
                 foreach (Vector3Int cell in activeRoofCells) {
                     roofMap.SetColor(cell, new Color(1,1,1,(count)));
                 }
@@ -97,7 +114,12 @@ public class GreenVillageInit : MonoBehaviour
                     rightWallMap.SetColor(cell, new Color(1,1,1,(0.25f+count*0.75f)));
                 }
             } else {
-                clarifying = false;
+                if (doorFace == "left") {
+                    leftWallMap.SetTile(doorCell, tiles["leftDoor"]);
+                } else {
+                    rightWallMap.SetTile(doorCell, tiles["rightDoor"]);
+                }
+                declarifying = false;
             }
         }
     }
@@ -129,16 +151,20 @@ public class GreenVillageInit : MonoBehaviour
             data.depth++;
             data.direction = "down";
             SceneManager.LoadScene("BasicDungeon");
+        } else if (key == "shopkeeper") {
+            Debug.Log("Shopkeeping!");
+            player.enabled = false;
+            npcController.StartShopping();
         }
     }
 
     public void OpenDoor(Vector3Int cell, int dir) {
         if (Room.FindByCell(player.tilePosition, rooms) == null) {
             // Coming in from outside, clarify!
-            if      (dir == 0) { cell.y++; }
-            else if (dir == 1) { cell.x++; }
-            Room r = Room.FindByCell(cell, rooms);
-            WorldTile _tile;
+            Vector3Int finderCell = cell;
+            if      (dir == 0) { finderCell.y++; }
+            else if (dir == 1) { finderCell.x++; }
+            Room r = Room.FindByCell(finderCell, rooms);
             activeRoofCells.Clear();
             foreach (Vector3Int c in r.AllCells()) {
                 Vector3Int roofCell = new Vector3Int(c.x+1, c.y+1, c.z);
@@ -152,6 +178,14 @@ public class GreenVillageInit : MonoBehaviour
             // Leaving, declarifying!
             declarifying = true;
             count = 0;
+        }
+        doorCell = cell;
+        if (dir == 0 || dir == 2) {
+            leftWallMap.SetTile(cell, tiles["leftDoorOpen"]);
+            doorFace = "left";
+        } else {
+            rightWallMap.SetTile(cell, tiles["rightDoorOpen"]);
+            doorFace = "right";
         }
     }
 
@@ -170,7 +204,6 @@ public class GreenVillageInit : MonoBehaviour
         for (int i=0; i<r.height ;i++) {
             activeRightWallCells.Add(new Vector3Int(cell.x, cell.y, cell.z));
             rightWallMap.SetTileFlags(cell, TileFlags.None);
-                    Debug.Log(cell);
             cell.y++;
         }
     }
