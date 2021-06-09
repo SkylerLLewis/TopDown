@@ -195,56 +195,52 @@ public class PathFinder : MonoBehaviour
         string s = "PATHFINDING: Line of sight";
         int deltax = to.x - from.x;
         int deltay = to.y - from.y;
-        int direction = 0;
-        /*
-        // Slope is deltay/delax; that is what's being walked over
-        int gcd = GCD(deltay, deltax);
-        Vector2Int slope = new Vector2Int(Mathf.Abs(deltax/gcd), Mathf.Abs(deltay/gcd));
-        int ycounter = slope.y;
-        int xcounter = slope.x;
-
-        // What will be walked first, x or y?
-        string move = "";
-        if (Mathf.Abs(deltay) > Mathf.Abs(deltax)) {
-            move = "y";
-            ycounter = Mathf.RoundToInt(ycounter/2);
+        int xdir, ydir;
+        if (deltax >= 0) {
+            xdir = 1;
         } else {
-            move = "x";
-            xcounter = Mathf.RoundToInt(xcounter/2);
-        }*/
+            xdir = 3;
+        }
+        if (deltay >= 0) {
+            ydir = 0;
+        } else {
+            ydir = 2;
+        }
+        float xcost, ycost;
         
         s += "\n    Starting at: "+from;
-        Vector3Int walk = from;
+        Vector3Int xtest = new Vector3Int(), ytest = new Vector3Int(), walk = from, targetCell;
         while (walk != to) {
-            deltax = to.x - walk.x;
-            deltay = to.y - walk.y;
-            if (Mathf.Abs(deltay) < Mathf.Abs(deltax)) {
-            //if (move == "x") {
-                if (deltax >= 0) {
-                    direction = 1;
-                } else {
-                    direction = 3;
-                }
-                /*xcounter--;
-                if (xcounter == 0) {
-                    move = "y";
-                    xcounter = slope.x;
-                }*/
+            if (deltax == 0) { // vertical target
+                targetCell = DirectionToCell(ydir, walk);
+            } else if (deltay == 0) { // horizontal target
+                targetCell = DirectionToCell(xdir, walk);
             } else {
-                if (deltay >= 0) {
-                    direction = 0;
-                } else {
-                    direction = 2;
+                // Try x
+                xtest = DirectionToCell(xdir, walk);
+                xcost = Vector3Int.Distance(xtest, to);
+                s += "\n        x: "+xcost;
+                // Try y 
+                ytest = DirectionToCell(ydir, walk);
+                ycost = Vector3Int.Distance(ytest, to);
+                s += "  y: "+ycost;
+                // Closest to target?
+                if (xcost < ycost) {
+                    targetCell = xtest;
+                } else if (xcost > ycost) {
+                    targetCell = ytest;
+                } else {// Cross over when unsure
+                    if (Mathf.Abs(deltax) < Mathf.Abs(deltay)) {
+                        targetCell = xtest;
+                    } else {
+                        targetCell = ytest;
+                    }
                 }
-                /*ycounter--;
-                if (ycounter == 0) {
-                    move = "x";
-                    ycounter = slope.y;
-                }*/
             }
-            s += "\n    Walking to: "+DirectionToCell(direction, walk);
-            if (IsWalkable(walk, DirectionToCell(direction, walk))) {
-                walk = DirectionToCell(direction, walk);
+
+            s += "\n    Walking to "+targetCell;
+            if (IsWalkable(walk, targetCell)) {
+                walk = targetCell;
             } else {
                 //Debug.Log(s+"\nFailed.");
                 return false;

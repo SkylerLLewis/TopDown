@@ -12,7 +12,7 @@
 ## Dungeons
 
 - [x] Add loot drops
-- [ ] Add Gold
+- [x] Add Gold
 - [ ] Add dynamic door opening
 - [x] Add ranged enemies
 - [ ] Add sneaking mechanic

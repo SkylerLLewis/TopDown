@@ -112,6 +112,8 @@ MonoBehaviour:
   defense: 0
   mindmg: 1
   maxdmg: 3
+  moveRatio: 1
+  actionCounter: 0
   enemyType: Ranged
 --- !u!50 &1786525879089976968
 Rigidbody2D:
