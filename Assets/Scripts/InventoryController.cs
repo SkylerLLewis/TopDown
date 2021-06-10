@@ -13,7 +13,7 @@ public class InventoryController : MonoBehaviour
     TextMeshProUGUI title, description, button, stats, gold;
     Image itemImage;
     PlayerController player;
-    static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
+    public static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
         {"Armor", 1},
         {"Weapon", 2},
         {"Potion", 3},
@@ -79,6 +79,10 @@ public class InventoryController : MonoBehaviour
             clone.GetComponent<InventoryItemController>().SetItemIndex(i);
             i++;
             if (i%11 == 0) { j++; }
+            // Display item count
+            if (item.count != 1) {
+                clone.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = item.count.ToString();
+            }
         }
         // Display Equipped Weapon
         clone = Instantiate(
@@ -113,6 +117,7 @@ public class InventoryController : MonoBehaviour
         title.text = item.displayName;
         description.text = item.description;
         itemImage.overrideSprite = item.sprite;
+        // Display various types
         if (item.itemType == "Weapon") {
             Weapon wep = item as Weapon;
             if (index >= 0) {
@@ -150,9 +155,6 @@ public class InventoryController : MonoBehaviour
 
             stats.text = stat;
         } else if (item.itemType == "Potion") {
-            if (item.count > 1) {
-                title.text = item.displayName+" ("+item.count+")";
-            }
             button.text = "Drink";
             Potion pot = item as Potion;
             string stat = "";
@@ -161,9 +163,6 @@ public class InventoryController : MonoBehaviour
             }
             stats.text = stat;
         } else if (item.itemType == "Food") {
-            if (item.count > 1) {
-                title.text = item.displayName+" ("+item.count+")";
-            }
             button.text = "Eat";
             Food food = item as Food;
             string stat = "Food: "+food.food/10+"%";
@@ -176,7 +175,7 @@ public class InventoryController : MonoBehaviour
         }
     }
 
-    private string ColorStat(string prefix, int stat, int current, Weapon w=null) {
+    public static string ColorStat(string prefix, int stat, int current, Weapon w=null) {
         string s = "";
         if (stat != 0 || stat != current) {
             if (stat > current) {
@@ -197,7 +196,7 @@ public class InventoryController : MonoBehaviour
         return s;
     }
     // float overload
-    private string ColorStat(string prefix, float stat, float current) { 
+    public static string ColorStat(string prefix, float stat, float current) { 
         string s = "";
         if (stat != 1f || stat != current) {
             if (stat > current) {
@@ -232,8 +231,13 @@ public class InventoryController : MonoBehaviour
                 data.inventory.RemoveAt(selected);
             }
         }
-        BackToScene();
-        player.EndTurn();
+        // End the player's turn if in combat
+        if (player.inCombat) {
+            BackToScene();
+            player.EndTurn();
+        } else {
+            RefreshItems();
+        }
     }
 
     public void EquipWeapon() {
@@ -256,7 +260,7 @@ public class InventoryController : MonoBehaviour
         player.FloatText("msg", "Equipped "+data.armor.displayName);
     }
 
-    private int CompareItems(InventoryItem left, InventoryItem right) {
+    public static int CompareItems(InventoryItem left, InventoryItem right) {
         if (left.displayName == right.displayName) {
             return 0;
         }

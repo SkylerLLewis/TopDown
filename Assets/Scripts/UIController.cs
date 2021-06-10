@@ -28,6 +28,7 @@ public class UIController : MonoBehaviour
     }
 
     public void OpenInventory() {
+        data.loadedMenu = "Inventory";
         StartCoroutine(LoadInventoryScene());
     }
     // Loads Scene on top of current scene asyncronously

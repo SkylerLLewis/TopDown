@@ -41,7 +41,11 @@ public class DmgTextController : MonoBehaviour
             yvar += 1;
         } else if (style == "wait") {
             textMesh.color = new Color32(255,255,255,255);
-            textMesh.text = "wait";
+            if (msg == "") {
+                textMesh.text = "wait";
+            } else {
+                textMesh.text = msg;
+            }
             xvar /= 2;
             yvar *= 0.9f;
         } else if (style == "msg") {

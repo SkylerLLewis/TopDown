@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviour
     private Animator animator;
     private string[] walkNames, attackNames;
     public float speed, food;
-    public bool moving = false, attacking = false, dying = false, waiting = false;
+    public bool moving = false, attacking = false, dying = false, waiting = false, readyToEnd = false;
     public string saySomething;
     public int direction;
     public Vector3Int tilePosition;
@@ -31,7 +31,9 @@ public class PlayerController : MonoBehaviour
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
-    private float count = 1.0f, regenCounter = 5.0f;
+    private float count = 1.0f, combatCounter = 0f;
+    private int combatIsActive = 5;
+    public bool inCombat = false;
     
     // Combat Stats
     public Weapon weapon;
@@ -133,7 +135,11 @@ public class PlayerController : MonoBehaviour
 
             // Wait?
             if (Mathf.Abs(pos.x-0.5f)<0.025f && Mathf.Abs(pos.y-0.55f)<0.05f) {
-                FloatText("wait");
+                if (inCombat) {
+                    FloatText("wait");
+                } else {
+                    FloatText("wait", "rest");
+                }
                 waiting = true;
                 EndTurn();
                 return;
@@ -199,6 +205,11 @@ public class PlayerController : MonoBehaviour
                             highPoint = targetPosition;
                             targetPosition = startPosition;
                             count = 0.0f;
+                            // You're in combat now
+                            if (entities.transform.childCount > 0) {
+                                combatCounter = combatIsActive;
+                                inCombat = true;
+                            }
                         } else if (mapType == "Village") {
                             // It's a village, just walk on in.
                             OpenDoor(wallCell, direction);
@@ -247,6 +258,8 @@ public class PlayerController : MonoBehaviour
                     targetPosition = startPosition;
                     count = 0.0f;
                     Attack(target);
+                    //EndTurn();
+                    readyToEnd = true;
                 // Point is valid?
                 } else {
                     // Check if I'm walking onto something important
@@ -256,6 +269,8 @@ public class PlayerController : MonoBehaviour
                     tilePosition = targetCell;
                     highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
                     count = 0.0f;
+                    //EndTurn();
+                    readyToEnd = true;
                 }
             }
             // Face player in new direction
@@ -279,7 +294,11 @@ public class PlayerController : MonoBehaviour
         } else if (Input.GetMouseButtonUp(0) && waiting) {
             waiting = false;
         }
-
+        // End turn after brief delay
+        if (readyToEnd && count > 0.2f) {
+            readyToEnd = false;
+            EndTurn();
+        }
         // Continue Bezier curve
         if (moving) {
             if (count < 1.0f) {
@@ -290,14 +309,12 @@ public class PlayerController : MonoBehaviour
                 Vector3 camVec = Vector3.Lerp(startPosition, targetPosition, count);
                 camVec.z = -10;
                 mainCamera.transform.position = camVec;
-            } else {
-                // Turn over, activate entities
+            } else if (!dying) {
                 if (saySomething != "") {
                     FloatText("msg", saySomething);
                     saySomething = "";
                 }
                 moving = false;
-                EndTurn();
             }
         } else if (attacking) {
             if (count < 1.0f) {
@@ -305,11 +322,10 @@ public class PlayerController : MonoBehaviour
                 Vector3 m1 = Vector3.Lerp(startPosition, highPoint, count);
                 Vector3 m2 = Vector3.Lerp(highPoint, targetPosition, count);
                 this.transform.position = Vector3.Lerp(m1, m2, count);
-            } else {
+            } else if (!dying) {
                 animator.CrossFade(walkNames[direction], 0f);
                 // Turn over, activate entities
                 attacking = false;
-                EndTurn();
             }
         } else if (dying) {
             
@@ -317,6 +333,8 @@ public class PlayerController : MonoBehaviour
     }
 
     void Attack(EnemyBehavior target) {
+        combatCounter = combatIsActive;
+        inCombat = true;
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
         int crit = 5 + attack - target.defense;
@@ -342,12 +360,15 @@ public class PlayerController : MonoBehaviour
             if (hp <= 0) {
                 Die();
             }
-            regenCounter = 0;
+            combatCounter = combatIsActive;
+            inCombat = true;
         }
         uiController.UpdateBars();
     }
 
     public void Heal(int heal) {
+        combatCounter = combatIsActive;
+        inCombat = true;
         hp += heal;
         if (hp > maxhp) {
             hp = maxhp;
@@ -403,13 +424,23 @@ public class PlayerController : MonoBehaviour
 
     public void EndTurn() {
         if (food > 0) {
-            if (regenCounter >= 5) {
-                if (hp != maxhp && Random.Range(0f,2f) < speed) {
-                    hp++;
-                    FloatText("heal", "1");
+            if (combatCounter <= 0) {
+                if (hp != maxhp && Random.Range(0f,3f) < speed) {
+                    if (waiting) { // Resting, triple regen & food cost
+                        hp += 3;
+                        if (hp > maxhp) hp = maxhp;
+                        FloatText("heal", "3");
+                        food -= speed*2;
+                    } else { // Just walking
+                        hp++;
+                        FloatText("heal", "1");
+                    }
                 }
-            } else if (regenCounter < 5) {
-                regenCounter += speed;
+            } else if (combatCounter > 0) {
+                combatCounter -= speed;
+                if (combatCounter <= 0) {
+                    inCombat = false;
+                }
             }
             food -= speed;
         }

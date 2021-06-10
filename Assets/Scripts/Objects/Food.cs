@@ -27,7 +27,8 @@ public class Food : InventoryItem {
         if (name == "Moldy Bread") {
             description = "You should really invest in some tupperware.";
             damage = 5;
-            food = 250;
+            food = 100;
+            cost = 0;
         }
     }
 
@@ -37,6 +38,11 @@ public class Food : InventoryItem {
         if (damage > 0) {
             player.Damage(damage, "dmg");
         }
+    }
+
+    public override InventoryItem Copy()
+    {
+        return new Food(this.name);
     }
 
     public static bool IsFood(string s) {

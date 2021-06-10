@@ -95,7 +95,7 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Cast Iron Plates", 10);
         lootWheel.Add("Patchy Brigandine", twiceDepth*2);
 
-        lootWheel.Add("Healing Potion", 30);
+        lootWheel.Add("Health Potion", 30);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {

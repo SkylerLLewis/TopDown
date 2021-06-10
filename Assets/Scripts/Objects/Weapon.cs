@@ -10,24 +10,28 @@ public class Weapon : InventoryItem {
         new List<string>() {"Rusty Shortsword", "Half a Scissor", "Copper Hatchet", "Mallet", "Flint Spear", "Grain Scythe"},
         new List<string>() {"Woodcutter's Axe"}
     };
-    public Weapon(string n) {
+    public Weapon(string n, int qual=-2) {
         itemType = "Weapon";
         name = n;
         sprite = Resources.Load<Sprite>("Weapons/"+name);
         if (sprite == null) {
             Debug.Log("Weapon name \""+name+"\" does not exist.");
         }
-        int rand = Random.Range(1,21);
-        if (rand <= 2) {
-            quality = -1; // Shitty (10%)
-        } else if (rand <= 15) {
-            quality = 0; // Normal (65%)
-        } else if (rand <= 17) {
-            quality = 1; // Good (10%)
-        } else if (rand <= 19) {
-            quality = 2; // Fine (10%)
-        } else if (rand == 20) {
-            quality = 3; // Masterwork (5%)
+        if (qual == -2) {
+            int rand = Random.Range(1,21);
+            if (rand <= 2) {
+                quality = -1; // Shitty (10%)
+            } else if (rand <= 15) {
+                quality = 0; // Normal (65%)
+            } else if (rand <= 17) {
+                quality = 1; // Good (10%)
+            } else if (rand <= 19) {
+                quality = 2; // Fine (10%)
+            } else if (rand == 20) {
+                quality = 3; // Masterwork (5%)
+            }
+        } else {
+            quality = qual;
         }
         Classify();
     }
@@ -41,8 +45,9 @@ public class Weapon : InventoryItem {
         // -- Tier 1 Starter Weapons -- //
         // Tier 1s have an average of 2 dmg and +10% effect
         if (WeaponTiers[0].Contains(name)) {
-            // Tier 0s have no quality, they're all shit
             tier = 1;
+            cost = 5;
+            // Tier 0s have no quality, they're all shit
             if (quality != 0) { quality = 0; }
             if (name == "Twig") {
                 description = "It's a twig. This is a terrible idea.";
@@ -83,8 +88,9 @@ public class Weapon : InventoryItem {
         // Tier 2s have average 3 dmg  and +25% extra effect
         // Each tier is 10% effect
         } else if (WeaponTiers[1].Contains(name)) {
-            // Tier 1 weapons can only be good or worse
             tier = 2;
+            cost = 30;
+            // Tier 1 weapons can only be good or worse
             if (quality > 1) {
                 quality = 1;
             }
@@ -102,7 +108,7 @@ public class Weapon : InventoryItem {
                 def = -3;
                 crit = 4;
             } else if (name == "Copper Hatchet") {
-                description = "This hatchet should bite deep. It has a nice shine to it. At least it's pretty.";
+                description = "This hatchet should bite deep. It has a nice shine to it.";
                 mindmg = 2;
                 maxdmg = 5;
                 atk = 2 + 2*quality;
@@ -127,8 +133,9 @@ public class Weapon : InventoryItem {
         // -- Tier 3 Weapons -- //
         // Tier 3 weapons have average 4 dmg and + 50% effect
         } else if (WeaponTiers[2].Contains(name)) {
-            // Tier 2 weapons can only be fine or worse
             tier = 3;
+            cost = 100;
+            // Tier 2 weapons can only be fine or worse
             if (quality > 2) {
                 quality = 2;
             }
@@ -140,6 +147,8 @@ public class Weapon : InventoryItem {
             }
         }
 
+        // Quality affects cost exponentially
+        cost = Mathf.RoundToInt(cost * Mathf.Pow(2, quality));
         if (quality == -1) {
             displayName = "Shitty "+name;
             description = description+" This one is very poorly made.";
@@ -164,6 +173,11 @@ public class Weapon : InventoryItem {
             }
         }
         return false;
+    }
+
+    public override InventoryItem Copy()
+    {
+        return new Weapon(this.name, this.quality);
     }
 
     public override string ToString()

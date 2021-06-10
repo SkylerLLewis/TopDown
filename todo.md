@@ -23,6 +23,6 @@
 
 - [ ] Implement dynamic start position
 - [x] Implement buildings
-- [ ] Add shopkeeper
+- [x] Add shopkeeper
 - [ ] Add talky NPCs
 - [ ] Add Quest #1!
