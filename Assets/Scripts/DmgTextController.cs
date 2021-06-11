@@ -12,7 +12,10 @@ public class DmgTextController : MonoBehaviour
 
     public void Init(Vector3 pos, string style, string msg="") {
         textMesh = gameObject.GetComponent<TextMeshProUGUI>();
-        this.transform.position = new Vector3(pos.x, pos.y+0.75f, pos.z);
+        if (style != "gold" && style != "cost") {
+            pos.y += 0.75f;
+        }
+        this.transform.position = pos;
         starPosition = this.transform.position;
         count = 1.0f;
         speed = 2;
@@ -54,6 +57,20 @@ public class DmgTextController : MonoBehaviour
             speed /= 2;
             xvar = 0;
             yvar *= 1.1f;
+        } else if (style == "cost") {
+            textMesh.color = new Color32(255,150,0,255);
+            textMesh.text = msg;
+            textMesh.fontSize = 24;
+            speed /= 2;
+            xvar *= 0.5f;
+            yvar *= -1.2f;
+        } else if (style == "gold") {
+            textMesh.color = new Color32(100,255,0,255);
+            textMesh.text = msg;
+            textMesh.fontSize = 24;
+            speed /= 2;
+            xvar *= 0.5f;
+            yvar *= 1.3f;
         } else {
             textMesh.text = "AHHH";
             textMesh.color = new Color32(255,0,0,255);

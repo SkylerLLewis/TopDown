@@ -6,7 +6,8 @@ public class Food : InventoryItem {
     public int healing, damage, food;
     public float speed;
     public static List<List<string>> FoodTiers = new List<List<string>>() {
-        new List<string>() {"Moldy bread"}
+        new List<string>() {"Moldy Bread", "Moldy Loaf"},
+        new List<string>() {"Burnt Toast", "Roast Squirrel"}
     };
     public Food(string n) {
         itemType = "Food";
@@ -24,11 +25,30 @@ public class Food : InventoryItem {
         healing = 0;
         damage = 0;
         speed = 0f;
-        if (name == "Moldy Bread") {
-            description = "You should really invest in some tupperware.";
-            damage = 5;
-            food = 100;
-            cost = 0;
+        if (FoodTiers[0].Contains(name)) {
+            tier = 1;
+            if (name == "Moldy Bread") {
+                description = "You should really invest in some tupperware.";
+                damage = 5;
+                food = 100;
+                cost = 1;
+            } else if (name == "Moldy Loaf") {
+                description = "That's... a lot of mold.";
+                damage = 15;
+                food = 500;
+                cost = 10;
+            }
+        } else if (FoodTiers[1].Contains(name)) {
+            tier = 2;
+            if (name == "Burnt Toast") {
+                description = "Mmmm, crunchy!";
+                food = 50;
+                cost = 10;
+            } else if (name == "Roast Squirrel") {
+                description = "Hey, that's actually pretty tasty!";
+                food = 150;
+                cost = 25;
+            }
         }
     }
 

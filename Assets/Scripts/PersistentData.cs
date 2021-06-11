@@ -17,7 +17,7 @@ public class PersistentData : MonoBehaviour
         DontDestroyOnLoad(transform.gameObject);
         depth = 0;
         entrance = 0;
-        gold = 0;
+        gold = 1000;
         playerHp = 0;
         food = 500;
         direction = "down";
@@ -28,6 +28,7 @@ public class PersistentData : MonoBehaviour
         Food bread = new Food("Moldy Bread");
         bread.count = 8;
         inventory.Add(bread);
+        inventory.Add(new Food("Roast Squirrel"));
         inventory.Add(new Potion("Health Potion"));
         // Shopkeeper List
         shopList = new List<InventoryItem>();
@@ -43,7 +44,11 @@ public class PersistentData : MonoBehaviour
         shopList.Add(new Armor(Armor.ArmorTiers[0][Random.Range(0, Armor.ArmorTiers[0].Count)]));
         shopList.Add(new Potion("Health Potion"));
         shopList.Add(new Food("Moldy Bread"));
+        shopList.Add(new Food("Moldy Loaf"));
+        shopList.Add(new Food("Burnt Toast"));
+        shopList.Add(new Food("Roast Squirrel"));
         shopList.Sort(InventoryController.CompareItems);
+        shopList.Reverse();
         SceneManager.LoadScene("GreenVillage");
     }
 
@@ -66,6 +71,21 @@ public class PersistentData : MonoBehaviour
         } else {
             inventory.Add(item);
         }
+    }
+
+    public bool RemoveFromInventory(int index) {
+        InventoryItem item = inventory[index];
+        if (item.itemType == "Potion" || item.itemType == "Food") {
+            if (item.count > 1) {
+                inventory[index].count--;
+                return false;
+            } else {
+                inventory.RemoveAt(index);
+            }
+        } else {
+            inventory.RemoveAt(index);
+        }
+        return true;
     }
 
     public static List<T> Sample<T>(int count, in List<T> list) {

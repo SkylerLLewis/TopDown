@@ -8,6 +8,7 @@ using UnityEngine.UI;
 public class InventoryController : MonoBehaviour
 {
     int selected;
+    bool refreshNeeded;
     private PersistentData data;
     private GameObject root, itemArray, eventSystem;
     TextMeshProUGUI title, description, button, stats, gold;
@@ -57,6 +58,9 @@ public class InventoryController : MonoBehaviour
             Destroy(child.gameObject);
         }
         DisplayItems();
+        if (refreshNeeded) {
+            DisplayItem(-1);
+        }
     }
 
     public void DisplayItems() {
@@ -125,12 +129,6 @@ public class InventoryController : MonoBehaviour
             } else {
                 button.text = "-";
             }
-            //string stat = "Dmg: "+wep.mindmg+"-"+wep.maxdmg+"\n";
-            /*if (wep.atk > 0) {
-                stat += "\natk +"+wep.atk;
-            } else if (wep.atk < 0) {
-                stat += "\natk "+wep.atk;
-            }*/
             string stat = ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
             stat += ColorStat("atk ", wep.atk, player.weapon.atk);
@@ -215,6 +213,7 @@ public class InventoryController : MonoBehaviour
 
     public void ActivateButton() {
         if (selected < 0) { return; }
+        refreshNeeded = false;
         InventoryItem item = data.inventory[selected];
         if (item.itemType == "Weapon") {
             EquipWeapon();
@@ -224,11 +223,13 @@ public class InventoryController : MonoBehaviour
             item.Activate(player);
             if (item.count == 0) {
                 data.inventory.RemoveAt(selected);
+                refreshNeeded = true;
             }
         } else if (item.itemType == "Food") {
             item.Activate(player);
             if (item.count == 0) {
                 data.inventory.RemoveAt(selected);
+                refreshNeeded = true;
             }
         }
         // End the player's turn if in combat

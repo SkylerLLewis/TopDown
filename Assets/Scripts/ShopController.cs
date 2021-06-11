@@ -7,12 +7,16 @@ using UnityEngine.UI;
 
 public class ShopController : MonoBehaviour
 {
-    int selected;
+    private int selected;
+    private string mode = "buying"; 
+    bool reselectNeeded;
     private PersistentData data;
-    private GameObject root, itemArray, eventSystem;
-    TextMeshProUGUI title, description, button, stats, gold;
+    private GameObject root, itemArray, eventSystem, textFab;
+    private Button buyButton, sellButton;
+    TextMeshProUGUI title, description, button, stats, goldText;
     Image itemImage;
     PlayerController player;
+    List<InventoryItem> activeList;
 
     void Start()
     {
@@ -22,6 +26,8 @@ public class ShopController : MonoBehaviour
         root = data.root;
         root.SetActive(false);
         player = root.GetComponentInChildren<PlayerController>();
+        textFab = Resources.Load("Prefabs/DamageText") as GameObject;
+        activeList = data.shopList;
 
         foreach (Transform child in gameObject.transform) {
             if (child.name == "ItemArray") {
@@ -37,13 +43,19 @@ public class ShopController : MonoBehaviour
             } else if (child.name == "ItemImage") {
                 itemImage = child.gameObject.GetComponent<Image>();
             } else if (child.name == "Gold") {
-                gold = child.gameObject.GetComponent<TextMeshProUGUI>();
+                goldText = child.gameObject.GetComponent<TextMeshProUGUI>();
+            } else if (child.name == "Buying") {
+                buyButton = child.gameObject.GetComponent<Button>();
+            } else if (child.name == "Selling") {
+                sellButton = child.gameObject.GetComponent<Button>();
             }
         }
         eventSystem = GameObject.Find("EventSystem");
 
+        buyButton.enabled = false;
+
         // Display Everything
-        gold.text = data.gold.ToString();
+        goldText.text = data.gold.ToString();
         DisplayItems();
         DisplayItem(0);
     }
@@ -52,7 +64,13 @@ public class ShopController : MonoBehaviour
         foreach (Transform child in itemArray.transform) {
             Destroy(child.gameObject);
         }
+        if (mode == "selling") {
+            data.inventory.Sort(InventoryController.CompareItems);
+        }
         DisplayItems();
+        if (reselectNeeded) {
+            DisplayItem(0);
+        }
     }
 
     public void DisplayItems() {
@@ -63,7 +81,7 @@ public class ShopController : MonoBehaviour
         GameObject clone;
         RectTransform rt;
         // Add all shop items
-        foreach (InventoryItem item in data.shopList) {
+        foreach (InventoryItem item in activeList) {
             x = -7.5f + (i%11)*1.25f;
             y = 4f - j*1.25f;
             clone = Instantiate(
@@ -84,35 +102,27 @@ public class ShopController : MonoBehaviour
 
     public void DisplayItem(int index) {
         selected = index;
-        InventoryItem item;
-        if (index == -1) {
-            item = data.weapon;
-        } else if (index == -2) {
-            item = data.armor;
-        } else {
-            item = data.shopList[index];
-        }
+        InventoryItem item = activeList[index];
         title.text = item.displayName;
         description.text = item.description;
         itemImage.overrideSprite = item.sprite;
-        string stat;
-        if (data.gold >= item.cost*5) {
-            button.text = "Buy";
-            stat = "cost: "+item.cost*5+"\n";
-        } else {
-            button.text = "-";
-            stat = "cost: <color=#700000>"+item.cost*5+"\n";
+        string stat = "";
+        if (mode == "buying") {
+            if (data.gold >= item.cost*5) {
+                button.text = "Buy";
+                stat = "cost: "+item.cost*5+"\n";
+            } else {
+                button.text = "-";
+                stat = "cost: <color=#700000>"+item.cost*5+"\n";
+            }
+        } else if (mode == "selling") {
+            button.text = "Sell";
+            stat = "Worth: <color=#007000>"+item.cost+"<color=#000000>\n";
         }
 
         // Display various types
         if (item.itemType == "Weapon") {
             Weapon wep = item as Weapon;
-            //string stat = "Dmg: "+wep.mindmg+"-"+wep.maxdmg+"\n";
-            /*if (wep.atk > 0) {
-                stat += "\natk +"+wep.atk;
-            } else if (wep.atk < 0) {
-                stat += "\natk "+wep.atk;
-            }*/
             stat += InventoryController.ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
             stat += InventoryController.ColorStat("atk ", wep.atk, player.weapon.atk);
@@ -145,13 +155,49 @@ public class ShopController : MonoBehaviour
         stats.text = stat;
     }
 
-    public void BuyItem() {
-        InventoryItem item = data.shopList[selected];
-        if (data.gold >= item.cost*5) {
-            data.AddToInventory(item.Copy());
-            data.gold -= item.cost*5;
-            gold.text = data.gold.ToString();
+    public void ActivateButton() {
+        InventoryItem item = activeList[selected];
+        if (mode == "buying") {
+            if (data.gold >= item.cost*5) {
+                data.AddToInventory(item.Copy());
+                data.gold -= item.cost*5;
+                goldText.text = data.gold.ToString();
+                // Float cost text
+                GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, gameObject.transform);
+                DmgTextController textCont = text.GetComponent<DmgTextController>();
+                textCont.Init(goldText.transform.position, "cost", "-"+(item.cost*5).ToString());
+            }
+        } else if (mode == "selling") {
+            data.gold += item.cost;
+            goldText.text = data.gold.ToString();
+            reselectNeeded = data.RemoveFromInventory(selected);
+            // Float cost text
+            GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, gameObject.transform);
+            DmgTextController textCont = text.GetComponent<DmgTextController>();
+            textCont.Init(goldText.transform.position, "gold", "+"+(item.cost).ToString());
+            
+            RefreshItems();
         }
+    }
+
+    public void ChangeToSelling() {
+        buyButton.enabled = true;
+        sellButton.enabled = false;
+        activeList = data.inventory;
+        mode = "selling";
+        Debug.Log("I am selling now!");
+        reselectNeeded = true;
+        RefreshItems();
+    }
+
+    public void ChangeToBuying() {
+        sellButton.enabled = true;
+        buyButton.enabled = false;
+        activeList = data.shopList;
+        mode = "buying";
+        Debug.Log("I am buying now!");
+        reselectNeeded = true;
+        RefreshItems();
     }
 
     public void BackToScene() {
