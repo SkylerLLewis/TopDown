@@ -6,7 +6,7 @@ using UnityEngine.Tilemaps;
 public class Room
 {
     public Vector3Int head, tail, center;
-    public int width, height;
+    public int width, height, loot;
     public Room[] neighbors;
     public bool active;
     Tilemap floorMap;
@@ -21,7 +21,12 @@ public class Room
                 break;
             }
         }
+        // Section for dungeon rooms only
         mapController = floorMap.GetComponent<Initializer>();
+        if (mapController != null) {
+            enemies = new List<string>();
+            mapController.RetrieveEnemies(this);
+        }
         active = false;
         head = h;
         tail = t;
@@ -32,8 +37,7 @@ public class Room
         if (parent != null) {
             SetNeighbors(parent, rooms);
         }
-        enemies = new List<string>();
-        mapController.RetrieveEnemies(this);
+        loot = 0;
     }
 
     // Draws the room into existence
@@ -112,6 +116,28 @@ public class Room
             }
         }
         return collide;
+    }
+
+    public List<Vector3Int> AllCells() {
+        List<Vector3Int> cells = new List<Vector3Int>();
+        int x,y;
+        for (int i=0; i<width; i++) {
+            x = tail.x+i;
+            for (int j=0; j<height; j++) {
+                y = tail.y+j;
+                cells.Add(new Vector3Int(x, y, 0));
+            }
+        }
+        return cells;
+    }
+
+    public static Room FindByCell(Vector3Int cell, List<Room> rooms) {
+        foreach (Room r in rooms) {
+            if (r.Contains(cell)) {
+                return r;
+            }
+        }
+        return null;
     }
 
     

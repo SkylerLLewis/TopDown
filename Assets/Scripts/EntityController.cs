@@ -7,6 +7,8 @@ public class EntityController : MonoBehaviour
     private List<EnemyBehavior> entities;
     private List<EnemyBehavior> next;
     public bool enemyTurn;
+    private float slowest;
+    private int waiting;
     void Start() {
         entities = new List<EnemyBehavior>();
         next = new List<EnemyBehavior>();
@@ -17,29 +19,36 @@ public class EntityController : MonoBehaviour
         entities.Clear();
         next.Clear();
         enemyTurn = true;
+        slowest = 0f;
 
-        // Sort enemies by timer, take turns
+        // Give them time to take turns (<0 means your turn!)
         foreach (Transform child in transform) {
             EnemyBehavior e = child.GetComponent<EnemyBehavior>();
             e.timer -= time;
-            entities.Add(e);
+            // Only add living/fast enough
+            if (e.timer < 0 && !e.dying) {
+                entities.Add(e);
+                if (e.moveSpeed > slowest) {
+                    slowest = e.moveSpeed;
+                }
+            }
         }
+        // Sort enemies by time
         entities.Sort((x, y) => {
             var ret = x.timer.CompareTo(y.timer);
             return ret;
         });
-        // Remove dead/slow ones
-        for (int i=entities.Count-1; i>=0; i--) {
-            if (entities[i].timer >= 0) {
-                entities.RemoveAt(i);
-            } else if (entities[i].dying) {
-                entities.RemoveAt(i);
-            }
-        }
         // Take actions
-        for (int i=0; i<entities.Count; i++) {
+        if (entities.Count > 0) {
+            //slowest += 0.5f;
+            //Invoke("TakeTurns", slowest);
+            TakeTurns();
+        } else {
+            enemyTurn = false;
+        }
+        /*for (int i=0; i<entities.Count; i++) {
             EnemyBehavior e = entities[i];
-            e.timer += e.speed;
+            e.timer += e.moveSpeed;
             if (e.timer < 0) {
                 next.Add(e);
             }
@@ -51,14 +60,33 @@ public class EntityController : MonoBehaviour
         }
         if (entities.Count == 0) {
             enemyTurn = false;
+        }*/
+    }
+
+    public void TakeTurns() {
+        foreach (EnemyBehavior e in entities) {
+            if (e.timer < 0) {
+                waiting++;
+                e.MyTurn();
+            }
+        }
+        if (waiting == 0) {
+            enemyTurn = false;
         }
     }
 
-    public void doubleTurn() {
+    public void Report() {
+        waiting--;
+        if (waiting == 0) {
+            TakeTurns();
+        }
+    }
+
+    /*public void doubleTurn() {
         if (next.Count != 0) {
             for (int i=next.Count-1; i>=0; i--) {
                 EnemyBehavior e = next[i];
-                    e.timer += e.speed;
+                    e.timer += e.moveSpeed;
                 if (next[i].timer >= 0) {
                     next.RemoveAt(i);
                 }
@@ -71,5 +99,5 @@ public class EntityController : MonoBehaviour
         } else {
             enemyTurn = false;
         }
-    }
+    }*/
 }

@@ -8,11 +8,19 @@ using UnityEngine.UI;
 public class InventoryController : MonoBehaviour
 {
     int selected;
+    bool refreshNeeded;
     private PersistentData data;
-    private GameObject root, itemArray;
-    TextMeshProUGUI title, description, button, stats;
+    private GameObject root, itemArray, eventSystem;
+    TextMeshProUGUI title, description, button, stats, gold;
+    RectTransform hpBar, foodBar;
     Image itemImage;
     PlayerController player;
+    public static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
+        {"Armor", 1},
+        {"Weapon", 2},
+        {"Potion", 3},
+        {"Food", 4}};
+
     void Start() {
         selected = -1;
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
@@ -34,10 +42,19 @@ public class InventoryController : MonoBehaviour
                 stats = child.gameObject.GetComponent<TextMeshProUGUI>();
             } else if (child.name == "ItemImage") {
                 itemImage = child.gameObject.GetComponent<Image>();
+            } else if (child.name == "Gold") {
+                gold = child.gameObject.GetComponent<TextMeshProUGUI>();
+            } else if (child.name == "HP Bar") {
+                hpBar = child.GetComponent<RectTransform>();
+            } else if (child.name == "Food Bar") {
+                foodBar = child.GetComponent<RectTransform>();
             }
         }
+        eventSystem = GameObject.Find("EventSystem");
 
-        // Display List of Items
+        // Display Everything
+        UpdateBars();
+        gold.text = data.gold.ToString();
         DisplayItems();
         DisplayItem(-1);
     }
@@ -47,9 +64,13 @@ public class InventoryController : MonoBehaviour
             Destroy(child.gameObject);
         }
         DisplayItems();
+        if (refreshNeeded) {
+            DisplayItem(-1);
+        }
     }
 
     public void DisplayItems() {
+        data.inventory.Sort(CompareItems);
         GameObject itemButton = Resources.Load("Prefabs/InventoryItemButton") as GameObject;
         int i=0, j=0;
         float x, y;
@@ -68,6 +89,10 @@ public class InventoryController : MonoBehaviour
             clone.GetComponent<InventoryItemController>().SetItemIndex(i);
             i++;
             if (i%11 == 0) { j++; }
+            // Display item count
+            if (item.count != 1) {
+                clone.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = item.count.ToString();
+            }
         }
         // Display Equipped Weapon
         clone = Instantiate(
@@ -102,6 +127,7 @@ public class InventoryController : MonoBehaviour
         title.text = item.displayName;
         description.text = item.description;
         itemImage.overrideSprite = item.sprite;
+        // Display various types
         if (item.itemType == "Weapon") {
             Weapon wep = item as Weapon;
             if (index >= 0) {
@@ -109,36 +135,32 @@ public class InventoryController : MonoBehaviour
             } else {
                 button.text = "-";
             }
-            string stat = "Dmg: "+wep.mindmg+"-"+wep.maxdmg;
-            if (wep.atk > 0) {
-                stat += "\natk +"+wep.atk;
-            } else if (wep.atk < 0) {
-                stat += "\natk "+wep.atk;
-            }
-            if (wep.def > 0) {
-                stat += "\ndef +"+wep.def;
-            } else if (wep.def < 0) {
-                stat += "\ndef "+wep.def;
-            }
-            if (wep.speed > 1) {
-                stat += "\nspeed +"+Mathf.RoundToInt((wep.speed - 1)*100)+"%";
-            } else if (wep.speed < 1) {
-                stat += "\nspeed "+Mathf.RoundToInt((wep.speed - 1)*100)+"%";
-            }
+            string stat = ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
+                player.weapon.mindmg+player.weapon.maxdmg, wep);
+            stat += ColorStat("atk ", wep.atk, player.weapon.atk);
+            stat += ColorStat("def ", wep.def, player.weapon.def);
+            stat += ColorStat("speed ", wep.speed, player.weapon.speed);
             stats.text = stat;
         } else if (item.itemType == "Armor") {
-            Armor arm = item as Armor;
             if (index >= 0) {
                 button.text = "Equip";
             } else {
                 button.text = "-";
             }
-            string stat = "Def +"+arm.def;
-            if (arm.speed > 1) {
-                stat += "\nspeed +"+Mathf.RoundToInt((arm.speed - 1)*100)+"%";
-            } else if (arm.speed < 1) {
-                stat += "\nspeed "+Mathf.RoundToInt((arm.speed - 1)*100)+"%";
+            Armor arm = item as Armor;
+            string stat = "";
+            if (player.armor != null) {
+                stat = ColorStat("Def: ", arm.def, player.armor.def);
+                stat += ColorStat("armor ", arm.armor, player.armor.armor);
+                stat += ColorStat("dmg ", arm.dmg, player.armor.dmg);
+                stat += ColorStat("speed ", arm.speed, player.armor.speed);
+            } else {
+                stat = ColorStat("Def: ", arm.def, 0);
+                stat += ColorStat("armor ", arm.armor, 0);
+                stat += ColorStat("dmg ", arm.dmg, 0);
+                stat += ColorStat("speed ", arm.speed, 1f);
             }
+
             stats.text = stat;
         } else if (item.itemType == "Potion") {
             button.text = "Drink";
@@ -148,11 +170,64 @@ public class InventoryController : MonoBehaviour
                 stat += "+"+pot.healing+" hp";
             }
             stats.text = stat;
+        } else if (item.itemType == "Food") {
+            Food food = item as Food;
+            if (player.hp > food.damage) {
+                button.text = "Eat";
+            } else {
+                button.text = "No HP";
+            }
+            string stat = "Food: "+food.food/10+"%";
+            if (food.damage > 0) {
+                stat += "\n-"+food.damage+" hp";
+            } else if (food.healing > 0) {
+                stat += "\n+"+food.healing+" hp";
+            }
+            stats.text = stat;
         }
     }
 
+    public static string ColorStat(string prefix, int stat, int current, Weapon w=null) {
+        string s = "";
+        if (stat != 0 || stat != current) {
+            if (stat > current) {
+                s += "<color=#006000>";
+            } else if (stat < current) {
+                s += "<color=#700000>";
+            } else {
+                s += "<color=black>";
+            }
+            s += prefix;
+            if (w == null) {
+                if (stat > 0) { s += "+"; }
+                s += stat+"\n";
+            } else { // This is a weapon's damage
+                s += w.mindmg+"-"+w.maxdmg+"\n";
+            }
+        }
+        return s;
+    }
+    // float overload
+    public static string ColorStat(string prefix, float stat, float current) { 
+        string s = "";
+        if (stat != 1f || stat != current) {
+            if (stat > current) {
+                s += "<color=#006000>";
+            } else if (stat < current) {
+                s += "<color=#700000>";
+            } else {
+                s += "<color=black>";
+            }
+            s += prefix;
+            if (stat > 1f) { s += "+"; }
+            s += Mathf.RoundToInt((stat - 1)*100)+"%"+"\n";
+        }
+        return s;
+    }
+
     public void ActivateButton() {
-        if (selected < 0) { return; }
+        if (selected < 0) return;
+        refreshNeeded = false;
         InventoryItem item = data.inventory[selected];
         if (item.itemType == "Weapon") {
             EquipWeapon();
@@ -160,11 +235,30 @@ public class InventoryController : MonoBehaviour
             EquipArmor();
         } else if (item.itemType == "Potion") {
             item.Activate(player);
-            data.inventory.RemoveAt(selected);
+            if (item.count == 0) {
+                data.inventory.RemoveAt(selected);
+                refreshNeeded = true;
+            }
+            UpdateBars();
+        } else if (item.itemType == "Food") {
+            if ((item as Food).damage >= player.hp) {// Not enough hp!
+                button.text = "No HP";
+                return;
+            }
+            item.Activate(player);
+            if (item.count == 0) {
+                data.inventory.RemoveAt(selected);
+                refreshNeeded = true;
+            }
+            UpdateBars();
+        }
+        // End the player's turn if in combat
+        if (player.inCombat) {
+            BackToScene();
+            player.EndTurn();
+        } else {
             RefreshItems();
         }
-        BackToScene();
-        player.EndTurn();
     }
 
     public void EquipWeapon() {
@@ -173,7 +267,8 @@ public class InventoryController : MonoBehaviour
         data.weapon = data.inventory[selected] as Weapon;
         data.inventory.RemoveAt(selected);
         data.inventory.Add(old);
-        RefreshItems();
+        selected = -1;
+        player.FloatText("msg", "Equipped "+data.weapon.displayName);
     }
 
     public void EquipArmor() {
@@ -184,11 +279,48 @@ public class InventoryController : MonoBehaviour
         if (old != null) {
             data.inventory.Add(old);
         }
-        RefreshItems();
+        selected = -2;
+        player.FloatText("msg", "Equipped "+data.armor.displayName);
+    }
+
+    public void UpdateBars() {
+        hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*((player.hp*1.0f)/player.maxhp));
+        foodBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*(player.food/1000));
+    }
+
+    public static int CompareItems(InventoryItem left, InventoryItem right) {
+        if (left.displayName == right.displayName) {
+            return 0;
+        }
+        if (ItemTypeOrder[left.itemType] < ItemTypeOrder[right.itemType]) {
+            return -1;
+        } else if (ItemTypeOrder[left.itemType] > ItemTypeOrder[right.itemType]) {
+            return 1;
+        } else {
+            if (left.tier > right.tier) {
+                return -1;
+            } else if (left.tier < right.tier) {
+                return 1;
+            } else {
+                if (string.Compare(left.name, right.name) < 0) {
+                    return -1;
+                } else if (string.Compare(left.name, right.name) > 0) {
+                    return 1;
+                } else {
+                    if (left.quality > right.quality) {
+                        return -1;
+                    } else if (left.quality < right.quality) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+            }
+        }
     }
 
     public void BackToScene() {
-        //SceneManager.SetActiveScene(SceneManager.GetSceneByName("GreenVillage"));
+        eventSystem.SetActive(false);
         SceneManager.UnloadSceneAsync("Inventory");
         root.SetActive(true);
     }

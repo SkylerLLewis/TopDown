@@ -96,11 +96,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3001be1d234b221cbdeec9c0fe7f8be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 1
+  moveSpeed: 1
+  attackSpeed: 1
+  visualSpeed: 0
   timer: 0
   moving: 0
   attacking: 0
   dying: 0
+  waiting: 0
   tilePosition: {x: 0, y: -2, z: 0}
   facing: []
   maxhp: 3
@@ -109,6 +112,7 @@ MonoBehaviour:
   defense: 5
   mindmg: 1
   maxdmg: 2
+  enemyType: Melee
 --- !u!50 &3103774673231044834
 Rigidbody2D:
   serializedVersion: 4

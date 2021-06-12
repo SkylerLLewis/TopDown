@@ -28,18 +28,25 @@ public class UIController : MonoBehaviour
     }
 
     public void OpenInventory() {
-        /*Scene scene = SceneManager.GetSceneByName("Inventory");
-        Debug.Log("Inventory is: "+scene.ToString());
-        SceneManager.SetActiveScene(SceneManager.GetSceneByName("Inventory"));
-        */
+        data.loadedMenu = "Inventory";
         StartCoroutine(LoadInventoryScene());
     }
-
-
-    // Loads the Scene in the background as the current Scene runs.
+    // Loads Scene on top of current scene asyncronously
     IEnumerator LoadInventoryScene() {
-
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync("Inventory", LoadSceneMode.Additive);
+
+        // Wait until the asynchronous scene fully loads
+        while (!asyncLoad.isDone) {
+            yield return null;
+        }
+    }
+
+    public void OpenStats() {
+        StartCoroutine(LoadStatsScene());
+    }
+    // Loads Scene on top of current scene asyncronously
+    IEnumerator LoadStatsScene() {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync("StatsScreen", LoadSceneMode.Additive);
 
         // Wait until the asynchronous scene fully loads
         while (!asyncLoad.isDone) {
@@ -50,7 +57,7 @@ public class UIController : MonoBehaviour
 
     public void AbilityActivate(string name) {
         Debug.Log("This: "+this.GetComponent<UIController>().ToString());
-        this.GetComponent<UIController>().player.Ability(name);
+        player.Ability(name);
     }
 
 }

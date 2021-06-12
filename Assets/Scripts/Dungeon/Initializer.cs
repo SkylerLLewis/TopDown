@@ -17,7 +17,8 @@ public class Initializer : MonoBehaviour
     private PlayerController player;
     private DungeonController dungeonController;
     private Dictionary<string, GameObject> enemyFabs;
-    private Dictionary<string, int> enemyWheel, lootWheel;
+    private Dictionary<string, int> enemyWheel, lootWheel, goldLedger;
+    private Dictionary<string, Sprite> goldSprites;
     private List<Room> rooms;
     private PersistentData data;
     
@@ -44,6 +45,7 @@ public class Initializer : MonoBehaviour
         tiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpen"));
         tiles.Add("stairsUp", Resources.Load<Tile>("Tiles/DungeonMap/stairsUp"));
         tiles.Add("stairsDown", Resources.Load<Tile>("Tiles/DungeonMap/stairsDown"));
+        tiles.Add("chest", Resources.Load<Tile>("Tiles/DungeonMap/chest"));
 
         clearTiles = new Dictionary<string,Tile>();
         clearTiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftClearWall"));
@@ -54,42 +56,62 @@ public class Initializer : MonoBehaviour
         clearTiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpenClear"));
 
         // Load Enemy prefabs and likelyhood
+        int twiceDepth = (data.depth-1)*2;
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
-        enemyFabs.Add("Goblin", Resources.Load("Prefabs/Goblin") as GameObject);
-        enemyFabs.Add("Hobgoblin", Resources.Load("Prefabs/Hobgoblin") as GameObject);
-        enemyFabs.Add("Spider", Resources.Load("Prefabs/Spider") as GameObject);
+        enemyFabs.Add("Skeleton Archer", Resources.Load("Prefabs/Skeleton Archer") as GameObject);
+        enemyFabs.Add("Skeleton Brute", Resources.Load("Prefabs/Skeleton Brute") as GameObject);
+        enemyFabs.Add("Skeleton Stabber", Resources.Load("Prefabs/Skeleton Stabber") as GameObject);
         enemyWheel.Add("Skeleton", 10);
-        enemyWheel.Add("Goblin", 1);
-        enemyWheel.Add("Hobgoblin", data.depth-1);
-        enemyWheel.Add("Spider", data.depth-1);
-        if (data.depth > 1 && data.depth < 4) {
-            enemyWheel["Skeleton"] = 1;
-            enemyWheel["Goblin"] = 15;
-        }
+        enemyWheel.Add("Skeleton Archer", twiceDepth+1);
+        enemyWheel.Add("Skeleton Brute", twiceDepth);
+        enemyWheel.Add("Skeleton Stabber", twiceDepth);
 
-        // Loot drop chance!
+        // Loot drop chances!
         lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
         lootWheel = new Dictionary<string, int>();
+        goldLedger = new Dictionary<string, int>();
+        goldSprites = new Dictionary<string,Sprite>();
 
+        goldSprites.Add("small", Resources.Load<Sprite>("Gold"));
+        goldSprites.Add("medium", Resources.Load<Sprite>("Gold Bar"));
+        goldSprites.Add("large", Resources.Load<Sprite>("Gold Pile"));
+
+
+        lootWheel.Add("Twig", 10);
         lootWheel.Add("Sharp Twig", 10);
         lootWheel.Add("Plank with a Nail", 10);
         lootWheel.Add("Club", 10);
         lootWheel.Add("Long Stick", 10);
         lootWheel.Add("Log", 10);
-        lootWheel.Add("Rusty Shortsword", data.depth-1);
-        lootWheel.Add("Half a Scissor", data.depth-1);
-        lootWheel.Add("Copper Hatchet", data.depth-1);
-        lootWheel.Add("Mallet", data.depth-1);
-        lootWheel.Add("Flint Spear", data.depth-1);
-        lootWheel.Add("Grain Scythe", data.depth-1);
+
+        lootWheel.Add("Rusty Shortsword", twiceDepth);
+        lootWheel.Add("Half a Scissor", twiceDepth);
+        lootWheel.Add("Copper Hatchet", twiceDepth);
+        lootWheel.Add("Mallet", twiceDepth);
+        lootWheel.Add("Flint Spear", twiceDepth);
+        lootWheel.Add("Dog Chain", twiceDepth);
+
+        lootWheel.Add("Dueling Sword", data.depth/3);
+        lootWheel.Add("Hunting Knife", data.depth/3);
+        lootWheel.Add("Woodcutter's Axe", data.depth/3);
+        lootWheel.Add("Hammer", data.depth/3);
+        lootWheel.Add("Wooden Pike", data.depth/3);
+        lootWheel.Add("Grain Scythe", data.depth/3);
         
         lootWheel.Add("Leather Tunic", 10);
-        lootWheel.Add("Cast Iron Plates", 10);
-        lootWheel.Add("Patchy Brigandine", (data.depth-1)*2);
+        lootWheel.Add("Bone Armor", 10);
 
-        lootWheel.Add("Healing Potion", 30);
+        lootWheel.Add("Padded Vest", twiceDepth);
+        lootWheel.Add("Cast Iron Plates", twiceDepth);
+        lootWheel.Add("Fang Bracers", twiceDepth);
+
+        lootWheel.Add("Light Leather Armor", data.depth/3);
+        lootWheel.Add("Gambeson", data.depth/3);
+        lootWheel.Add("Patchy Brigandine", data.depth/3);
+
+        lootWheel.Add("Health Potion", 30);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -101,7 +123,6 @@ public class Initializer : MonoBehaviour
             } else if (map.name == "BlockMap") {
                 blockMap = map;
             }
-
         }
 
         // Gen Dungeon
@@ -112,18 +133,24 @@ public class Initializer : MonoBehaviour
 
     // Actions on collisions
     public void NotableActions(string key) {
+
         if (key == "stairsUp") {
             data.depth--;
-            data.direction = "up";
+            data.floorDirection = "up";
             if (data.depth == 0) {
+                data.entrance = 1;
                 SceneManager.LoadScene("GreenVillage");
             } else {
                 SceneManager.LoadScene("BasicDungeon");
             }
+            return;
+
         } else if (key == "stairsDown") {
             data.depth++;
-            data.direction = "down";
+            data.floorDirection = "down";
             SceneManager.LoadScene("BasicDungeon");
+            return;
+
         } else if (key.IndexOf("Loot") >= 0) {
             Vector3 pos = floorMap.CellToWorld(notableCells[key]);
             if (pos.z != 0) { // Account for floor z diff
@@ -140,25 +167,56 @@ public class Initializer : MonoBehaviour
                 }
             }
             if (target != null) {
-                // ! Will not work for other item types - type finding needed
                 if (Weapon.IsWeapon(target.name)) {
                     Weapon wep = new Weapon(target.name);
-                    data.inventory.Add(wep);
+                    data.AddToInventory(wep);
                     player.saySomething = wep.displayName;
                 } else if (Armor.IsArmor(target.name)) {
                     Armor arm = new Armor(target.name);
-                    data.inventory.Add(arm);
+                    data.AddToInventory(arm);
                     player.saySomething = arm.displayName;
                 } else if (Potion.IsPotion(target.name)) {
                     Potion pot = new Potion(target.name);
-                    data.inventory.Add(pot);
+                    data.AddToInventory(pot);
                     player.saySomething = pot.displayName;
                 }
                 Destroy(target.gameObject);
                 notableCells.Remove(key);
                 dungeonController.UpdateNotables(notableCells);
             }
-        } 
+            return;
+
+        } else if (key.IndexOf("Gold") >= 0) {
+            Vector3 pos = floorMap.CellToWorld(notableCells[key]);
+            if (pos.z != 0) { // Account for floor z diff
+                pos.y += 0.75f;
+                pos.z = 0;
+            }
+            Vector3 diff;
+            Transform target = null;
+            foreach (Transform child in loot.transform) {
+                diff = pos - child.position;
+                if (diff.magnitude < 0.5) {
+                    target = child;
+                    break;
+                }
+            }
+            if (target != null) {
+                data.gold += goldLedger[key];
+                player.saySomething = "+"+goldLedger[key]+" gold";
+                goldLedger.Remove(key);
+                Destroy(target.gameObject);
+                notableCells.Remove(key);
+                dungeonController.UpdateNotables(notableCells);
+            }
+            return;
+
+        } else if (key.IndexOf("Chest") >= 0) {
+            OpenChest(notableCells[key]);
+            notableCells.Remove(key);
+            dungeonController.UpdateNotables(notableCells);
+            return;
+        }
     }
 
     // Creates a map of rooms 
@@ -201,6 +259,7 @@ public class Initializer : MonoBehaviour
                 }
             }
         } else if (rand == 1) { // Loop shape Dungeon
+            Debug.Log("Loop!");
             Room branch = core;
             int direction = Random.Range(0, 4);
             // Create loop of rooms
@@ -213,7 +272,10 @@ public class Initializer : MonoBehaviour
                     branch = branch.neighbors[dir];
                 }
             }
-            GenerateRoom(branch, (direction+3)%4);
+            // Cap final room with forks
+            for (int i=0; i<3; i++) {
+                GenerateRoom(branch, (direction+2+i)%4);
+            }
             // Add Random Rooms
             for (int i=0; i<6; i++) {
                 branch = rooms[Random.Range(0, rooms.Count)];
@@ -230,6 +292,7 @@ public class Initializer : MonoBehaviour
             }
         }
         GenExits();
+        GenLoot();
         core.Draw();
     }
 
@@ -327,8 +390,8 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
-        if (Random.Range(0, 4) == 0) {
-            DropLoot(r);
+        for (int i=0; i<r.loot; i++) {
+            GenChest(r);
         }
         GenEnemies(r);
     }
@@ -459,7 +522,7 @@ public class Initializer : MonoBehaviour
 
     void GenExits() {
         string entrance = "stairsUp", exit = "stairsDown";
-        if (data.direction == "up") {
+        if (data.floorDirection == "up") {
             entrance = "stairsDown";
             exit = "stairsUp";
         }
@@ -479,14 +542,41 @@ public class Initializer : MonoBehaviour
         }
     }
 
+    void GenLoot() {
+        // 4-8 (6) loot per floor
+        int loots = Random.Range(4,9);
+        for (int i=0; i<loots; i++) {
+            int rand = Random.Range(1, rooms.Count);
+            rooms[rand].loot++;
+        }
+    }
+
+    public void OpenChest(Vector3Int cell) {
+        blockMap.SetTile(cell, null);
+        Tile clone = Instantiate(tiles["floor"]);
+        clone.name = clone.name.Split('(')[0];
+        floorMap.SetTile(cell, clone);
+        DropLoot(cell);
+    }
+
     public void OpenDoor(Vector3Int cell, int dir) {
         Tile clone;
         if (dir == 0 || dir == 2) {
-            clone = Instantiate(tiles["leftDoorOpen"]);
+            string name = leftWallMap.GetTile(cell).name;
+            if (name.IndexOf("Clear") >= 0) {
+                clone = Instantiate(clearTiles["leftDoorOpen"]);
+            } else {
+                clone = Instantiate(tiles["leftDoorOpen"]);
+            }
             leftWallMap.SetTile(cell, clone);
             if (dir == 0) { cell.y++; }
         } else {
-            clone = Instantiate(tiles["rightDoorOpen"]);
+            string name = rightWallMap.GetTile(cell).name;
+            if (name.IndexOf("Clear") >= 0) {
+                clone = Instantiate(clearTiles["rightDoorOpen"]);
+            } else {
+                clone = Instantiate(tiles["rightDoorOpen"]);
+            }
             rightWallMap.SetTile(cell, clone);
             if (dir == 1) { cell.x++; }
         }
@@ -565,56 +655,116 @@ public class Initializer : MonoBehaviour
         }
     }
 
-    public void DropLoot(Room r) {
-        Vector3Int cell;
+    public void GenChest(Room r) {
+        Vector3Int cell = new Vector3Int();
+        int sentinel = 0;
         do {
             cell = new Vector3Int(
-                    r.tail.x+Random.Range(1,r.width-1),
-                    r.tail.y+Random.Range(1,r.height-1),
+                    r.tail.x+Random.Range(0,r.width-1),
+                    r.tail.y+Random.Range(0,r.height-1),
                     0);
+            sentinel++;
+            if (sentinel > 100) { return; }
         } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
 
-        // Spin the wheel!
-        float wheelTotal = 0f;
-        foreach (KeyValuePair<string,int> item in lootWheel) {
-            wheelTotal += item.Value;
-        }
-        int total = 0;
-        float roll = Random.Range(0, wheelTotal+1);
-        foreach (KeyValuePair<string,int> item in lootWheel) {
-            total += item.Value;
-            if (roll <= total) {
-                Vector3 pos = floorMap.CellToWorld(cell);
-                pos.y += 0.75f;
-                pos.z = 0;
-                GameObject clone = Instantiate(
-                    lootFab,
-                    pos,
-                    Quaternion.identity,
-                    loot.transform);
-                clone.name = item.Key;
-                Sprite sprite = null;
-                if (Weapon.IsWeapon(item.Key)) {
-                    sprite = Resources.Load<Sprite>("Weapons/"+item.Key);
-                } else if (Armor.IsArmor(item.Key)) {
-                    sprite = Resources.Load<Sprite>("Armors/"+item.Key);
-                } else if (Potion.IsPotion(item.Key)) {
-                    sprite = Resources.Load<Sprite>("Potions/"+item.Key);
-                }
-                clone.GetComponent<SpriteRenderer>().sprite = sprite;
-                break;
-            }
-        }
-        // Find new loot number to add
+        Tile clone = Instantiate(tiles["chest"]);
+        clone.name = clone.name.Split('(')[0];
+        blockMap.SetTile(cell, clone);
+
+        // Find new chest number to add
         int last = 0;
         foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
-            if (item.Key.IndexOf("Loot") >= 0) {
+            if (item.Key.IndexOf("Chest") >= 0) {
                 int x = System.Convert.ToInt32(item.Key.Split('t')[1]);
                 if (x > last) {
                     last = x; 
                 }
             }
         }
-        notableCells.Add("Loot"+(last+1), cell);
+        notableCells.Add("Chest"+(last+1), cell);
+    }
+
+    private void DropLoot(Vector3Int cell) {
+        Vector3 pos = floorMap.CellToWorld(cell);
+            pos.y += 0.75f;
+            pos.z = 0;
+        
+        if (Random.Range(0,2) == 1) { // 50% change for gold drop
+            // 1 - 46  gold at lvl 1
+            // 1 - 74  gold at lvl 3
+            // 1 - 110 gold at lvl 5
+            int pow = 7;
+            if (data.depth >= 3) { pow = 9; }
+            if (data.depth >= 5) { pow = 11; }
+            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(0,pow), 2)) + Random.Range(1, 11) + (data.depth-1)*3;
+            GameObject clone = Instantiate(
+                lootFab,
+                pos,
+                Quaternion.identity,
+                loot.transform);
+            clone.name = "Gold";
+            string sprite = "";
+            if (gold < 50) {
+                sprite = "small";
+            } else if (gold < 100) {
+                sprite = "medium";
+            } else {
+                sprite = "large";
+            }
+            clone.GetComponent<SpriteRenderer>().sprite = goldSprites[sprite];
+            // Find new loot number to add
+            int last = 0;
+            foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+                if (item.Key.IndexOf("Gold") >= 0) {
+                    int x = System.Convert.ToInt32(item.Key.Split('d')[1]);
+                    if (x > last) {
+                        last = x; 
+                    }
+                }
+            }
+            notableCells.Add("Gold"+(last+1), cell);
+            goldLedger.Add("Gold"+(last+1), gold);
+
+        } else {
+            // Spin the wheel!
+            float wheelTotal = 0f;
+            foreach (KeyValuePair<string,int> item in lootWheel) {
+                wheelTotal += item.Value;
+            }
+            int total = 0;
+            float roll = Random.Range(0f, wheelTotal);
+            foreach (KeyValuePair<string,int> item in lootWheel) {
+                total += item.Value;
+                if (roll <= total) {
+                    GameObject clone = Instantiate(
+                        lootFab,
+                        pos,
+                        Quaternion.identity,
+                        loot.transform);
+                    clone.name = item.Key;
+                    Sprite sprite = null;
+                    if (Weapon.IsWeapon(item.Key)) {
+                        sprite = Resources.Load<Sprite>("Weapons/"+item.Key);
+                    } else if (Armor.IsArmor(item.Key)) {
+                        sprite = Resources.Load<Sprite>("Armors/"+item.Key);
+                    } else if (Potion.IsPotion(item.Key)) {
+                        sprite = Resources.Load<Sprite>("Potions/"+item.Key);
+                    }
+                    clone.GetComponent<SpriteRenderer>().sprite = sprite;
+                    break;
+                }
+            }
+            // Find new loot number to add
+            int last = 0;
+            foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+                if (item.Key.IndexOf("Loot") >= 0) {
+                    int x = System.Convert.ToInt32(item.Key.Split('t')[1]);
+                    if (x > last) {
+                        last = x; 
+                    }
+                }
+            }
+            notableCells.Add("Loot"+(last+1), cell);
+        }
     }
 }

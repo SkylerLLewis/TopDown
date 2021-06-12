@@ -48,6 +48,10 @@ public class PathFinder : MonoBehaviour
         nodes = new MapArray<Node>();
     }
 
+    public static Vector3 TileToWorld(Vector3Int p) {
+        return new Vector3(p.x-p.y, (p.x+p.y)/2, 0);
+    }
+
     public int PathFind(Vector3Int s, Vector3Int e) {
         start = s;
         end = e;
@@ -189,6 +193,76 @@ public class PathFinder : MonoBehaviour
             }
         }
         return true;
+    }
+
+    public bool LineOfSight(Vector3Int from, Vector3Int to) {
+        string s = "PATHFINDING: Line of sight";
+        int deltax = to.x - from.x;
+        int deltay = to.y - from.y;
+        int xdir, ydir;
+        if (deltax >= 0) {
+            xdir = 1;
+        } else {
+            xdir = 3;
+        }
+        if (deltay >= 0) {
+            ydir = 0;
+        } else {
+            ydir = 2;
+        }
+        float xcost, ycost;
+        
+        s += "\n    Starting at: "+from;
+        Vector3Int xtest = new Vector3Int(), ytest = new Vector3Int(), walk = from, targetCell;
+        while (walk != to) {
+            if (deltax == 0) { // vertical target
+                targetCell = DirectionToCell(ydir, walk);
+            } else if (deltay == 0) { // horizontal target
+                targetCell = DirectionToCell(xdir, walk);
+            } else {
+                // Try x
+                xtest = DirectionToCell(xdir, walk);
+                xcost = Vector3Int.Distance(xtest, to);
+                s += "\n        x: "+xcost;
+                // Try y 
+                ytest = DirectionToCell(ydir, walk);
+                ycost = Vector3Int.Distance(ytest, to);
+                s += "  y: "+ycost;
+                // Closest to target?
+                if (xcost < ycost) {
+                    targetCell = xtest;
+                } else if (xcost > ycost) {
+                    targetCell = ytest;
+                } else {// Cross over when unsure
+                    if (Mathf.Abs(deltax) < Mathf.Abs(deltay)) {
+                        targetCell = xtest;
+                    } else {
+                        targetCell = ytest;
+                    }
+                }
+            }
+
+            s += "\n    Walking to "+targetCell;
+            if (IsWalkable(walk, targetCell)) {
+                walk = targetCell;
+            } else {
+                //Debug.Log(s+"\nFailed.");
+                return false;
+            }
+        }
+        //Debug.Log(s+"\nSuccess!");
+        return true;
+    }
+
+    private int GCD(int a, int b) {
+        int greater = a;
+        if (b > a) { greater = b; }
+        for (int i = greater; i>0; i--) {
+            if (a%i == 0 && b%i == 0) {
+                return i;
+            }
+        }
+        return 1;
     }
 
     public Vector3Int DirectionToCell(int direction, Vector3Int currentCell) {
