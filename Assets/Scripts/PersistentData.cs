@@ -5,8 +5,8 @@ using UnityEngine.SceneManagement;
 
 public class PersistentData : MonoBehaviour
 {
-    public int depth, entrance;
-    public string direction, loadedMenu;
+    public int depth, direction, entrance;
+    public string floorDirection, loadedMenu;
     public int playerHp, gold;
     public float food;
     public Weapon weapon;
@@ -17,10 +17,11 @@ public class PersistentData : MonoBehaviour
         DontDestroyOnLoad(transform.gameObject);
         depth = 0;
         entrance = 0;
-        gold = 1000;
+        gold = 0;
         playerHp = 0;
         food = 500;
-        direction = "down";
+        direction = 2;
+        floorDirection = "down";
         // Inventory
         inventory = new List<InventoryItem>();
         weapon = new Weapon("Twig");
@@ -36,12 +37,14 @@ public class PersistentData : MonoBehaviour
         foreach (string item in weaponOptions) {
             shopList.Add(new Weapon(item));
         }
-        weaponOptions = Sample<string>(2, Weapon.WeaponTiers[1]);
+        weaponOptions = Sample<string>(3, Weapon.WeaponTiers[1]);
         foreach (string item in weaponOptions) {
             shopList.Add(new Weapon(item));
         }
-        shopList.Add(new Weapon("Woodcutter's Axe"));
+        shopList.Add(new Weapon(Weapon.WeaponTiers[2][Random.Range(0, Weapon.WeaponTiers[2].Count)]));
         shopList.Add(new Armor(Armor.ArmorTiers[0][Random.Range(0, Armor.ArmorTiers[0].Count)]));
+        shopList.Add(new Armor(Armor.ArmorTiers[1][Random.Range(0, Armor.ArmorTiers[1].Count)]));
+        shopList.Add(new Armor(Armor.ArmorTiers[2][Random.Range(0, Armor.ArmorTiers[2].Count)]));
         shopList.Add(new Potion("Health Potion"));
         shopList.Add(new Food("Moldy Bread"));
         shopList.Add(new Food("Moldy Loaf"));

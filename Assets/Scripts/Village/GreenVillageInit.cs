@@ -142,14 +142,18 @@ public class GreenVillageInit : MonoBehaviour
         }
     }
 
-    public Vector3Int GetEntrance() {
+    public Vector3Int FetchPosition() {
+        if (data.entrance == 1) {
+            data.direction = 0;
+            return new Vector3Int(0,-8,0);
+        }
         return new Vector3Int(0,0,0);
     }
 
     public void NotableActions(string key) {
         if (key == "stairsDown") {
             data.depth++;
-            data.direction = "down";
+            data.floorDirection = "down";
             SceneManager.LoadScene("BasicDungeon");
         } else if (key == "shopkeeper") {
             Debug.Log("Shopkeeping!");

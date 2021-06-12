@@ -17,11 +17,8 @@ public class ArrowController : MonoBehaviour
         style = s;
         startPosition = transform.position;
         startPosition.y += 0.5f;
-        targetPosition = new Vector3(
-            p.tilePosition.x-p.tilePosition.y,
-            (p.tilePosition.x+p.tilePosition.y)/2,
-            0);
-        targetPosition.y += 0.75f;
+        targetPosition = PathFinder.TileToWorld(p.tilePosition);
+        targetPosition.y += 0.5f;
         count = 0;
         speed = 15/Vector3.Distance(startPosition, targetPosition);
         // Set rotation of Arrow

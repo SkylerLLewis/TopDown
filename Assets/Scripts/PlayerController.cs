@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     System.Action<Vector3Int> NotableCollide;
     System.Action<Vector3Int, int> OpenDoor;
     System.Action<Vector3Int> OpenChest;
+    System.Func<Vector3Int> FetchPosition;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
@@ -38,7 +39,7 @@ public class PlayerController : MonoBehaviour
     // Combat Stats
     public Weapon weapon;
     public Armor armor;
-    public int maxhp, hp, attack, defense, mindmg, maxdmg;
+    public int maxhp, hp, attack, defense, mindmg, maxdmg, armorDR;
 
     void Start() {
         // Load Controllers
@@ -69,6 +70,7 @@ public class PlayerController : MonoBehaviour
             mapType = "Village";
             NotableCollide = villageController.NotableCollide;
             OpenDoor = villageController.OpenDoor;
+            FetchPosition = villageController.FetchPosition;
         }
         maps = new Dictionary<string, Tilemap>();
         maps.Add("left", leftWallMap);
@@ -84,6 +86,13 @@ public class PlayerController : MonoBehaviour
 
         // Set Attributes
         tilePosition = new Vector3Int(0,0,0);
+        if (FetchPosition != null) {
+            tilePosition = FetchPosition();
+            Vector3 pos = PathFinder.TileToWorld(tilePosition);
+            pos.y += 0.25f;
+            transform.position = pos;
+            animator.CrossFade(walkNames[data.direction], 0f);
+        }
         entities = GameObject.FindWithTag("EntityList");
         entityController = entities.GetComponent<EntityController>();
         mainCamera = GameObject.FindWithTag("MainCamera");
@@ -101,6 +110,9 @@ public class PlayerController : MonoBehaviour
         attack = 5;
         defense = 5;
         speed = 1;
+        mindmg = 0;
+        maxdmg = 0;
+        armorDR = 0;
         EquipWeapon(data.weapon);
         if (data.armor != null) {
             EquipArmor(data.armor);
@@ -353,22 +365,24 @@ public class PlayerController : MonoBehaviour
         }
     }
     
-    public void Damage(int dmg, string style) {
+    public void Damage(int dmg, string style, bool combat=true) {
         FloatText(style, dmg.ToString());
         if (dmg != 0) {
+            dmg -= armorDR;
+            if (dmg < 1) dmg = 1;
             hp -= dmg;
             if (hp <= 0) {
                 Die();
             }
-            combatCounter = combatIsActive;
-            inCombat = true;
+            if (combat) {
+                combatCounter = combatIsActive;
+                inCombat = true;
+            }
         }
         uiController.UpdateBars();
     }
 
     public void Heal(int heal) {
-        combatCounter = combatIsActive;
-        inCombat = true;
         hp += heal;
         if (hp > maxhp) {
             hp = maxhp;
@@ -387,13 +401,15 @@ public class PlayerController : MonoBehaviour
         if (weapon != null) { // Unequip old weapon
             attack -= weapon.atk;
             defense -= weapon.def;
+            mindmg -= weapon.mindmg;
+            maxdmg -= weapon.maxdmg;
             speed /= (1/weapon.speed);
         }
         weapon = w;
         attack += weapon.atk;
         defense += weapon.def;
-        mindmg = weapon.mindmg;
-        maxdmg = weapon.maxdmg;
+        mindmg += weapon.mindmg;
+        maxdmg += weapon.maxdmg;
         speed *= (1/weapon.speed);
     }
 
@@ -401,10 +417,16 @@ public class PlayerController : MonoBehaviour
         if (armor != null) { // Unequip old armor
             defense -= armor.def;
             speed /= (1/armor.speed);
+            armorDR -= armor.armor;
+            mindmg -= armor.dmg;
+            maxdmg -= armor.dmg;
         }
         armor = a;
         defense += armor.def;
         speed *= (1/armor.speed);
+        armorDR += armor.armor;
+        mindmg += armor.dmg;
+        maxdmg += armor.dmg;
     }
 
     public void FloatText(string style, string msg="") {

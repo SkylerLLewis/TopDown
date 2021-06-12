@@ -113,7 +113,7 @@ public class ShopController : MonoBehaviour
                 stat = "cost: "+item.cost*5+"\n";
             } else {
                 button.text = "-";
-                stat = "cost: <color=#700000>"+item.cost*5+"\n";
+                stat = "cost: <color=#700000>"+item.cost*5+"<color=#000000>\n";
             }
         } else if (mode == "selling") {
             button.text = "Sell";
@@ -132,9 +132,13 @@ public class ShopController : MonoBehaviour
             Armor arm = item as Armor;
             if (player.armor != null) {
                 stat += InventoryController.ColorStat("Def: ", arm.def, player.armor.def);
+                stat += InventoryController.ColorStat("armor ", arm.armor, player.armor.armor);
+                stat += InventoryController.ColorStat("dmg ", arm.dmg, player.armor.dmg);
                 stat += InventoryController.ColorStat("speed ", arm.speed, player.armor.speed);
             } else {
                 stat += InventoryController.ColorStat("Def: ", arm.def, 0);
+                stat += InventoryController.ColorStat("armor ", arm.armor, 0);
+                stat += InventoryController.ColorStat("dmg ", arm.dmg, 0);
                 stat += InventoryController.ColorStat("speed ", arm.speed, 1f);
             }
         } else if (item.itemType == "Potion") {

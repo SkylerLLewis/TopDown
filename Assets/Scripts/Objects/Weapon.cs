@@ -7,8 +7,8 @@ public class Weapon : InventoryItem {
     public float speed;
     public static List<List<string>> WeaponTiers = new List<List<string>>() {
         new List<string>() {"Twig", "Sharp Twig", "Plank with a Nail", "Club", "Long Stick", "Log"},
-        new List<string>() {"Rusty Shortsword", "Half a Scissor", "Copper Hatchet", "Mallet", "Flint Spear", "Grain Scythe"},
-        new List<string>() {"Woodcutter's Axe"}
+        new List<string>() {"Rusty Shortsword", "Half a Scissor", "Copper Hatchet", "Mallet", "Flint Spear", "Dog Chain"},
+        new List<string>() {"Dueling Sword", "Hunting Knife", "Woodcutter's Axe", "Hammer", "Wooden Pike", "Grain Scythe"}
     };
     public Weapon(string n, int qual=-2) {
         itemType = "Weapon";
@@ -122,8 +122,8 @@ public class Weapon : InventoryItem {
                 mindmg = 2;
                 maxdmg = 4;
                 def = 2 + 2*quality;
-            } else if (name == "Grain Scythe") {
-                description = "It's big, clunky, and the blade is backwards. But it has a blade!";
+            } else if (name == "Dog Chain") {
+                description = "Stake still attached! You'd hate to meet whatever chewed through it...";
                 mindmg = 2;
                 maxdmg = 6;
                 speed = 0.67f + 0.11f*quality;
@@ -139,11 +139,41 @@ public class Weapon : InventoryItem {
             if (quality > 2) {
                 quality = 2;
             }
-            if (name == "Woodcutter's Axe") {
+            if (name == "Dueling Sword") {
+                description = "An antique dueling blade, long and thin. It looks precise.";
+                mindmg = 1;
+                maxdmg = 7;
+                atk = 2 + 1*quality;
+                def = 2;
+                crit = 3;
+                speed = 1.1f + 0.05f*quality;
+            } else if (name == "Hunting Knife") {
+                description = "A barbed, wicked looking dagger for killing and skinning game.";
+                mindmg = 1;
+                maxdmg = 9;
+                def = -3;
+                crit = 4;
+                speed = 1.2f + 0.1f*quality;
+            } else if (name == "Woodcutter's Axe") {
                 description = "A solid iron axe, good for cleaving.";
                 mindmg = 2;
                 maxdmg = 8;
                 atk = 5 + 2*quality;
+            } else if (name == "Hammer") {
+                description = "Made for smashing.";
+                mindmg = 4 + 2*quality;
+                maxdmg = 8;
+            } else if (name == "Wooden Pike") {
+                description = "Was this a signpost?";
+                mindmg = 2 + quality;
+                maxdmg = 6 + quality;
+                def = 10;
+            } else if (name == "Grain Scythe") {
+                description = "It's big, clunky, and the blade is backwards. But it has a blade!";
+                mindmg = 4;
+                maxdmg = 6;
+                speed = 1.1f + 0.1f*quality;
+                def = 3;
             }
         }
 

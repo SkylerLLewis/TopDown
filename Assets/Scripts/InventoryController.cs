@@ -12,6 +12,7 @@ public class InventoryController : MonoBehaviour
     private PersistentData data;
     private GameObject root, itemArray, eventSystem;
     TextMeshProUGUI title, description, button, stats, gold;
+    RectTransform hpBar, foodBar;
     Image itemImage;
     PlayerController player;
     public static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
@@ -43,11 +44,16 @@ public class InventoryController : MonoBehaviour
                 itemImage = child.gameObject.GetComponent<Image>();
             } else if (child.name == "Gold") {
                 gold = child.gameObject.GetComponent<TextMeshProUGUI>();
+            } else if (child.name == "HP Bar") {
+                hpBar = child.GetComponent<RectTransform>();
+            } else if (child.name == "Food Bar") {
+                foodBar = child.GetComponent<RectTransform>();
             }
         }
         eventSystem = GameObject.Find("EventSystem");
 
         // Display Everything
+        UpdateBars();
         gold.text = data.gold.ToString();
         DisplayItems();
         DisplayItem(-1);
@@ -145,9 +151,13 @@ public class InventoryController : MonoBehaviour
             string stat = "";
             if (player.armor != null) {
                 stat = ColorStat("Def: ", arm.def, player.armor.def);
+                stat += ColorStat("armor ", arm.armor, player.armor.armor);
+                stat += ColorStat("dmg ", arm.dmg, player.armor.dmg);
                 stat += ColorStat("speed ", arm.speed, player.armor.speed);
             } else {
                 stat = ColorStat("Def: ", arm.def, 0);
+                stat += ColorStat("armor ", arm.armor, 0);
+                stat += ColorStat("dmg ", arm.dmg, 0);
                 stat += ColorStat("speed ", arm.speed, 1f);
             }
 
@@ -161,8 +171,12 @@ public class InventoryController : MonoBehaviour
             }
             stats.text = stat;
         } else if (item.itemType == "Food") {
-            button.text = "Eat";
             Food food = item as Food;
+            if (player.hp > food.damage) {
+                button.text = "Eat";
+            } else {
+                button.text = "No HP";
+            }
             string stat = "Food: "+food.food/10+"%";
             if (food.damage > 0) {
                 stat += "\n-"+food.damage+" hp";
@@ -212,7 +226,7 @@ public class InventoryController : MonoBehaviour
     }
 
     public void ActivateButton() {
-        if (selected < 0) { return; }
+        if (selected < 0) return;
         refreshNeeded = false;
         InventoryItem item = data.inventory[selected];
         if (item.itemType == "Weapon") {
@@ -225,12 +239,18 @@ public class InventoryController : MonoBehaviour
                 data.inventory.RemoveAt(selected);
                 refreshNeeded = true;
             }
+            UpdateBars();
         } else if (item.itemType == "Food") {
+            if ((item as Food).damage >= player.hp) {// Not enough hp!
+                button.text = "No HP";
+                return;
+            }
             item.Activate(player);
             if (item.count == 0) {
                 data.inventory.RemoveAt(selected);
                 refreshNeeded = true;
             }
+            UpdateBars();
         }
         // End the player's turn if in combat
         if (player.inCombat) {
@@ -247,6 +267,7 @@ public class InventoryController : MonoBehaviour
         data.weapon = data.inventory[selected] as Weapon;
         data.inventory.RemoveAt(selected);
         data.inventory.Add(old);
+        selected = -1;
         player.FloatText("msg", "Equipped "+data.weapon.displayName);
     }
 
@@ -258,7 +279,13 @@ public class InventoryController : MonoBehaviour
         if (old != null) {
             data.inventory.Add(old);
         }
+        selected = -2;
         player.FloatText("msg", "Equipped "+data.armor.displayName);
+    }
+
+    public void UpdateBars() {
+        hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*((player.hp*1.0f)/player.maxhp));
+        foodBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*(player.food/1000));
     }
 
     public static int CompareItems(InventoryItem left, InventoryItem right) {

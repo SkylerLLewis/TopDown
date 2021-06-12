@@ -29,12 +29,12 @@ public class Food : InventoryItem {
             tier = 1;
             if (name == "Moldy Bread") {
                 description = "You should really invest in some tupperware.";
-                damage = 5;
+                damage = 4;
                 food = 100;
                 cost = 1;
             } else if (name == "Moldy Loaf") {
                 description = "That's... a lot of mold.";
-                damage = 15;
+                damage = 9;
                 food = 500;
                 cost = 10;
             }
@@ -42,12 +42,13 @@ public class Food : InventoryItem {
             tier = 2;
             if (name == "Burnt Toast") {
                 description = "Mmmm, crunchy!";
-                food = 50;
-                cost = 10;
+                damage = 1;
+                food = 100;
+                cost = 5;
             } else if (name == "Roast Squirrel") {
                 description = "Hey, that's actually pretty tasty!";
-                food = 150;
-                cost = 25;
+                food = 200;
+                cost = 15;
             }
         }
     }
@@ -56,7 +57,7 @@ public class Food : InventoryItem {
         count--;
         player.Feed(food);
         if (damage > 0) {
-            player.Damage(damage, "dmg");
+            player.Damage(damage, "dmg", combat:false);
         }
     }
 

@@ -78,22 +78,38 @@ public class Initializer : MonoBehaviour
         goldSprites.Add("medium", Resources.Load<Sprite>("Gold Bar"));
         goldSprites.Add("large", Resources.Load<Sprite>("Gold Pile"));
 
+
+        lootWheel.Add("Twig", 10);
         lootWheel.Add("Sharp Twig", 10);
         lootWheel.Add("Plank with a Nail", 10);
         lootWheel.Add("Club", 10);
         lootWheel.Add("Long Stick", 10);
         lootWheel.Add("Log", 10);
+
         lootWheel.Add("Rusty Shortsword", twiceDepth);
         lootWheel.Add("Half a Scissor", twiceDepth);
         lootWheel.Add("Copper Hatchet", twiceDepth);
         lootWheel.Add("Mallet", twiceDepth);
         lootWheel.Add("Flint Spear", twiceDepth);
-        lootWheel.Add("Grain Scythe", twiceDepth);
-        lootWheel.Add("Woodcutter's Axe", 1);
+        lootWheel.Add("Dog Chain", twiceDepth);
+
+        lootWheel.Add("Dueling Sword", data.depth/3);
+        lootWheel.Add("Hunting Knife", data.depth/3);
+        lootWheel.Add("Woodcutter's Axe", data.depth/3);
+        lootWheel.Add("Hammer", data.depth/3);
+        lootWheel.Add("Wooden Pike", data.depth/3);
+        lootWheel.Add("Grain Scythe", data.depth/3);
         
         lootWheel.Add("Leather Tunic", 10);
-        lootWheel.Add("Cast Iron Plates", 10);
-        lootWheel.Add("Patchy Brigandine", twiceDepth*2);
+        lootWheel.Add("Bone Armor", 10);
+
+        lootWheel.Add("Padded Vest", twiceDepth);
+        lootWheel.Add("Cast Iron Plates", twiceDepth);
+        lootWheel.Add("Fang Bracers", twiceDepth);
+
+        lootWheel.Add("Light Leather Armor", data.depth/3);
+        lootWheel.Add("Gambeson", data.depth/3);
+        lootWheel.Add("Patchy Brigandine", data.depth/3);
 
         lootWheel.Add("Health Potion", 30);
 
@@ -120,8 +136,9 @@ public class Initializer : MonoBehaviour
 
         if (key == "stairsUp") {
             data.depth--;
-            data.direction = "up";
+            data.floorDirection = "up";
             if (data.depth == 0) {
+                data.entrance = 1;
                 SceneManager.LoadScene("GreenVillage");
             } else {
                 SceneManager.LoadScene("BasicDungeon");
@@ -130,7 +147,7 @@ public class Initializer : MonoBehaviour
 
         } else if (key == "stairsDown") {
             data.depth++;
-            data.direction = "down";
+            data.floorDirection = "down";
             SceneManager.LoadScene("BasicDungeon");
             return;
 
@@ -242,6 +259,7 @@ public class Initializer : MonoBehaviour
                 }
             }
         } else if (rand == 1) { // Loop shape Dungeon
+            Debug.Log("Loop!");
             Room branch = core;
             int direction = Random.Range(0, 4);
             // Create loop of rooms
@@ -254,7 +272,10 @@ public class Initializer : MonoBehaviour
                     branch = branch.neighbors[dir];
                 }
             }
-            GenerateRoom(branch, (direction+3)%4);
+            // Cap final room with forks
+            for (int i=0; i<3; i++) {
+                GenerateRoom(branch, (direction+2+i)%4);
+            }
             // Add Random Rooms
             for (int i=0; i<6; i++) {
                 branch = rooms[Random.Range(0, rooms.Count)];
@@ -501,7 +522,7 @@ public class Initializer : MonoBehaviour
 
     void GenExits() {
         string entrance = "stairsUp", exit = "stairsDown";
-        if (data.direction == "up") {
+        if (data.floorDirection == "up") {
             entrance = "stairsDown";
             exit = "stairsUp";
         }

@@ -48,6 +48,10 @@ public class PathFinder : MonoBehaviour
         nodes = new MapArray<Node>();
     }
 
+    public static Vector3 TileToWorld(Vector3Int p) {
+        return new Vector3(p.x-p.y, (p.x+p.y)/2, 0);
+    }
+
     public int PathFind(Vector3Int s, Vector3Int e) {
         start = s;
         end = e;
