@@ -358,20 +358,19 @@ public class Initializer : MonoBehaviour
             for (int y=0; y>-yLen; y--) {
                 placement.x = r.head.x + x;
                 placement.y = r.head.y + y;
-                Tile clone = null;
-                clone = Instantiate(tiles["floor"]);
+                Tile tile = null;
+                tile = tiles["floor"];
                 int rand = Random.Range(0, 20);
                 if (rand < 10) {
-                    clone = Instantiate(tiles["floor"]);
+                    tile = tiles["floor"];
                 } else if (rand < 18) {
-                    clone = Instantiate(tiles["floor1"]);
+                    tile = tiles["floor1"];
                 } else if (rand == 18) {
-                    clone = Instantiate(tiles["floor2"]);
+                    tile = tiles["floor2"];
                 } else if (rand == 19) {
-                    clone = Instantiate(tiles["floor3"]);
+                    tile = tiles["floor3"];
                 }
-                clone.name = clone.name.Split('(')[0];
-                floorMap.SetTile(placement, clone);
+                DungeonUtils.PlaceTile(floorMap, placement, tile);
             }
         }
         // Place Walls
@@ -379,8 +378,8 @@ public class Initializer : MonoBehaviour
         // Create exits, if applicable
         foreach (KeyValuePair<string,Vector3Int> exit in notableCells) {
             if (r.Contains(exit.Value)) {
-                floorMap.SetTile(exit.Value, null);
-                blockMap.SetTile(exit.Value, tiles[exit.Key]);
+                DungeonUtils.PlaceTile(floorMap, exit.Value, null);
+                DungeonUtils.PlaceTile(blockMap, exit.Value, tiles[exit.Key]);
             }
         }
         // Place Doors
@@ -442,24 +441,13 @@ public class Initializer : MonoBehaviour
             map = rightWallMap;
         }
         TileBase currentWall = map.GetTile(cell);
-        string currentName = "";
         if (currentWall != null) { // Wall in-place, clarify it
-            currentName = currentWall.name;
-            if (currentName.ToLower().IndexOf("clear") < 0) {
-                Tile clone = Instantiate(clearTiles[currentName]);
-                map.SetTile(cell, clone);
-                clone.name = clone.name.Split('(')[0];
-            }
+            map.SetColor(cell, new Color(1,1,1,0.25f));
         } else { // Place wall normally
-            Tile clone;
-            if (!clear) {
-                clone = Instantiate(tiles[name]);
-                map.SetTile(cell, clone);
-            } else {
-                clone = Instantiate(clearTiles[name]);
-                map.SetTile(cell, clone);
+            DungeonUtils.PlaceTile(map, cell, tiles[name]);
+            if (clear) {
+                map.SetColor(cell, new Color(1,1,1,0.25f));
             }
-            clone.name = clone.name.Split('(')[0];
         }
     }
 
@@ -473,7 +461,7 @@ public class Initializer : MonoBehaviour
                 cell.x = r1.tail.x + x;
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y+1,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    leftWallMap.SetTile(cell, tiles["leftDoor"]);
+                    DungeonUtils.PlaceTile(leftWallMap, cell, tiles["leftDoor"]);
                     break;
                 }
                 x = (x+1) % r1.width;
@@ -486,7 +474,7 @@ public class Initializer : MonoBehaviour
                 cell.y = r1.tail.y + y;
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    rightWallMap.SetTile(cell, tiles["rightDoor"]);
+                    DungeonUtils.PlaceTile(rightWallMap, cell, tiles["rightDoor"]);
                     break;
                 }
                 y = (y+1) % r1.height;
@@ -497,9 +485,11 @@ public class Initializer : MonoBehaviour
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
+                Vector3Int doorCell = new Vector3Int(cell.x,cell.y-1,cell.z);
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    leftWallMap.SetTile(new Vector3Int(cell.x,cell.y-1,cell.z), clearTiles["leftDoor"]);
+                    DungeonUtils.PlaceTile(leftWallMap, doorCell, tiles["leftDoor"]);
+                    leftWallMap.SetColor(doorCell, new Color(1,1,1,0.5f));
                     break;
                 }
                 x = (x+1) % r1.width;
@@ -510,9 +500,11 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
+                Vector3Int doorCell = new Vector3Int(cell.x-1,cell.y,cell.z);
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    rightWallMap.SetTile(new Vector3Int(cell.x-1,cell.y,cell.z), clearTiles["rightDoor"]);
+                    DungeonUtils.PlaceTile(rightWallMap, doorCell, tiles["rightDoor"]);
+                    rightWallMap.SetColor(doorCell, new Color(1,1,1,0.5f));
                     break;
                 }
                 y = (y+1) % r1.height;
@@ -552,35 +544,23 @@ public class Initializer : MonoBehaviour
     }
 
     public void OpenChest(Vector3Int cell) {
-        blockMap.SetTile(cell, null);
-        Tile clone = Instantiate(tiles["floor"]);
-        clone.name = clone.name.Split('(')[0];
-        floorMap.SetTile(cell, clone);
+        DungeonUtils.PlaceTile(blockMap, cell, null);
+        DungeonUtils.PlaceTile(floorMap, cell, tiles["floor"]);
         DropLoot(cell);
     }
 
     public void OpenDoor(Vector3Int cell, int dir) {
-        Tile clone;
         if (dir == 0 || dir == 2) {
-            string name = leftWallMap.GetTile(cell).name;
-            if (name.IndexOf("Clear") >= 0) {
-                clone = Instantiate(clearTiles["leftDoorOpen"]);
-            } else {
-                clone = Instantiate(tiles["leftDoorOpen"]);
-            }
-            leftWallMap.SetTile(cell, clone);
+            Color color = leftWallMap.GetColor(cell);
+            DungeonUtils.PlaceTile(leftWallMap, cell, tiles["leftDoorOpen"]);
+            leftWallMap.SetColor(cell, color);
             if (dir == 0) { cell.y++; }
         } else {
-            string name = rightWallMap.GetTile(cell).name;
-            if (name.IndexOf("Clear") >= 0) {
-                clone = Instantiate(clearTiles["rightDoorOpen"]);
-            } else {
-                clone = Instantiate(tiles["rightDoorOpen"]);
-            }
-            rightWallMap.SetTile(cell, clone);
+            Color color = rightWallMap.GetColor(cell);
+            DungeonUtils.PlaceTile(rightWallMap, cell, tiles["rightDoorOpen"]);
+            rightWallMap.SetColor(cell, color);
             if (dir == 1) { cell.x++; }
         }
-        clone.name = clone.name.Split('(')[0];
         foreach (Room r in rooms) {
             if (r.Contains(cell) && !r.active) {
                 r.Draw();
@@ -667,9 +647,7 @@ public class Initializer : MonoBehaviour
             if (sentinel > 100) { return; }
         } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
 
-        Tile clone = Instantiate(tiles["chest"]);
-        clone.name = clone.name.Split('(')[0];
-        blockMap.SetTile(cell, clone);
+        DungeonUtils.PlaceTile(blockMap, cell, tiles["chest"]);
 
         // Find new chest number to add
         int last = 0;
@@ -691,12 +669,12 @@ public class Initializer : MonoBehaviour
         
         if (Random.Range(0,2) == 1) { // 50% change for gold drop
             // 1 - 46  gold at lvl 1
-            // 1 - 74  gold at lvl 3
-            // 1 - 110 gold at lvl 5
-            int pow = 7;
-            if (data.depth >= 3) { pow = 9; }
-            if (data.depth >= 5) { pow = 11; }
-            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(0,pow), 2)) + Random.Range(1, 11) + (data.depth-1)*3;
+            // 5 - 74  gold at lvl 3
+            // 17 - 110 gold at lvl 5
+            int mod = 0;
+            if (data.depth >= 3) { mod = 2; }
+            if (data.depth >= 5) { mod = 4; }
+            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(mod,7+mod), 2)) + Random.Range(1, 11);
             GameObject clone = Instantiate(
                 lootFab,
                 pos,
