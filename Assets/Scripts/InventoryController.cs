@@ -284,8 +284,8 @@ public class InventoryController : MonoBehaviour
     }
 
     public void UpdateBars() {
-        hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*((player.hp*1.0f)/player.maxhp));
-        foodBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 190f*(player.food/1000));
+        hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*((player.hp*1.0f)/player.maxhp));
+        foodBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*(player.food/1000));
     }
 
     public static int CompareItems(InventoryItem left, InventoryItem right) {
