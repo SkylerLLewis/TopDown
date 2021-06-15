@@ -5,9 +5,11 @@ using UnityEngine.Tilemaps;
 
 public class Room
 {
-    public Vector3Int head, tail, center;
+    public Vector3Int head, tail;
     public int width, height, loot;
+    public Vector3 center;
     public Room[] neighbors;
+    public Vector3Int[] doors;
     public bool active;
     Tilemap floorMap;
     Initializer mapController;
@@ -33,6 +35,7 @@ public class Room
         width = head.x - tail.x + 1;
         height = head.y - tail.y + 1;
         center = (head + tail) / 2;
+        doors = new Vector3Int[4];
         neighbors = new Room[4];
         if (parent != null) {
             SetNeighbors(parent, rooms);
@@ -140,6 +143,51 @@ public class Room
         return null;
     }
 
+    public Vector3Int GetDoorCell(int dir, Room target) {
+        Vector3Int delta = new Vector3Int(
+            Mathf.RoundToInt(target.center.x - center.x),
+            Mathf.RoundToInt(target.center.y - center.y),
+            0);
+        // Basic direction won't work
+        if (doors[dir] == null) {
+            int prev = dir;
+            // rotate left or right
+            if (Mathf.Abs(delta.y) >= Mathf.Abs(delta.x)) {
+                // Was going up/down, go left/right
+                if (delta.x >= 0) {
+                    dir = 1;
+                } else {
+                    dir = 3;
+                }
+            } else {
+                // Was going left/right, go up/down
+                if (delta.y >= 0) {
+                    dir = 0;
+                } else {
+                    dir = 2;
+                }
+            }
+            if (doors[dir] == null) {
+                // try other way
+                dir = (dir+2)%4;
+                if (doors[dir] == null) {
+                    // just turn around
+                    dir = (prev+2)%2;
+                }
+            }
+        }
+        Vector3Int cell = doors[dir];
+        if (dir == 0) {
+            cell.y++;
+        } else if (dir == 1) {
+            cell.x++;
+        } else if (dir == 2) {
+            cell.y--;
+        } else if (dir == 3) {
+            cell.x--;
+        }
+        return cell;
+    }
     
     public override string ToString() {
         string s = "Room: ";

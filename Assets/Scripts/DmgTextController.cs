@@ -60,14 +60,14 @@ public class DmgTextController : MonoBehaviour
         } else if (style == "cost") {
             textMesh.color = new Color32(255,150,0,255);
             textMesh.text = msg;
-            textMesh.fontSize = 24;
+            textMesh.fontSize = 48;
             speed /= 2;
             xvar *= 0.5f;
             yvar *= -1.2f;
         } else if (style == "gold") {
             textMesh.color = new Color32(100,255,0,255);
             textMesh.text = msg;
-            textMesh.fontSize = 24;
+            textMesh.fontSize = 48;
             speed /= 2;
             xvar *= 0.5f;
             yvar *= 1.3f;

@@ -8,9 +8,10 @@ public class EnemyBehavior : MonoBehaviour
     public float moveSpeed, attackSpeed, visualSpeed;
     public float timer;
     public bool moving=false, attacking=false, dying=false, waiting=false;
-    public Vector3Int tilePosition;
+    public Vector3Int tilePosition, targetDoorCell;
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
+    private DungeonController dungeonController;
     private Dictionary<string,Tilemap> maps;
     private GameObject arrow;
     private PlayerController player;
@@ -21,6 +22,7 @@ public class EnemyBehavior : MonoBehaviour
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
     private float count = 1.0f;
+    public Room currentRoom;
     
     // Combat Stats
     public int maxhp, hp, attack, defense, mindmg, maxdmg, moveRatio, actionCounter;
@@ -44,6 +46,9 @@ public class EnemyBehavior : MonoBehaviour
         maps = new Dictionary<string, Tilemap>();
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
+        dungeonController = floorMap.GetComponent<DungeonController>();
+        currentRoom = dungeonController.GetRooms()[0];
+        targetDoorCell = Vector3Int.zero;
         pathFinder = floorMap.GetComponent<PathFinder>();
         canvas = GameObject.FindWithTag("WorldCanvas");
         //tilePosition = floorMap.WorldToCell(this.transform.position);
@@ -66,28 +71,38 @@ public class EnemyBehavior : MonoBehaviour
         int [] directions = new int[3];
         Vector3Int targetCell;
 
-        int deltax = player.tilePosition.x - tilePosition.x;
-        int deltay = player.tilePosition.y - tilePosition.y;
+        Vector3Int delta = new Vector3Int();
+        delta.x = player.tilePosition.x - tilePosition.x;
+        delta.y = player.tilePosition.y - tilePosition.y;
         // Manhattan distance
-        int distance = Mathf.Abs(deltax) + Mathf.Abs(deltay);
+        int distance = Mathf.Abs(delta.x) + Mathf.Abs(delta.y);
 
         // Ranged? Run away!
         if (enemyType == "Ranged") {
-            if (distance < 4) {
-                deltax *= -1;
-                deltay *= -1;
+            if (distance < 4 && currentRoom == player.currentRoom) {
+                delta.x *= -1;
+                delta.y *= -1;
             }
         }
 
-        // Get uninformed direction
-        if (deltay > 0) {
+        // Get naiive direction
+        if (delta.y > 0) {
             direction = 0;
-        } else if (deltax > 0) {
+        } else if (delta.x > 0) {
             direction = 1;
-        } else if (deltay < 0) {
+        } else if (delta.y < 0) {
             direction = 2;
-        } else if (deltax < 0) {
+        } else if (delta.x < 0) {
             direction = 3;
+        }
+
+        // In another room? Make for the door!
+        if (currentRoom != player.currentRoom) {
+            if (targetDoorCell == Vector3Int.zero) {
+                targetDoorCell = currentRoom.GetDoorCell(direction, player.currentRoom);
+            }
+            delta.x = targetDoorCell.x - tilePosition.x;
+            delta.y = targetDoorCell.y - tilePosition.y;
         }
         
         if (enemyType == "Melee") {
@@ -146,17 +161,21 @@ public class EnemyBehavior : MonoBehaviour
 
         // Try to move
         // Decide best direction for moving
-        if (Mathf.Abs(deltay) >= Mathf.Abs(deltax)) {
-            if (deltay >= 0) {
+        if (Mathf.Abs(delta.y) >= Mathf.Abs(delta.x)) {
+            if (delta.y > 0) {
                 direction = 0;
-            } else {
+            } else if (delta.y < 0) {
                 direction = 2;
+            } else {
+                direction = Utilities.Choice(0, 2);
             }
             if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                if (deltax >= 0) {
+                if (delta.x > 0) {
                     direction = 1;
-                } else {
+                } else if (delta.x < 0) {
                     direction = 3;
+                } else {
+                    direction = Utilities.Choice(1, 3);
                 }
                 if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
                     direction = (direction + 2) % 4;
@@ -165,17 +184,21 @@ public class EnemyBehavior : MonoBehaviour
                     }
                 }
             }
-        } else if (Mathf.Abs(deltax) >= Mathf.Abs(deltay)) {
-            if (deltax >= 0) {
+        } else if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y)) {
+            if (delta.x > 0) {
                 direction = 1;
-            } else {
+            } else if (delta.x < 0) {
                 direction = 3;
+            } else {
+                direction = Utilities.Choice(1, 3);
             }
             if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
-                if (deltay >= 0) {
+                if (delta.y > 0) {
                     direction = 0;
-                } else {
+                } else if (delta.y < 0) {
                     direction = 2;
+                } else {
+                    direction = Utilities.Choice(0, 2);
                 }
                 if (!pathFinder.DirectionWalkable(tilePosition, direction, "enemy")) {
                     direction = (direction + 2) % 4;
@@ -214,6 +237,10 @@ public class EnemyBehavior : MonoBehaviour
             waiting = true;
             count = 0f;
             EndTurn(moveSpeed);
+        }
+        if (!currentRoom.Contains(tilePosition)) {
+            currentRoom = Room.FindByCell(tilePosition, dungeonController.GetRooms());
+            targetDoorCell = Vector3Int.zero;
         }
     }
 

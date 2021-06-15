@@ -56,7 +56,6 @@ public class UIController : MonoBehaviour
     
 
     public void AbilityActivate(string name) {
-        Debug.Log("This: "+this.GetComponent<UIController>().ToString());
         player.Ability(name);
     }
 

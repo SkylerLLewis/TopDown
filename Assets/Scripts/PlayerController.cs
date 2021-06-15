@@ -14,7 +14,8 @@ public class PlayerController : MonoBehaviour
     public Vector3Int tilePosition;
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
-    private string mapType;
+    private PathFinder pathFinder;
+    private List<Vector3Int> rangedTiles;
     private Dictionary<string,Tilemap> maps;
     private PersistentData data;
     private DungeonController dungeonController;
@@ -22,10 +23,12 @@ public class PlayerController : MonoBehaviour
     System.Action<Vector3Int> NotableCollide;
     System.Action<Vector3Int, int> OpenDoor;
     System.Action<Vector3Int> OpenChest;
+    System.Action<List<Vector3Int>> HighlightTiles;
     System.Func<Vector3Int> FetchPosition;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
+    private Camera _mainCamera;
     private GameObject canvas;
     private UIController uiController;
     private GameObject textFab;
@@ -35,6 +38,8 @@ public class PlayerController : MonoBehaviour
     private float count = 1.0f, combatCounter = 0f;
     private int combatIsActive = 5;
     public bool inCombat = false;
+    private string waitingToExecute = "";
+    public Room currentRoom;
     
     // Combat Stats
     public Weapon weapon;
@@ -60,18 +65,19 @@ public class PlayerController : MonoBehaviour
         }
         dungeonController = floorMap.GetComponent<DungeonController>();
         if (dungeonController != null) {
-            mapType = "Dungeon";
             NotableCollide = dungeonController.NotableCollide;
             OpenDoor = dungeonController.OpenDoor;
             OpenChest = dungeonController.OpenChest;
+            HighlightTiles = dungeonController.HighlightTiles;
         }
         villageController = floorMap.GetComponent<VillageController>();
         if (villageController != null) {
-            mapType = "Village";
             NotableCollide = villageController.NotableCollide;
             OpenDoor = villageController.OpenDoor;
             FetchPosition = villageController.FetchPosition;
         }
+        pathFinder = floorMap.GetComponent<PathFinder>();
+        rangedTiles = new List<Vector3Int>();
         maps = new Dictionary<string, Tilemap>();
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
@@ -93,9 +99,13 @@ public class PlayerController : MonoBehaviour
             transform.position = pos;
             animator.CrossFade(walkNames[data.direction], 0f);
         }
+        if (data.mapType == "Dungeon") {
+            currentRoom = dungeonController.GetRooms()[0];
+        }
         entities = GameObject.FindWithTag("EntityList");
         entityController = entities.GetComponent<EntityController>();
         mainCamera = GameObject.FindWithTag("MainCamera");
+        _mainCamera = mainCamera.GetComponent<Camera>();
         Vector3 camVec = this.transform.position;
         camVec.z = -10;
         mainCamera.transform.position = camVec;
@@ -141,7 +151,16 @@ public class PlayerController : MonoBehaviour
                 Input.mousePosition.y/Screen.height);
             
             // Using interface?
-            if (pos.x<0.2 || pos.x>0.8) {
+            if (pos.x<0.1 || pos.x>0.9) {
+                return;
+            }
+
+            // Use Ability?
+            if (waitingToExecute != "") {
+                Vector3Int aimCell = PathFinder.WorldToTile(
+                    _mainCamera.ScreenToWorldPoint(
+                        Input.mousePosition));
+                Debug.Log("Target cell is: "+aimCell);
                 return;
             }
 
@@ -208,7 +227,7 @@ public class PlayerController : MonoBehaviour
             if (targetWall != null) {
                 if (targetWall.name.ToLower().IndexOf(face+"door") >= 0) { 
                     if (targetWall.name.ToLower().IndexOf("open") < 0) {
-                        if (mapType == "Dungeon") {
+                        if (data.mapType == "Dungeon") {
                             // Open door and simulate an attack move on door
                             blocked = true;
                             OpenDoor(wallCell, direction);
@@ -222,7 +241,8 @@ public class PlayerController : MonoBehaviour
                                 combatCounter = combatIsActive;
                                 inCombat = true;
                             }
-                        } else if (mapType == "Village") {
+                            readyToEnd = true;
+                        } else if (data.mapType == "Village") {
                             // It's a village, just walk on in.
                             OpenDoor(wallCell, direction);
                             blocked = false;
@@ -245,6 +265,7 @@ public class PlayerController : MonoBehaviour
                     highPoint = targetPosition;
                     targetPosition = startPosition;
                     count = 0.0f;
+                    readyToEnd = true;
                 }
                 NotableCollide(targetCell);
                 blocked = true;
@@ -303,7 +324,14 @@ public class PlayerController : MonoBehaviour
                     animator.CrossFade(attackNames[direction], 0f);
                 }
             }
+            // Check if room needs to change
+            if (data.mapType == "Dungeon") {
+                if (!currentRoom.Contains(tilePosition)) {
+                    currentRoom = Room.FindByCell(tilePosition, dungeonController.GetRooms());
+                }
+            }
         } else if (Input.GetMouseButtonUp(0) && waiting) {
+            // Each wait must be an individual click
             waiting = false;
         }
         // End turn after brief delay
@@ -437,6 +465,28 @@ public class PlayerController : MonoBehaviour
 
     public void Ability(string abilityName) {
         Debug.Log("Ability "+abilityName+" activated!");
+        if (abilityName == "Arrow") {
+            waitingToExecute = abilityName;
+            RangeFind(range:6);
+        }
+    }
+
+    private void ExecuteAbility() {
+
+    }
+
+    private void RangeFind(int range) {
+        rangedTiles = pathFinder.GetTilesInSight(tilePosition, 6);
+        string s = "Cells:\n";
+        foreach (Vector3Int cell in rangedTiles) {
+            s += "    "+cell+"\n";
+        }
+        Debug.Log(s);
+        HighlightTiles(rangedTiles);
+    }
+
+    private void ShootArrow() {
+
     }
 
     private void Die() {

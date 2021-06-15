@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public class PersistentData : MonoBehaviour
 {
     public int depth, direction, entrance;
-    public string floorDirection, loadedMenu;
+    public string floorDirection, loadedMenu, mapType;
     public int playerHp, gold;
     public float food;
     public Weapon weapon;
@@ -33,18 +33,18 @@ public class PersistentData : MonoBehaviour
         inventory.Add(new Potion("Health Potion"));
         // Shopkeeper List
         shopList = new List<InventoryItem>();
-        List<string> weaponOptions = Sample<string>(4, Weapon.WeaponTiers[0]);
+        List<string> weaponOptions = Utilities.Sample(4, Weapon.WeaponTiers[0]);
         foreach (string item in weaponOptions) {
             shopList.Add(new Weapon(item));
         }
-        weaponOptions = Sample<string>(3, Weapon.WeaponTiers[1]);
+        weaponOptions = Utilities.Sample(3, Weapon.WeaponTiers[1]);
         foreach (string item in weaponOptions) {
             shopList.Add(new Weapon(item));
         }
-        shopList.Add(new Weapon(Weapon.WeaponTiers[2][Random.Range(0, Weapon.WeaponTiers[2].Count)]));
-        shopList.Add(new Armor(Armor.ArmorTiers[0][Random.Range(0, Armor.ArmorTiers[0].Count)]));
-        shopList.Add(new Armor(Armor.ArmorTiers[1][Random.Range(0, Armor.ArmorTiers[1].Count)]));
-        shopList.Add(new Armor(Armor.ArmorTiers[2][Random.Range(0, Armor.ArmorTiers[2].Count)]));
+        shopList.Add(new Weapon(Utilities.Choice(Weapon.WeaponTiers[2])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[0])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[1])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[2])));
         shopList.Add(new Potion("Health Potion"));
         shopList.Add(new Food("Moldy Bread"));
         shopList.Add(new Food("Moldy Loaf"));
@@ -89,17 +89,5 @@ public class PersistentData : MonoBehaviour
             inventory.RemoveAt(index);
         }
         return true;
-    }
-
-    public static List<T> Sample<T>(int count, in List<T> list) {
-        List<T> newList = new List<T>();
-        for (int i=0; i<list.Count; i++) {
-            if (Random.value < (float)count/(list.Count-i)) {
-                newList.Add(list[i]);
-                count--;
-                if (count == 0) break;
-            }
-        }
-        return newList;
     }
 }

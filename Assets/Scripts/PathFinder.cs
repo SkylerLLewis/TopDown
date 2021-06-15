@@ -49,7 +49,15 @@ public class PathFinder : MonoBehaviour
     }
 
     public static Vector3 TileToWorld(Vector3Int p) {
-        return new Vector3(p.x-p.y, (p.x+p.y)/2, 0);
+        return new Vector3(p.x-p.y, (p.x+p.y)/2f, 0);
+    }
+
+    public static Vector3Int WorldToTile(Vector3 p) {
+        Debug.Log("World Vec: "+p+"\n  x:"+p.x+" - "+p.y+"\n  y:"+p.y+" - "+p.x);
+        return new Vector3Int(
+            Mathf.RoundToInt(p.x+p.y/2),
+            Mathf.RoundToInt(p.y-p.x),
+            0);
     }
 
     public int PathFind(Vector3Int s, Vector3Int e) {
@@ -281,5 +289,26 @@ public class PathFinder : MonoBehaviour
 
     public bool DirectionWalkable(Vector3Int currentCell, int direction, string obstructors="") {
         return IsWalkable(currentCell, DirectionToCell(direction, currentCell), obstructors);
+    }
+
+    public List<Vector3Int> GetTilesInSight(Vector3Int center, int range) {
+        List<Vector3Int> cells = new List<Vector3Int>();
+        Vector3Int cell = new Vector3Int();
+        int width = center.x+range;
+        int height = center.y+range;
+        for (int x=center.x-range; x <= width; x++) {
+            for (int y=center.y-range; y <= height; y++) {
+                cell.x = x;
+                cell.y = y;
+                if (floorMap.GetTile(cell) != null) {
+                    if (Vector3Int.Distance(center, cell) <= 6 &&
+                    LineOfSight(center, cell)) {
+                        Vector3Int copy = cell;
+                        cells.Add(cell);
+                    }
+                }
+            }
+        }
+        return cells;
     }
 }

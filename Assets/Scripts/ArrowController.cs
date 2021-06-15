@@ -16,9 +16,9 @@ public class ArrowController : MonoBehaviour
         damage = dmg;
         style = s;
         startPosition = transform.position;
-        startPosition.y += 0.5f;
+        startPosition.y += 0.75f;
         targetPosition = PathFinder.TileToWorld(p.tilePosition);
-        targetPosition.y += 0.5f;
+        targetPosition.y += 0.75f;
         count = 0;
         speed = 15/Vector3.Distance(startPosition, targetPosition);
         // Set rotation of Arrow

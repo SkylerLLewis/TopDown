@@ -19,7 +19,7 @@ public class Initializer : MonoBehaviour
     private Dictionary<string, GameObject> enemyFabs;
     private Dictionary<string, int> enemyWheel, lootWheel, goldLedger;
     private Dictionary<string, Sprite> goldSprites;
-    private List<Room> rooms;
+    public List<Room> rooms;
     private PersistentData data;
     
     void Awake() {
@@ -370,7 +370,7 @@ public class Initializer : MonoBehaviour
                 } else if (rand == 19) {
                     tile = tiles["floor3"];
                 }
-                DungeonUtils.PlaceTile(floorMap, placement, tile);
+                Utilities.PlaceTile(floorMap, placement, tile);
             }
         }
         // Place Walls
@@ -378,8 +378,8 @@ public class Initializer : MonoBehaviour
         // Create exits, if applicable
         foreach (KeyValuePair<string,Vector3Int> exit in notableCells) {
             if (r.Contains(exit.Value)) {
-                DungeonUtils.PlaceTile(floorMap, exit.Value, null);
-                DungeonUtils.PlaceTile(blockMap, exit.Value, tiles[exit.Key]);
+                Utilities.PlaceTile(floorMap, exit.Value, null);
+                Utilities.PlaceTile(blockMap, exit.Value, tiles[exit.Key]);
             }
         }
         // Place Doors
@@ -444,7 +444,7 @@ public class Initializer : MonoBehaviour
         if (currentWall != null) { // Wall in-place, clarify it
             map.SetColor(cell, new Color(1,1,1,0.25f));
         } else { // Place wall normally
-            DungeonUtils.PlaceTile(map, cell, tiles[name]);
+            Utilities.PlaceTile(map, cell, tiles[name]);
             if (clear) {
                 map.SetColor(cell, new Color(1,1,1,0.25f));
             }
@@ -461,7 +461,9 @@ public class Initializer : MonoBehaviour
                 cell.x = r1.tail.x + x;
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y+1,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    DungeonUtils.PlaceTile(leftWallMap, cell, tiles["leftDoor"]);
+                    Utilities.PlaceTile(leftWallMap, cell, tiles["leftDoor"]);
+                    r1.doors[0] = cell;
+                    r2.doors[2] = new Vector3Int(cell.x, cell.y+1, 0);
                     break;
                 }
                 x = (x+1) % r1.width;
@@ -474,7 +476,9 @@ public class Initializer : MonoBehaviour
                 cell.y = r1.tail.y + y;
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    DungeonUtils.PlaceTile(rightWallMap, cell, tiles["rightDoor"]);
+                    Utilities.PlaceTile(rightWallMap, cell, tiles["rightDoor"]);
+                    r1.doors[1] = cell;
+                    r2.doors[3] = new Vector3Int(cell.x+1, cell.y, 0);
                     break;
                 }
                 y = (y+1) % r1.height;
@@ -488,8 +492,10 @@ public class Initializer : MonoBehaviour
                 Vector3Int doorCell = new Vector3Int(cell.x,cell.y-1,cell.z);
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    DungeonUtils.PlaceTile(leftWallMap, doorCell, tiles["leftDoor"]);
+                    Utilities.PlaceTile(leftWallMap, doorCell, tiles["leftDoor"]);
                     leftWallMap.SetColor(doorCell, new Color(1,1,1,0.5f));
+                    r1.doors[2] = cell;
+                    r2.doors[0] = new Vector3Int(cell.x, cell.y-1, 0);
                     break;
                 }
                 x = (x+1) % r1.width;
@@ -503,8 +509,10 @@ public class Initializer : MonoBehaviour
                 Vector3Int doorCell = new Vector3Int(cell.x-1,cell.y,cell.z);
                 if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))
                 && !notableCells.ContainsValue(cell)) {
-                    DungeonUtils.PlaceTile(rightWallMap, doorCell, tiles["rightDoor"]);
+                    Utilities.PlaceTile(rightWallMap, doorCell, tiles["rightDoor"]);
                     rightWallMap.SetColor(doorCell, new Color(1,1,1,0.5f));
+                    r1.doors[3] = cell;
+                    r2.doors[1] = new Vector3Int(cell.x-1, cell.y, 0);
                     break;
                 }
                 y = (y+1) % r1.height;
@@ -544,20 +552,20 @@ public class Initializer : MonoBehaviour
     }
 
     public void OpenChest(Vector3Int cell) {
-        DungeonUtils.PlaceTile(blockMap, cell, null);
-        DungeonUtils.PlaceTile(floorMap, cell, tiles["floor"]);
+        Utilities.PlaceTile(blockMap, cell, null);
+        Utilities.PlaceTile(floorMap, cell, tiles["floor"]);
         DropLoot(cell);
     }
 
     public void OpenDoor(Vector3Int cell, int dir) {
         if (dir == 0 || dir == 2) {
             Color color = leftWallMap.GetColor(cell);
-            DungeonUtils.PlaceTile(leftWallMap, cell, tiles["leftDoorOpen"]);
+            Utilities.PlaceTile(leftWallMap, cell, tiles["leftDoorOpen"]);
             leftWallMap.SetColor(cell, color);
             if (dir == 0) { cell.y++; }
         } else {
             Color color = rightWallMap.GetColor(cell);
-            DungeonUtils.PlaceTile(rightWallMap, cell, tiles["rightDoorOpen"]);
+            Utilities.PlaceTile(rightWallMap, cell, tiles["rightDoorOpen"]);
             rightWallMap.SetColor(cell, color);
             if (dir == 1) { cell.x++; }
         }
@@ -647,7 +655,7 @@ public class Initializer : MonoBehaviour
             if (sentinel > 100) { return; }
         } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
 
-        DungeonUtils.PlaceTile(blockMap, cell, tiles["chest"]);
+        Utilities.PlaceTile(blockMap, cell, tiles["chest"]);
 
         // Find new chest number to add
         int last = 0;
@@ -744,5 +752,15 @@ public class Initializer : MonoBehaviour
             }
             notableCells.Add("Loot"+(last+1), cell);
         }
+    }
+
+    public void HighlightTiles(List<Vector3Int> cells) {
+        foreach (Vector3Int cell in cells) {
+            floorMap.SetColor(cell, new Color(0.5f,0.5f,1,1));
+        }
+    }
+
+    public List<Room> GetRooms() {
+        return rooms;
     }
 }
