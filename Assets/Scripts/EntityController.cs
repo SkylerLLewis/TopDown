@@ -26,7 +26,7 @@ public class EntityController : MonoBehaviour
             EnemyBehavior e = child.GetComponent<EnemyBehavior>();
             e.timer -= time;
             // Only add living/fast enough
-            if (e.timer < 0 && !e.dying) {
+            if (e.timer < 0 && !e.dying && !e.disabled) {
                 entities.Add(e);
                 if (e.moveSpeed > slowest) {
                     slowest = e.moveSpeed;

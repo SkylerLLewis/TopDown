@@ -7,7 +7,7 @@ public class PersistentData : MonoBehaviour
 {
     public int depth, direction, entrance;
     public string floorDirection, loadedMenu, mapType;
-    public int playerHp, gold;
+    public int playerHp, mana, gold;
     public float food;
     public Weapon weapon;
     public Armor armor;
@@ -19,6 +19,7 @@ public class PersistentData : MonoBehaviour
         entrance = 0;
         gold = 0;
         playerHp = 0;
+        mana = 0;
         food = 500;
         direction = 2;
         floorDirection = "down";

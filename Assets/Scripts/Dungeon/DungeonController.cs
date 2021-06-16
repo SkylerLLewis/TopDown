@@ -8,7 +8,7 @@ public class DungeonController : MonoBehaviour
     public Dictionary<string,Vector3Int> notableCells;
     public System.Action<Vector3Int,int> OpenDoorRef;
     public System.Action<Vector3Int> OpenChestRef;
-    public System.Action<List<Vector3Int>> HighlightTilesRef;
+    public System.Action<List<Vector3Int>,Color> HighlightTilesRef;
     public System.Action<string> NotableActionsRef;
     public System.Func<List<Room>> GetRoomsRef;
     private PersistentData data;
@@ -50,7 +50,7 @@ public class DungeonController : MonoBehaviour
         return GetRoomsRef();
     }
 
-    public void HighlightTiles(List<Vector3Int> tiles) {
-        HighlightTilesRef(tiles);
+    public void HighlightTiles(List<Vector3Int> tiles, Color color) {
+        HighlightTilesRef(tiles, color);
     }
 }

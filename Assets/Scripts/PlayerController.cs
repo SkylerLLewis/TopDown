@@ -23,7 +23,7 @@ public class PlayerController : MonoBehaviour
     System.Action<Vector3Int> NotableCollide;
     System.Action<Vector3Int, int> OpenDoor;
     System.Action<Vector3Int> OpenChest;
-    System.Action<List<Vector3Int>> HighlightTiles;
+    System.Action<List<Vector3Int>,Color> HighlightTiles;
     System.Func<Vector3Int> FetchPosition;
     private GameObject entities;
     private EntityController entityController;
@@ -31,20 +31,20 @@ public class PlayerController : MonoBehaviour
     private Camera _mainCamera;
     private GameObject canvas;
     private UIController uiController;
-    private GameObject textFab;
+    private GameObject textFab, magicBolt;
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
     private float count = 1.0f, combatCounter = 0f;
     private int combatIsActive = 5;
     public bool inCombat = false;
-    private string waitingToExecute = "";
+    private string rangedToExecute = "";
     public Room currentRoom;
     
     // Combat Stats
     public Weapon weapon;
     public Armor armor;
-    public int maxhp, hp, attack, defense, mindmg, maxdmg, armorDR;
+    public int maxhp, hp, attack, defense, mindmg, maxdmg, armorDR, maxMana, mana;
 
     void Start() {
         // Load Controllers
@@ -84,13 +84,17 @@ public class PlayerController : MonoBehaviour
         uiController = GameObject.Find("UICanvas").GetComponent<UIController>();
         canvas = GameObject.FindWithTag("WorldCanvas");
 
+        entities = GameObject.FindWithTag("EntityList");
+        entityController = entities.GetComponent<EntityController>();
+
         // Load Resources
         walkNames = new string[4] {"walkUp", "walkRight", "walkDown", "walkLeft"};
         attackNames = new string[4] {"attackUp", "attackRight", "attackDown", "attackLeft"};
         targetPosition = this.transform.position;
         textFab = Resources.Load("Prefabs/DamageText") as GameObject;
+        magicBolt = Resources.Load("Prefabs/MagicBolt") as GameObject;
 
-        // Set Attributes
+        // Set Position
         tilePosition = new Vector3Int(0,0,0);
         if (FetchPosition != null) {
             tilePosition = FetchPosition();
@@ -102,19 +106,22 @@ public class PlayerController : MonoBehaviour
         if (data.mapType == "Dungeon") {
             currentRoom = dungeonController.GetRooms()[0];
         }
-        entities = GameObject.FindWithTag("EntityList");
-        entityController = entities.GetComponent<EntityController>();
+        facing = new string[2];
+
+        // Orient Camera
         mainCamera = GameObject.FindWithTag("MainCamera");
         _mainCamera = mainCamera.GetComponent<Camera>();
         Vector3 camVec = this.transform.position;
         camVec.z = -10;
         mainCamera.transform.position = camVec;
-        facing = new string[2];
+
+        // Set Attributes
+        maxMana = 20;
+        mana = data.mana;
+        if (mana == 0) mana = maxMana;
         maxhp = 20;
         hp = data.playerHp;
-        if (hp == 0) {
-            hp = maxhp;
-        }
+        if (hp == 0) hp = maxhp;
         food = data.food;
         uiController.UpdateBars();
         attack = 5;
@@ -156,11 +163,21 @@ public class PlayerController : MonoBehaviour
             }
 
             // Use Ability?
-            if (waitingToExecute != "") {
+            if (rangedToExecute != "") {
+                waiting = true;
                 Vector3Int aimCell = PathFinder.WorldToTile(
                     _mainCamera.ScreenToWorldPoint(
                         Input.mousePosition));
-                Debug.Log("Target cell is: "+aimCell);
+                enemyList = GameObject.FindGameObjectsWithTag("Enemy");
+                bool hit = false;
+                foreach (GameObject Eobj in enemyList) {
+                    EnemyBehavior e = Eobj.GetComponent<EnemyBehavior>();
+                    if (aimCell == e.tilePosition && rangedTiles.Contains(aimCell)) {
+                        hit = true;
+                        ExecuteRanged(e);
+                        break;
+                    }
+                }
                 return;
             }
 
@@ -464,25 +481,55 @@ public class PlayerController : MonoBehaviour
     }
 
     public void Ability(string abilityName) {
-        Debug.Log("Ability "+abilityName+" activated!");
-        if (abilityName == "Arrow") {
-            waitingToExecute = abilityName;
+        if (rangedToExecute != "") {
+            rangedToExecute = "";
+            HighlightTiles(rangedTiles, new Color(1,1,1,1));
+            return;
+        }
+        if (abilityName == "MagicMissile") {
+            if (mana < 4) return;
+            rangedToExecute = abilityName;
             RangeFind(range:6);
         }
     }
 
-    private void ExecuteAbility() {
+    private void ExecuteRanged(EnemyBehavior e) {
+        if (rangedToExecute == "MagicMissile") {
+            MagicMissile(e);
+        }
+        rangedToExecute = "";
+        HighlightTiles(rangedTiles, new Color(1,1,1,1));
+    }
 
+    void MagicMissile(EnemyBehavior target) {
+        mana -= 4;
+        uiController.UpdateBars();
+        int damage;
+        int roll = Mathf.RoundToInt(Random.Range(1,20+1))+5;
+        string style = "dmg";
+        if (roll >= 8) {
+            damage = Random.Range(2,5+1);
+            if (Random.Range(0, 100) < 10) {
+                damage += Random.Range(2,5+1);
+                style = "crit";
+            }
+        } else {
+            damage = 0;
+            style = "miss";
+        }
+        GameObject clone = Instantiate(
+            magicBolt,
+            transform.position,
+            Quaternion.identity);
+        clone.name = clone.name.Split('(')[0];
+        clone.GetComponent<ProjectileController>().Shoot(target, damage, style);
+        target.FutureDamage(damage);
+        EndTurn(2);
     }
 
     private void RangeFind(int range) {
         rangedTiles = pathFinder.GetTilesInSight(tilePosition, 6);
-        string s = "Cells:\n";
-        foreach (Vector3Int cell in rangedTiles) {
-            s += "    "+cell+"\n";
-        }
-        Debug.Log(s);
-        HighlightTiles(rangedTiles);
+        HighlightTiles(rangedTiles, new Color(0.5f,0.5f,1,1));
     }
 
     private void ShootArrow() {
@@ -494,18 +541,29 @@ public class PlayerController : MonoBehaviour
         animator.CrossFade("die", 0f);
     }
 
-    public void EndTurn() {
+    public void EndTurn(float speedMod=1) {
         if (food > 0) {
             if (combatCounter <= 0) {
-                if (hp != maxhp && Random.Range(0f,3f) < speed) {
-                    if (waiting) { // Resting, triple regen & food cost
-                        hp += 3;
+                // Resting, quadruple regen & food cost
+                if (waiting) {
+                    food -= speed*3;
+                    if(hp != maxhp && Random.Range(0f,2f) < speed) {
+                        hp += 2;
                         if (hp > maxhp) hp = maxhp;
-                        FloatText("heal", "3");
-                        food -= speed*2;
-                    } else { // Just walking
+                        FloatText("heal", "2");
+                    }
+                    if (mana != maxMana && Random.Range(0,2f) < speed) {
+                        mana++;
+                        FloatText("mana", "1");
+                    }
+                } else {// Just walking
+                    if(hp != maxhp && Random.Range(0f,4f) < speed) {
                         hp++;
                         FloatText("heal", "1");
+                    }
+                    if (mana != maxMana && Random.Range(0,8f) < speed) {
+                        mana++;
+                        FloatText("mana", "1");
                     }
                 }
             } else if (combatCounter > 0) {
@@ -517,11 +575,12 @@ public class PlayerController : MonoBehaviour
             food -= speed;
         }
         uiController.UpdateBars();
-        entities.BroadcastMessage("turnStart", speed);
+        entities.BroadcastMessage("turnStart", speed*speedMod);
     }
 
     void OnDestroy() {
         data.playerHp = hp;
+        data.mana = mana;
         data.food = food;
     }
 }

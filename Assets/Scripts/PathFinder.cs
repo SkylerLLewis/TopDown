@@ -53,10 +53,10 @@ public class PathFinder : MonoBehaviour
     }
 
     public static Vector3Int WorldToTile(Vector3 p) {
-        Debug.Log("World Vec: "+p+"\n  x:"+p.x+" - "+p.y+"\n  y:"+p.y+" - "+p.x);
+        p.y -= 0.5f;
         return new Vector3Int(
-            Mathf.RoundToInt(p.x+p.y/2),
-            Mathf.RoundToInt(p.y-p.x),
+            Mathf.RoundToInt(p.y+p.x/2),
+            Mathf.RoundToInt(p.y-p.x/2),
             0);
     }
 

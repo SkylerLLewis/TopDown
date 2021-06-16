@@ -7,7 +7,7 @@ public class EnemyBehavior : MonoBehaviour
 {
     public float moveSpeed, attackSpeed, visualSpeed;
     public float timer;
-    public bool moving=false, attacking=false, dying=false, waiting=false;
+    public bool moving=false, attacking=false, dying=false, waiting=false, disabled=false;
     public Vector3Int tilePosition, targetDoorCell;
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
@@ -310,7 +310,7 @@ public class EnemyBehavior : MonoBehaviour
             transform.position,
             Quaternion.identity);
         clone.name = clone.name.Split('(')[0];
-        clone.GetComponent<ArrowController>().Shoot(player, damage, style);
+        clone.GetComponent<EnemyProjectileController>().Shoot(player, damage, style);
     }
 
     public void Damage(int dmg, string style) {
@@ -324,6 +324,13 @@ public class EnemyBehavior : MonoBehaviour
                 Die();
             }
         }
+    }
+
+    public void FutureDamage(int dmg) {
+        if (dmg >= hp) {
+            disabled = true;
+        }
+        return;
     }
 
     private void EndTurn(float time) {

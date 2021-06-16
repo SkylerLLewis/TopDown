@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ArrowController : MonoBehaviour
+public class EnemyProjectileController : MonoBehaviour
 {
     Vector3 startPosition, targetPosition;
     float count;

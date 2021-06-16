@@ -754,9 +754,9 @@ public class Initializer : MonoBehaviour
         }
     }
 
-    public void HighlightTiles(List<Vector3Int> cells) {
+    public void HighlightTiles(List<Vector3Int> cells, Color color) {
         foreach (Vector3Int cell in cells) {
-            floorMap.SetColor(cell, new Color(0.5f,0.5f,1,1));
+            floorMap.SetColor(cell, color);
         }
     }
 

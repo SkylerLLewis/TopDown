@@ -153,8 +153,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   depth: 0
+  direction: 0
   entrance: 0
-  direction: 
+  floorDirection: 
+  loadedMenu: 
+  mapType: 
   playerHp: 0
   gold: 0
   food: 0
