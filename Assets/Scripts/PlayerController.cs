@@ -9,7 +9,7 @@ public class PlayerController : MonoBehaviour
     private string[] walkNames, attackNames;
     public float speed, food;
     public bool moving = false, attacking = false, dying = false, waiting = false, readyToEnd = false;
-    public string saySomething;
+    public string saySomething = "";
     public int direction;
     public Vector3Int tilePosition;
     public string[] facing;
@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour
     private List<Vector3Int> rangedTiles;
     private Dictionary<string,Tilemap> maps;
     private PersistentData data;
-    private DungeonController dungeonController;
+    public DungeonController dungeonController;
     private VillageController villageController;
     System.Action<Vector3Int> NotableCollide;
     System.Action<Vector3Int, int> OpenDoor;
@@ -40,6 +40,7 @@ public class PlayerController : MonoBehaviour
     public bool inCombat = false;
     private string rangedToExecute = "";
     public Room currentRoom;
+    public List<Effect> effects;
     
     // Combat Stats
     public Weapon weapon;
@@ -134,7 +135,14 @@ public class PlayerController : MonoBehaviour
         if (data.armor != null) {
             EquipArmor(data.armor);
         }
-        saySomething = "";
+        // Apply effects
+        effects = new List<Effect>();
+        if (data.playerEffects != null) {
+            effects = data.playerEffects;
+            foreach (Effect e in effects) {
+                e.Apply(this);
+            }
+        }
     }
 
 
@@ -169,11 +177,9 @@ public class PlayerController : MonoBehaviour
                     _mainCamera.ScreenToWorldPoint(
                         Input.mousePosition));
                 enemyList = GameObject.FindGameObjectsWithTag("Enemy");
-                bool hit = false;
                 foreach (GameObject Eobj in enemyList) {
                     EnemyBehavior e = Eobj.GetComponent<EnemyBehavior>();
                     if (aimCell == e.tilePosition && rangedTiles.Contains(aimCell)) {
-                        hit = true;
                         ExecuteRanged(e);
                         break;
                     }
@@ -429,10 +435,14 @@ public class PlayerController : MonoBehaviour
 
     public void Heal(int heal) {
         hp += heal;
-        if (hp > maxhp) {
-            hp = maxhp;
-        }
+        if (hp > maxhp) hp = maxhp;
         FloatText("heal", heal.ToString());
+    }
+
+    public void GetMana(int m) {
+        mana += m;
+        if (mana > maxMana) mana = maxMana;
+        FloatText("mana", m.ToString());
     }
 
     public void Feed(int f) {
@@ -461,6 +471,7 @@ public class PlayerController : MonoBehaviour
     public void EquipArmor(Armor a) {
         if (armor != null) { // Unequip old armor
             defense -= armor.def;
+            attack -= armor.atk;
             speed /= (1/armor.speed);
             armorDR -= armor.armor;
             mindmg -= armor.dmg;
@@ -468,10 +479,20 @@ public class PlayerController : MonoBehaviour
         }
         armor = a;
         defense += armor.def;
+        attack += armor.atk;
         speed *= (1/armor.speed);
         armorDR += armor.armor;
         mindmg += armor.dmg;
         maxdmg += armor.dmg;
+    }
+
+    public void SpeedEffect(float s, float dur) {
+        effects.Add(new Effect("Speed", (1/s), dur, this));
+        FloatText("msg", "I am speed");
+    }
+
+    public void RegenEffect(int regen, float dur) {
+        effects.Add(new Effect("Regeneration", regen, dur, this));
     }
 
     public void FloatText(string style, string msg="") {
@@ -574,6 +595,16 @@ public class PlayerController : MonoBehaviour
             }
             food -= speed;
         }
+        // Cycle through active effects
+        for (int i=effects.Count-1; i >= 0; i--) {
+            Effect e = effects[i];
+            e.duration -= speed;
+            e.Ongoing(this);
+            if (e.duration <= 0) {
+                e.Remove(this);
+                effects.RemoveAt(i);
+            }
+        }
         uiController.UpdateBars();
         entities.BroadcastMessage("turnStart", speed*speedMod);
     }
@@ -582,5 +613,45 @@ public class PlayerController : MonoBehaviour
         data.playerHp = hp;
         data.mana = mana;
         data.food = food;
+        data.playerEffects = effects;
+    }
+
+    // A bundle of active effects for easy saving
+    public class Effect {
+        public string typeName;
+        public float effect, duration, effectTimer;
+        public Effect(string t, float e, float dur, PlayerController p) {
+            typeName = t;
+            effect = e;
+            duration = dur;
+            effectTimer = 0;
+            Apply(p);
+        }
+
+        public void Apply(PlayerController p) {
+            if (typeName == "Speed") {
+                Debug.Log("Applying speed "+effect+"!");
+                p.speed *= effect;
+                Debug.Log("New speed: "+p.speed);
+            }
+        }
+
+        public void Ongoing(PlayerController p) {
+            if (typeName == "Regeneration") {
+                effectTimer += p.speed;
+                int heal = Mathf.FloorToInt(effectTimer);
+                if (p.hp < p.maxhp && heal > 0) {
+                    p.Heal(heal);
+                    effectTimer -= heal;
+                }
+            }
+        }
+
+        public void Remove(PlayerController p) {
+            if (typeName == "Speed") {
+                p.speed /= effect;
+            }
+            p.FloatText("msg", typeName+" wore off");
+        }
     }
 }

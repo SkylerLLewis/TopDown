@@ -18,8 +18,9 @@ public class InventoryController : MonoBehaviour
     public static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
         {"Armor", 1},
         {"Weapon", 2},
-        {"Potion", 3},
-        {"Food", 4}};
+        {"Scroll", 3},
+        {"Potion", 4},
+        {"Food", 5}};
 
     void Start() {
         selected = -1;
@@ -152,11 +153,13 @@ public class InventoryController : MonoBehaviour
             if (player.armor != null) {
                 stat = ColorStat("Def: ", arm.def, player.armor.def);
                 stat += ColorStat("armor ", arm.armor, player.armor.armor);
+                stat += ColorStat("atk ", arm.atk, player.armor.atk);
                 stat += ColorStat("dmg ", arm.dmg, player.armor.dmg);
                 stat += ColorStat("speed ", arm.speed, player.armor.speed);
             } else {
                 stat = ColorStat("Def: ", arm.def, 0);
                 stat += ColorStat("armor ", arm.armor, 0);
+                stat += ColorStat("atk ", arm.atk, 0);
                 stat += ColorStat("dmg ", arm.dmg, 0);
                 stat += ColorStat("speed ", arm.speed, 1f);
             }
@@ -184,6 +187,12 @@ public class InventoryController : MonoBehaviour
                 stat += "\n+"+food.healing+" hp";
             }
             stats.text = stat;
+        } else if (item.itemType == "Scroll") {
+            if (data.mapType == "Dungeon") {
+                button.text = "Cast";
+            } else {
+                button.text = "-";
+            }
         }
     }
 
@@ -227,6 +236,7 @@ public class InventoryController : MonoBehaviour
 
     public void ActivateButton() {
         if (selected < 0) return;
+        bool needToReturn = false;
         refreshNeeded = false;
         InventoryItem item = data.inventory[selected];
         if (item.itemType == "Weapon") {
@@ -240,6 +250,14 @@ public class InventoryController : MonoBehaviour
                 refreshNeeded = true;
             }
             UpdateBars();
+        } else if (item.itemType == "Scroll") {
+            if (data.mapType != "Dungeon") return;
+            item.Activate(player);
+            if (item.count == 0) {
+                data.inventory.RemoveAt(selected);
+                refreshNeeded = true;
+            }
+            needToReturn = true;
         } else if (item.itemType == "Food") {
             if ((item as Food).damage >= player.hp) {// Not enough hp!
                 button.text = "No HP";
@@ -252,8 +270,11 @@ public class InventoryController : MonoBehaviour
             }
             UpdateBars();
         }
+        // Return if actions are needed
+        if (needToReturn) {
+            BackToScene();
         // End the player's turn if in combat
-        if (player.inCombat) {
+        } else if (player.inCombat) {
             BackToScene();
             player.EndTurn();
         } else {

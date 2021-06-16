@@ -78,7 +78,7 @@ public class Initializer : MonoBehaviour
         goldSprites.Add("medium", Resources.Load<Sprite>("Gold Bar"));
         goldSprites.Add("large", Resources.Load<Sprite>("Gold Pile"));
 
-
+        // Weapons
         lootWheel.Add("Twig", 10);
         lootWheel.Add("Sharp Twig", 10);
         lootWheel.Add("Plank with a Nail", 10);
@@ -100,8 +100,9 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Wooden Pike", data.depth/3);
         lootWheel.Add("Grain Scythe", data.depth/3);
         
-        lootWheel.Add("Leather Tunic", 10);
-        lootWheel.Add("Bone Armor", 10);
+        // Armors
+        lootWheel.Add("Leather Tunic", 20);
+        lootWheel.Add("Bone Armor", 20);
 
         lootWheel.Add("Padded Vest", twiceDepth);
         lootWheel.Add("Cast Iron Plates", twiceDepth);
@@ -111,7 +112,12 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Gambeson", data.depth/3);
         lootWheel.Add("Patchy Brigandine", data.depth/3);
 
+        // Potions
         lootWheel.Add("Health Potion", 30);
+        lootWheel.Add("Mana Potion", 10);
+        lootWheel.Add("Potion of Speed", 10);
+
+        lootWheel.Add("Potion of Regeneration", 2*twiceDepth);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -543,8 +549,8 @@ public class Initializer : MonoBehaviour
     }
 
     void GenLoot() {
-        // 4-8 (6) loot per floor
-        int loots = Random.Range(4,9);
+        // 6-10 (8) loot per floor
+        int loots = Random.Range(6,11);
         for (int i=0; i<loots; i++) {
             int rand = Random.Range(1, rooms.Count);
             rooms[rand].loot++;

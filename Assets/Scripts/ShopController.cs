@@ -133,11 +133,13 @@ public class ShopController : MonoBehaviour
             if (player.armor != null) {
                 stat += InventoryController.ColorStat("Def: ", arm.def, player.armor.def);
                 stat += InventoryController.ColorStat("armor ", arm.armor, player.armor.armor);
+                stat += InventoryController.ColorStat("atk ", arm.atk, player.armor.atk);
                 stat += InventoryController.ColorStat("dmg ", arm.dmg, player.armor.dmg);
                 stat += InventoryController.ColorStat("speed ", arm.speed, player.armor.speed);
             } else {
                 stat += InventoryController.ColorStat("Def: ", arm.def, 0);
                 stat += InventoryController.ColorStat("armor ", arm.armor, 0);
+                stat += InventoryController.ColorStat("atk ", arm.atk, 0);
                 stat += InventoryController.ColorStat("dmg ", arm.dmg, 0);
                 stat += InventoryController.ColorStat("speed ", arm.speed, 1f);
             }
@@ -155,6 +157,8 @@ public class ShopController : MonoBehaviour
             } else if (food.healing > 0) {
                 stat += "\n+"+food.healing+" hp";
             }
+        } else if (item.itemType == "Scroll") {
+            
         }
         stats.text = stat;
     }

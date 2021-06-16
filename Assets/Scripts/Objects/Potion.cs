@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Potion : InventoryItem {
-    public int healing;
-    public float speed;
+    public int healing, mana, regen;
+    public float duration, speed;
     public static List<List<string>> PotionTiers = new List<List<string>>() {
-        new List<string>() {"Health Potion"}
+        new List<string>() {"Health Potion", "Mana Potion", "Potion of Speed"},
+        new List<string>() {"Potion of Regeneration"}
     };
     public Potion(string n) {
         itemType = "Potion";
@@ -22,11 +23,30 @@ public class Potion : InventoryItem {
 
     private void Classify() {
         healing = 0;
-        speed = 0f;
-        if (name == "Health Potion") {
-            description = "A pungent, herbal smelling healing potion.";
-            healing = 20;
+        regen = 0;
+        mana = 0;
+        duration = 0f;
+        speed = 1f;
+        if (PotionTiers[0].Contains(name)) {
             cost = 20;
+            if (name == "Health Potion") {
+                description = "A pungent, herbal smelling healing potion.";
+                healing = 20;
+            } else if (name == "Mana Potion") {
+                description = "You see swirls of color in the glowing blue liquid.";
+                mana = 20;
+            } else if (name == "Potion of Speed") {
+                description = "Static shocks your hand when you touch it.";
+                speed = 1.5f;
+                duration = 20f;
+            }
+        } else if (PotionTiers[1].Contains(name)) {
+            cost = 50;
+            if (name == "Potion of Regeneration") {
+                description = "This swirling blue-green potion smells earthy.";
+                regen = 1;
+                duration = 20f;
+            }
         }
     }
 
@@ -34,6 +54,15 @@ public class Potion : InventoryItem {
         count--;
         if (healing > 0) {
             player.Heal(healing);
+        }
+        if (mana > 0) {
+            player.GetMana(mana);
+        }
+        if (speed != 1f) {
+            player.SpeedEffect(speed, duration);
+        }
+        if (regen != 0) {
+            player.RegenEffect(regen, duration);
         }
     }
 

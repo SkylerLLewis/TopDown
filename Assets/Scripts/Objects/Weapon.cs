@@ -57,8 +57,8 @@ public class Weapon : InventoryItem {
                 description = "A particularly spiky twig. Fast and quiet, but you'll have to get close.";
                 mindmg = 1;
                 maxdmg = 2;
-                speed = 1.25f;
-                atk = 3;
+                speed = 1.15f;
+                atk = 2;
                 def = -3;
                 crit = 4;
             } else if (name == "Plank with a Nail") { // Axe type
@@ -70,7 +70,7 @@ public class Weapon : InventoryItem {
                 description = "It's slow, but it hits hard.";
                 mindmg = 1;
                 maxdmg = 4;
-                speed = 0.8f;
+                speed = 0.9f;
             } else if (name == "Long Stick") { // Spear type
                 description = "Now this should keep them back.";
                 mindmg = 1;
@@ -82,7 +82,7 @@ public class Weapon : InventoryItem {
                 maxdmg = 3;
                 atk = 3;
                 def = 3;
-                speed = 0.60f;
+                speed = 0.80f;
             }
         // -- Tier 2 Weapons -- //
         // Tier 2s have average 3 dmg  and +25% extra effect
@@ -98,14 +98,14 @@ public class Weapon : InventoryItem {
                 description = "Finally, a real weapon! The rust is so thick you can barely see the iron. Probably should avoid hitting anything too hard...";
                 mindmg = 2;
                 maxdmg = 4;
-                speed = 1.2f + 0.1f*quality;
+                speed = 1.1f + 0.05f*quality;
             } else if (name == "Half a Scissor") {
                 description = "You know what, it'll work. It's even got a convenient thumb loop!";
                 mindmg = 1;
                 maxdmg = 3;
-                speed = 1.25f + 0.1f*quality;
+                speed = 1.15f + 0.05f*quality;
                 atk = 3;
-                def = -3;
+                def = -4;
                 crit = 4;
             } else if (name == "Copper Hatchet") {
                 description = "This hatchet should bite deep. It has a nice shine to it.";
@@ -116,7 +116,7 @@ public class Weapon : InventoryItem {
                 description = "I'm gettin me mallet!";
                 mindmg = 3 + quality;
                 maxdmg = 6;
-                speed = 0.8f;
+                speed = 0.9f;
             } else if (name == "Flint Spear") {
                 description = "It smells faintly of mammoth blood.";
                 mindmg = 2;
@@ -126,7 +126,7 @@ public class Weapon : InventoryItem {
                 description = "Stake still attached! You'd hate to meet whatever chewed through it...";
                 mindmg = 2;
                 maxdmg = 6;
-                speed = 0.67f + 0.11f*quality;
+                speed = 0.85f + 0.05f*quality;
                 atk = 2;
                 def = 3;
             }
@@ -146,14 +146,14 @@ public class Weapon : InventoryItem {
                 atk = 2 + 1*quality;
                 def = 2;
                 crit = 3;
-                speed = 1.1f + 0.05f*quality;
+                speed = 1.05f + 0.025f*quality;
             } else if (name == "Hunting Knife") {
                 description = "A barbed, wicked looking dagger for killing and skinning game.";
                 mindmg = 1;
                 maxdmg = 9;
                 def = -3;
                 crit = 4;
-                speed = 1.2f + 0.1f*quality;
+                speed = 1.1f + 0.05f*quality;
             } else if (name == "Woodcutter's Axe") {
                 description = "A solid iron axe, good for cleaving.";
                 mindmg = 2;
@@ -172,7 +172,7 @@ public class Weapon : InventoryItem {
                 description = "It's big, clunky, and the blade is backwards. But it has a blade!";
                 mindmg = 4;
                 maxdmg = 6;
-                speed = 1.1f + 0.1f*quality;
+                speed = 1.05f + 0.05f*quality;
                 def = 3;
             }
         }

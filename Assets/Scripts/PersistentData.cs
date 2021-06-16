@@ -9,6 +9,7 @@ public class PersistentData : MonoBehaviour
     public string floorDirection, loadedMenu, mapType;
     public int playerHp, mana, gold;
     public float food;
+    public List<PlayerController.Effect> playerEffects;
     public Weapon weapon;
     public Armor armor;
     public GameObject root;
@@ -32,6 +33,7 @@ public class PersistentData : MonoBehaviour
         inventory.Add(bread);
         inventory.Add(new Food("Roast Squirrel"));
         inventory.Add(new Potion("Health Potion"));
+        inventory.Add(new Scroll("Scroll of Return"));
         // Shopkeeper List
         shopList = new List<InventoryItem>();
         List<string> weaponOptions = Utilities.Sample(4, Weapon.WeaponTiers[0]);
@@ -46,7 +48,9 @@ public class PersistentData : MonoBehaviour
         shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[0])));
         shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[1])));
         shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[2])));
-        shopList.Add(new Potion("Health Potion"));
+        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[0])));
+        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[1])));
+        shopList.Add(new Scroll("Scroll of Return"));
         shopList.Add(new Food("Moldy Bread"));
         shopList.Add(new Food("Moldy Loaf"));
         shopList.Add(new Food("Burnt Toast"));
