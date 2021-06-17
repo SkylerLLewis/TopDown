@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class UIController : MonoBehaviour
@@ -10,7 +11,13 @@ public class UIController : MonoBehaviour
     TextMeshProUGUI depthText;
     private PersistentData data;
     private PlayerController player;
-    private GameObject root;
+    private GameObject root, dialogueGroup;
+    private TextMeshProUGUI dialogueName, prompt;
+    private Image dialogueBox;
+    private List<TextMeshProUGUI> options;
+    private List<string> dialogueOptions;
+    private List<Button> optionButtons;
+    private System.Action<string> responseAction;
     void Awake()
     {
         root = GameObject.FindWithTag("Root");
@@ -21,6 +28,29 @@ public class UIController : MonoBehaviour
         depthText = GameObject.Find("Depth Text").GetComponent<TextMeshProUGUI>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         depthText.text = data.depth.ToString();
+
+        optionButtons = new List<Button>();
+        options = new List<TextMeshProUGUI>();
+        dialogueGroup = GameObject.Find("Dialogue");
+        dialogueGroup.SetActive(false);
+        dialogueBox = dialogueGroup.GetComponent<Image>();
+        foreach (Transform child in dialogueGroup.transform) {
+            if (child.name == "Name") {
+                dialogueName = child.gameObject.GetComponent<TextMeshProUGUI>();
+            } else if (child.name == "Prompt") {
+                prompt = child.gameObject.GetComponent<TextMeshProUGUI>();
+            } else if (child.name == "Option1") {
+                optionButtons.Add(child.gameObject.GetComponent<Button>());
+                options.Add(child.GetChild(0).GetComponent<TextMeshProUGUI>());
+            } else if (child.name == "Option2") {
+                optionButtons.Add(child.gameObject.GetComponent<Button>());
+                options.Add(child.GetChild(0).GetComponent<TextMeshProUGUI>());
+            } else if (child.name == "Option3") {
+                optionButtons.Add(child.gameObject.GetComponent<Button>());
+                options.Add(child.GetChild(0).GetComponent<TextMeshProUGUI>());
+            }
+        }
+        dialogueOptions = new List<string>();
     }
 
     public void UpdateBars() {
@@ -61,4 +91,30 @@ public class UIController : MonoBehaviour
         player.Ability(name);
     }
 
+    public void Dialogue(string name, string _prompt, List<string> opts, System.Action<string> response) {
+        Debug.Log("Dialoguing!");
+        dialogueGroup.SetActive(true);
+        dialogueName.text = name;
+        prompt.text = _prompt;
+        for (int i=0; i<3; i++) {
+            if (opts.Count > i) {
+                if (!optionButtons[i].interactable) optionButtons[i].interactable = true;
+                options[i].text = opts[i];
+            } else {
+                if (optionButtons[i].interactable) optionButtons[i].interactable = false;
+                options[i].text = "";
+            }
+        }
+        dialogueOptions = opts;
+        responseAction = response;
+    }
+
+    public void DialogueOption(int choice) {
+        responseAction(dialogueOptions[choice]);
+    }
+
+    public void EndDialogue(string s="") {
+        dialogueGroup.SetActive(false);
+        player.enabled = true;
+    }
 }

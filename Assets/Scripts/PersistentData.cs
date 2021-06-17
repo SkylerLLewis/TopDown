@@ -18,7 +18,7 @@ public class PersistentData : MonoBehaviour
         DontDestroyOnLoad(transform.gameObject);
         depth = 0;
         entrance = 0;
-        gold = 0;
+        gold = 100;
         playerHp = 0;
         mana = 0;
         food = 500;
@@ -36,27 +36,11 @@ public class PersistentData : MonoBehaviour
         inventory.Add(new Scroll("Scroll of Return"));
         // Shopkeeper List
         shopList = new List<InventoryItem>();
-        List<string> weaponOptions = Utilities.Sample(4, Weapon.WeaponTiers[0]);
-        foreach (string item in weaponOptions) {
-            shopList.Add(new Weapon(item));
-        }
-        weaponOptions = Utilities.Sample(3, Weapon.WeaponTiers[1]);
-        foreach (string item in weaponOptions) {
-            shopList.Add(new Weapon(item));
-        }
-        shopList.Add(new Weapon(Utilities.Choice(Weapon.WeaponTiers[2])));
-        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[0])));
-        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[1])));
-        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[2])));
-        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[0])));
-        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[1])));
-        shopList.Add(new Scroll("Scroll of Return"));
-        shopList.Add(new Food("Moldy Bread"));
-        shopList.Add(new Food("Moldy Loaf"));
-        shopList.Add(new Food("Burnt Toast"));
-        shopList.Add(new Food("Roast Squirrel"));
-        shopList.Sort(InventoryController.CompareItems);
-        shopList.Reverse();
+        LoadShopList();
+        LoadingScreenLoad("GreenVillage");
+    }
+
+    public void LoadingScreenLoad(string sceneName) {
         SceneManager.LoadScene("GreenVillage");
     }
 
@@ -94,5 +78,30 @@ public class PersistentData : MonoBehaviour
             inventory.RemoveAt(index);
         }
         return true;
+    }
+
+    public void LoadShopList() {
+        shopList.Clear();
+        List<string> weaponOptions = Utilities.Sample(4, Weapon.WeaponTiers[0]);
+        foreach (string item in weaponOptions) {
+            shopList.Add(new Weapon(item));
+        }
+        weaponOptions = Utilities.Sample(3, Weapon.WeaponTiers[1]);
+        foreach (string item in weaponOptions) {
+            shopList.Add(new Weapon(item));
+        }
+        shopList.Add(new Weapon(Utilities.Choice(Weapon.WeaponTiers[2])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[0])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[1])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[2])));
+        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[0])));
+        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[1])));
+        shopList.Add(new Scroll("Scroll of Return"));
+        shopList.Add(new Food("Moldy Bread"));
+        shopList.Add(new Food("Moldy Loaf"));
+        shopList.Add(new Food("Burnt Toast"));
+        shopList.Add(new Food("Roast Squirrel"));
+        shopList.Sort(InventoryController.CompareItems);
+        shopList.Reverse();
     }
 }

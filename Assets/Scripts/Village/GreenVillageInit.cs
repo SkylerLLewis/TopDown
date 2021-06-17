@@ -72,6 +72,7 @@ public class GreenVillageInit : MonoBehaviour
         notableCells = new Dictionary<string, Vector3Int>();
         notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
         notableCells.Add("shopkeeper", new Vector3Int(5,-2,0));
+        notableCells.Add("barkeep", new Vector3Int(3,6,0));
 
         villageController.UpdateNotables(notableCells);
     }
@@ -146,6 +147,11 @@ public class GreenVillageInit : MonoBehaviour
         if (data.entrance == 1) {
             data.direction = 0;
             return new Vector3Int(0,-8,0);
+        } else if (data.entrance == 2) {
+            Vector3Int cell = new Vector3Int(1,9,0);
+            player.tilePosition = new Vector3Int(2,3,0);
+            OpenDoor(new Vector3Int(2,3,0), 0);
+            return cell;
         }
         return new Vector3Int(0,0,0);
     }
@@ -156,9 +162,12 @@ public class GreenVillageInit : MonoBehaviour
             data.floorDirection = "down";
             SceneManager.LoadScene("BasicDungeon");
         } else if (key == "shopkeeper") {
-            Debug.Log("Shopkeeping!");
             player.enabled = false;
-            npcController.StartShopping();
+            npcController.SpeakToShopkeeper();
+        } else if (key == "barkeep") {
+            Debug.Log("Talking to barkeep!");
+            player.enabled = false;
+            npcController.SpeakToBarkeep();
         }
     }
 
