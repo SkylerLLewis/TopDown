@@ -46,7 +46,7 @@ public class Armor : InventoryItem {
         // -- Tier 1 Starter Armor -- //
         if (ArmorTiers[0].Contains(name)) {
             tier = 1;
-            cost = 10;
+            cost = 2;
             // Tier 1s have no quality, they're all shit
             // Tier 1 comes with 10% effect
             if (quality != 0) { quality = 0; }
@@ -56,12 +56,11 @@ public class Armor : InventoryItem {
             } else  if (name == "Bone Armor") {
                 description = "Probably made by some hobgoblin, it looks to be crudely strapped pieces thick bone on leather.";
                 def = 5;
-                atk = 1;
                 speed = 0.90f;
             }
         } else if (ArmorTiers[1].Contains(name)) {
             tier = 2;
-            cost = 50;
+            cost = 10;
             // Tier 2s are good or worse
             // Tier 2 comes with 20% effect
              if (quality > 1) {
@@ -82,7 +81,7 @@ public class Armor : InventoryItem {
             }
         } else if (ArmorTiers[2].Contains(name)) {
             tier = 3;
-            cost = 200;
+            cost = 50;
             // Tier 3 Armor can only be fine or worse
             // Tier 3 comes with 30% effect
             if (quality > 2) {

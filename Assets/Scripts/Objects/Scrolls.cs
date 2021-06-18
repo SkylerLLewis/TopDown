@@ -27,7 +27,7 @@ public class Scroll : InventoryItem {
         speed = 1f;
         if (name == "Scroll of Return") {
             description = "This scroll will take me straight back to the surface";
-            cost = 10;
+            cost = 2;
         }
     }
 

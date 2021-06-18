@@ -56,17 +56,20 @@ public class Initializer : MonoBehaviour
         clearTiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpenClear"));
 
         // Load Enemy prefabs and likelyhood
-        int twiceDepth = (data.depth-1)*2;
+        int easy = 12 - 2*data.depth;
+        int medium = 2;
+        int hard = data.depth/2;
+        int rare = data.depth/4;
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
         enemyFabs.Add("Skeleton Archer", Resources.Load("Prefabs/Skeleton Archer") as GameObject);
         enemyFabs.Add("Skeleton Brute", Resources.Load("Prefabs/Skeleton Brute") as GameObject);
         enemyFabs.Add("Skeleton Stabber", Resources.Load("Prefabs/Skeleton Stabber") as GameObject);
-        enemyWheel.Add("Skeleton", 10);
-        enemyWheel.Add("Skeleton Archer", twiceDepth+1);
-        enemyWheel.Add("Skeleton Brute", twiceDepth);
-        enemyWheel.Add("Skeleton Stabber", twiceDepth);
+        enemyWheel.Add("Skeleton", easy);
+        enemyWheel.Add("Skeleton Archer", medium+1);
+        enemyWheel.Add("Skeleton Brute", hard);
+        enemyWheel.Add("Skeleton Stabber", hard);
 
         // Loot drop chances!
         lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
@@ -79,45 +82,46 @@ public class Initializer : MonoBehaviour
         goldSprites.Add("large", Resources.Load<Sprite>("Gold Pile"));
 
         // Weapons
-        lootWheel.Add("Twig", 10);
-        lootWheel.Add("Sharp Twig", 10);
-        lootWheel.Add("Plank with a Nail", 10);
-        lootWheel.Add("Club", 10);
-        lootWheel.Add("Long Stick", 10);
-        lootWheel.Add("Log", 10);
+        lootWheel.Add("Twig", easy);
+        lootWheel.Add("Sharp Twig", easy);
+        lootWheel.Add("Plank with a Nail", easy);
+        lootWheel.Add("Club", easy);
+        lootWheel.Add("Long Stick", easy);
+        lootWheel.Add("Log", easy);
 
-        lootWheel.Add("Rusty Shortsword", twiceDepth);
-        lootWheel.Add("Half a Scissor", twiceDepth);
-        lootWheel.Add("Copper Hatchet", twiceDepth);
-        lootWheel.Add("Mallet", twiceDepth);
-        lootWheel.Add("Flint Spear", twiceDepth);
-        lootWheel.Add("Dog Chain", twiceDepth);
+        lootWheel.Add("Rusty Shortsword", medium);
+        lootWheel.Add("Half a Scissor", medium);
+        lootWheel.Add("Copper Hatchet", medium);
+        lootWheel.Add("Mallet", medium);
+        lootWheel.Add("Flint Spear", medium);
+        lootWheel.Add("Dog Chain", medium);
 
-        lootWheel.Add("Dueling Sword", data.depth/3);
-        lootWheel.Add("Hunting Knife", data.depth/3);
-        lootWheel.Add("Woodcutter's Axe", data.depth/3);
-        lootWheel.Add("Hammer", data.depth/3);
-        lootWheel.Add("Wooden Pike", data.depth/3);
-        lootWheel.Add("Grain Scythe", data.depth/3);
+        lootWheel.Add("Dueling Sword", rare);
+        lootWheel.Add("Hunting Knife", rare);
+        lootWheel.Add("Woodcutter's Axe", rare);
+        lootWheel.Add("Hammer", rare);
+        lootWheel.Add("Wooden Pike", rare);
+        lootWheel.Add("Grain Scythe", rare);
         
         // Armors
-        lootWheel.Add("Leather Tunic", 20);
-        lootWheel.Add("Bone Armor", 20);
+        lootWheel.Add("Leather Tunic", 2*easy);
+        lootWheel.Add("Bone Armor", 2*easy);
 
-        lootWheel.Add("Padded Vest", twiceDepth);
-        lootWheel.Add("Cast Iron Plates", twiceDepth);
-        lootWheel.Add("Fang Bracers", twiceDepth);
+        lootWheel.Add("Padded Vest", medium);
+        lootWheel.Add("Cast Iron Plates", medium);
+        lootWheel.Add("Fang Bracers", medium);
 
-        lootWheel.Add("Light Leather Armor", data.depth/3);
-        lootWheel.Add("Gambeson", data.depth/3);
-        lootWheel.Add("Patchy Brigandine", data.depth/3);
+        lootWheel.Add("Light Leather Armor", rare);
+        lootWheel.Add("Gambeson", rare);
+        lootWheel.Add("Patchy Brigandine", rare);
 
-        // Potions
-        lootWheel.Add("Health Potion", 30);
-        lootWheel.Add("Mana Potion", 10);
-        lootWheel.Add("Potion of Speed", 10);
+        // Potions & scrolls
+        lootWheel.Add("Health Potion", 2*easy);
+        lootWheel.Add("Mana Potion", easy);
+        lootWheel.Add("Potion of Speed", easy);
+        lootWheel.Add("Scroll of Return", easy);
 
-        lootWheel.Add("Potion of Regeneration", 2*twiceDepth);
+        lootWheel.Add("Potion of Regeneration", hard);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -185,6 +189,10 @@ public class Initializer : MonoBehaviour
                     Potion pot = new Potion(target.name);
                     data.AddToInventory(pot);
                     player.saySomething = pot.displayName;
+                } else if (Scroll.IsScroll(target.name)) {
+                    Scroll scroll = new Scroll(target.name);
+                    data.AddToInventory(scroll);
+                    player.saySomething = scroll.displayName;
                 }
                 Destroy(target.gameObject);
                 notableCells.Remove(key);
@@ -236,6 +244,7 @@ public class Initializer : MonoBehaviour
         tail.x = Random.Range(-3, 0);
         tail.y = Random.Range(-3, 0);
         Room core = new Room(head, tail);
+        core.enemies.Clear();
         rooms.Add(core);
         int rand = Random.Range(0,2);
         if (rand == 0) {// String shape Dungeon
@@ -251,7 +260,7 @@ public class Initializer : MonoBehaviour
                 branch = branch.neighbors[direction];
             }
             // Add Random Rooms
-            for (int i=0; i<10; i++) {
+            for (int i=0; i<16; i++) {
                 branch = rooms[Random.Range(0, rooms.Count)];
                 direction = Random.Range(0, 4);
                 int j = 0;
@@ -283,7 +292,7 @@ public class Initializer : MonoBehaviour
                 GenerateRoom(branch, (direction+2+i)%4);
             }
             // Add Random Rooms
-            for (int i=0; i<6; i++) {
+            for (int i=0; i<12; i++) {
                 branch = rooms[Random.Range(0, rooms.Count)];
                 direction = Random.Range(0, 4);
                 int j = 0;
@@ -299,6 +308,10 @@ public class Initializer : MonoBehaviour
         }
         GenExits();
         GenLoot();
+        if (core.loot > 0) {
+            rooms[1].loot += core.loot;
+            core.loot = 0;
+        }
         core.Draw();
     }
 
@@ -584,7 +597,13 @@ public class Initializer : MonoBehaviour
 
     // Give a room its list of enemies
     public void RetrieveEnemies(Room r) {
-        int numEnemies = Mathf.RoundToInt(Mathf.Pow(Random.Range(1f,2f), 2));
+        float mod = 0;
+        if (data.depth == 4) {
+            mod = 0.25f;
+        } else if (data.depth == 5) {
+            mod = 0.5f;
+        }
+        int numEnemies = Mathf.RoundToInt(Mathf.Pow(Random.Range(1f+mod,2f+mod), 2));
         float wheelTotal = 0f;
         foreach (KeyValuePair<string,int> e in enemyWheel) {
             wheelTotal += e.Value;
@@ -682,13 +701,13 @@ public class Initializer : MonoBehaviour
             pos.z = 0;
         
         if (Random.Range(0,2) == 1) { // 50% change for gold drop
-            // 1 - 46  gold at lvl 1
-            // 5 - 74  gold at lvl 3
-            // 17 - 110 gold at lvl 5
+            // 1 - 26  gold at lvl 1
+            // 2 - 35  gold at lvl 3
+            // 5 - 46 gold at lvl 5
             int mod = 0;
-            if (data.depth >= 3) { mod = 2; }
-            if (data.depth >= 5) { mod = 4; }
-            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(mod,7+mod), 2)) + Random.Range(1, 11);
+            if (data.depth >= 3) { mod = 1; }
+            if (data.depth >= 5) { mod = 2; }
+            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(mod,5+mod), 2)) + Random.Range(1, 11);
             GameObject clone = Instantiate(
                 lootFab,
                 pos,
@@ -696,9 +715,9 @@ public class Initializer : MonoBehaviour
                 loot.transform);
             clone.name = "Gold";
             string sprite = "";
-            if (gold < 50) {
+            if (gold < 25) {
                 sprite = "small";
-            } else if (gold < 100) {
+            } else if (gold < 35) {
                 sprite = "medium";
             } else {
                 sprite = "large";
@@ -741,6 +760,8 @@ public class Initializer : MonoBehaviour
                         sprite = Resources.Load<Sprite>("Armors/"+item.Key);
                     } else if (Potion.IsPotion(item.Key)) {
                         sprite = Resources.Load<Sprite>("Potions/"+item.Key);
+                    } else if (Scroll.IsScroll(item.Key)) {
+                        sprite = Resources.Load<Sprite>("Scrolls/"+item.Key);
                     }
                     clone.GetComponent<SpriteRenderer>().sprite = sprite;
                     break;

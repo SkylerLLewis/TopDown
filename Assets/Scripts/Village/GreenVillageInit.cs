@@ -72,7 +72,7 @@ public class GreenVillageInit : MonoBehaviour
         notableCells = new Dictionary<string, Vector3Int>();
         notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
         notableCells.Add("shopkeeper", new Vector3Int(5,-2,0));
-        notableCells.Add("barkeep", new Vector3Int(3,6,0));
+        notableCells.Add("barkeep", new Vector3Int(4,6,0));
 
         villageController.UpdateNotables(notableCells);
     }

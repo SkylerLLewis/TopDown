@@ -46,7 +46,7 @@ public class Weapon : InventoryItem {
         // Tier 1s have an average of 2 dmg and +10% effect
         if (WeaponTiers[0].Contains(name)) {
             tier = 1;
-            cost = 5;
+            cost = 1;
             // Tier 0s have no quality, they're all shit
             if (quality != 0) { quality = 0; }
             if (name == "Twig") {
@@ -89,7 +89,7 @@ public class Weapon : InventoryItem {
         // Each tier is 10% effect
         } else if (WeaponTiers[1].Contains(name)) {
             tier = 2;
-            cost = 30;
+            cost = 5;
             // Tier 1 weapons can only be good or worse
             if (quality > 1) {
                 quality = 1;
@@ -134,7 +134,7 @@ public class Weapon : InventoryItem {
         // Tier 3 weapons have average 4 dmg and + 50% effect
         } else if (WeaponTiers[2].Contains(name)) {
             tier = 3;
-            cost = 100;
+            cost = 20;
             // Tier 2 weapons can only be fine or worse
             if (quality > 2) {
                 quality = 2;

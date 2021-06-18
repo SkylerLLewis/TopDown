@@ -17,16 +17,18 @@ public class NPCController : MonoBehaviour
     public void SpeakToBarkeep() {
         uiController.Dialogue(
             "Barkeep",
-            "Looking for a warm bed and mug of ale?\n(-25 gold)",
+            "Looking for a warm bed and mug of ale?\n(-5 gold)",
             new List<string>(){"yes", "no"},
             BarkeepActions);
     }
 
     public void BarkeepActions(string response) {
         if (response == "yes") {
-            if (data.gold >= 25) {
-                data.gold -= 25;
+            if (data.gold >= 5) {
+                data.gold -= 5;
                 player.food = 1000;
+                player.hp = player.maxhp;
+                player.mana = player.maxMana;
                 data.entrance = 2;
                 data.direction = 2;
                 data.LoadShopList();

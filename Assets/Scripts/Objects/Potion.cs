@@ -28,7 +28,7 @@ public class Potion : InventoryItem {
         duration = 0f;
         speed = 1f;
         if (PotionTiers[0].Contains(name)) {
-            cost = 20;
+            cost = 4;
             if (name == "Health Potion") {
                 description = "A pungent, herbal smelling healing potion.";
                 healing = 20;
@@ -41,7 +41,7 @@ public class Potion : InventoryItem {
                 duration = 20f;
             }
         } else if (PotionTiers[1].Contains(name)) {
-            cost = 50;
+            cost = 10;
             if (name == "Potion of Regeneration") {
                 description = "This swirling blue-green potion smells earthy.";
                 regen = 1;

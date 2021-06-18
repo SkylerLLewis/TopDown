@@ -16,9 +16,9 @@ public class PersistentData : MonoBehaviour
     public List<InventoryItem> inventory, shopList;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
-        depth = 0;
+        depth = 3;
         entrance = 0;
-        gold = 100;
+        gold = 5;
         playerHp = 0;
         mana = 0;
         food = 500;
@@ -45,7 +45,7 @@ public class PersistentData : MonoBehaviour
     }
 
     public void AddToInventory(InventoryItem item) {
-        if (item.itemType == "Potion" || item.itemType == "Food") {
+        if (item.itemType == "Potion" || item.itemType == "Food" || item.itemType == "Scroll") {
             bool contains = false;
             int index = 0;
             foreach (InventoryItem i in inventory) {
