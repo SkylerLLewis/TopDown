@@ -288,7 +288,14 @@ public class EnemyBehavior : MonoBehaviour
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
         roll += attack - target.defense;
         if (roll >= 8) {
-            target.Damage(Random.Range(mindmg,maxdmg+1), "dmg");
+            int dmg = Random.Range(mindmg,maxdmg+1);
+            int crit = 5 + attack-target.defense;
+            if (Random.Range(0, 100) < crit) {
+                dmg += Random.Range(mindmg,maxdmg+1);
+                target.Damage(dmg, "crit");
+            } else {
+                target.Damage(dmg, "dmg");
+            }
         } else {
             target.Damage(0, "miss");
         }

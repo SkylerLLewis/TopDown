@@ -15,6 +15,7 @@
 - [x] Add Gold
 - [ ] Add dynamic door opening
 - [x] Add ranged enemies
+- [ ] Add the boss!
 - [ ] Add sneaking mechanic
 - [ ] Add complex room generation
 - [ ] Implement prefab rooms

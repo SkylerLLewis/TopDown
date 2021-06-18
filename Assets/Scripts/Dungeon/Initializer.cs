@@ -56,20 +56,24 @@ public class Initializer : MonoBehaviour
         clearTiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpenClear"));
 
         // Load Enemy prefabs and likelyhood
-        int easy = 12 - 2*data.depth;
+        int easy = 10 - 2*data.depth;
         int medium = 2;
         int hard = data.depth/2;
         int rare = data.depth/4;
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
+        enemyFabs.Add("Skeleton Rat", Resources.Load("Prefabs/Skeleton Rat") as GameObject);
         enemyFabs.Add("Skeleton Archer", Resources.Load("Prefabs/Skeleton Archer") as GameObject);
         enemyFabs.Add("Skeleton Brute", Resources.Load("Prefabs/Skeleton Brute") as GameObject);
         enemyFabs.Add("Skeleton Stabber", Resources.Load("Prefabs/Skeleton Stabber") as GameObject);
+        enemyFabs.Add("Skeleton Warrior", Resources.Load("Prefabs/Skeleton Warrior") as GameObject);
         enemyWheel.Add("Skeleton", easy);
+        enemyWheel.Add("Skeleton Rat", easy);
         enemyWheel.Add("Skeleton Archer", medium+1);
         enemyWheel.Add("Skeleton Brute", hard);
         enemyWheel.Add("Skeleton Stabber", hard);
+        enemyWheel.Add("Skeleton Warrior", rare);
 
         // Loot drop chances!
         lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
@@ -701,13 +705,13 @@ public class Initializer : MonoBehaviour
             pos.z = 0;
         
         if (Random.Range(0,2) == 1) { // 50% change for gold drop
-            // 1 - 26  gold at lvl 1
-            // 2 - 35  gold at lvl 3
-            // 5 - 46 gold at lvl 5
+            // 1 - 19  gold at lvl 1
+            // 2 - 26  gold at lvl 3
+            // 5 - 35 gold at lvl 5
             int mod = 0;
             if (data.depth >= 3) { mod = 1; }
             if (data.depth >= 5) { mod = 2; }
-            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(mod,5+mod), 2)) + Random.Range(1, 11);
+            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(mod,4+mod), 2)) + Random.Range(1, 11);
             GameObject clone = Instantiate(
                 lootFab,
                 pos,

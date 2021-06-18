@@ -140,7 +140,7 @@ public class InventoryController : MonoBehaviour
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
             stat += ColorStat("atk ", wep.atk, player.weapon.atk);
             stat += ColorStat("def ", wep.def, player.weapon.def);
-            stat += ColorStat("speed ", wep.speed, player.weapon.speed);
+            stat += ColorStat("spd ", wep.speed, player.weapon.speed);
             stats.text = stat;
         } else if (item.itemType == "Armor") {
             if (index >= 0) {
@@ -155,13 +155,13 @@ public class InventoryController : MonoBehaviour
                 stat += ColorStat("armor ", arm.armor, player.armor.armor);
                 stat += ColorStat("atk ", arm.atk, player.armor.atk);
                 stat += ColorStat("dmg ", arm.dmg, player.armor.dmg);
-                stat += ColorStat("speed ", arm.speed, player.armor.speed);
+                stat += ColorStat("spd ", arm.speed, player.armor.speed);
             } else {
                 stat = ColorStat("Def: ", arm.def, 0);
                 stat += ColorStat("armor ", arm.armor, 0);
                 stat += ColorStat("atk ", arm.atk, 0);
                 stat += ColorStat("dmg ", arm.dmg, 0);
-                stat += ColorStat("speed ", arm.speed, 1f);
+                stat += ColorStat("spd ", arm.speed, 1f);
             }
 
             stats.text = stat;
@@ -208,10 +208,22 @@ public class InventoryController : MonoBehaviour
             }
             s += prefix;
             if (w == null) {
-                if (stat > 0) { s += "+"; }
-                s += stat+"\n";
+                s += stat;
+                if (stat != current && current != 0) {
+                    s += " (";
+                    if (stat-current > 0) s += "+";
+                    s += (stat-current)+")";
+                }
+                s += "\n";
             } else { // This is a weapon's damage
-                s += w.mindmg+"-"+w.maxdmg+"\n";
+                float fStat = stat/2f, fCurrent = current/2f;
+                s += w.mindmg+"-"+w.maxdmg;
+                if (stat != current) {
+                    s += " (";
+                    if (stat-current > 0) s += "+";
+                    s += (fStat-fCurrent)+")";
+                }
+                s += "\n";
             }
         }
         return s;
@@ -229,7 +241,13 @@ public class InventoryController : MonoBehaviour
             }
             s += prefix;
             if (stat > 1f) { s += "+"; }
-            s += Mathf.RoundToInt((stat - 1)*100)+"%"+"\n";
+            s += Mathf.RoundToInt((stat - 1)*100)+"%";
+            if (stat != current && current != 1f) {
+                s += " (";
+                if (stat-current > 0) s += "+";
+                s += Mathf.RoundToInt((stat-current)*100)+"%)";
+            }
+            s += "\n";
         }
         return s;
     }

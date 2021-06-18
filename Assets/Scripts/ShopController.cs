@@ -127,7 +127,7 @@ public class ShopController : MonoBehaviour
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
             stat += InventoryController.ColorStat("atk ", wep.atk, player.weapon.atk);
             stat += InventoryController.ColorStat("def ", wep.def, player.weapon.def);
-            stat += InventoryController.ColorStat("speed ", wep.speed, player.weapon.speed);
+            stat += InventoryController.ColorStat("spd ", wep.speed, player.weapon.speed);
         } else if (item.itemType == "Armor") {
             Armor arm = item as Armor;
             if (player.armor != null) {
@@ -135,13 +135,13 @@ public class ShopController : MonoBehaviour
                 stat += InventoryController.ColorStat("armor ", arm.armor, player.armor.armor);
                 stat += InventoryController.ColorStat("atk ", arm.atk, player.armor.atk);
                 stat += InventoryController.ColorStat("dmg ", arm.dmg, player.armor.dmg);
-                stat += InventoryController.ColorStat("speed ", arm.speed, player.armor.speed);
+                stat += InventoryController.ColorStat("spd ", arm.speed, player.armor.speed);
             } else {
                 stat += InventoryController.ColorStat("Def: ", arm.def, 0);
                 stat += InventoryController.ColorStat("armor ", arm.armor, 0);
                 stat += InventoryController.ColorStat("atk ", arm.atk, 0);
                 stat += InventoryController.ColorStat("dmg ", arm.dmg, 0);
-                stat += InventoryController.ColorStat("speed ", arm.speed, 1f);
+                stat += InventoryController.ColorStat("spd ", arm.speed, 1f);
             }
         } else if (item.itemType == "Potion") {
             Potion pot = item as Potion;
