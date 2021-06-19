@@ -7,7 +7,7 @@ public class Scroll : InventoryItem {
     public int healing, mana;
     public float duration, speed;
     public static List<List<string>> ScrollTiers = new List<List<string>>() {
-        new List<string>() {"Scroll of Return"}
+        new List<string>() {"Scroll of Return", "Scroll of Descent"}
     };
     public Scroll(string n) {
         itemType = "Scroll";
@@ -28,15 +28,30 @@ public class Scroll : InventoryItem {
         if (name == "Scroll of Return") {
             description = "This scroll will take me straight back to the surface";
             cost = 2;
+        } else if (name == "Scroll of Descent") {
+            description = "This scroll will take me one level deeper";
+            cost = 2;
         }
     }
 
     public override void Activate(PlayerController player) {
         count--;
         if (name == "Scroll of Return") {
-            PersistentData data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
-            data.depth = 1;
-            player.dungeonController.NotableActionsRef("stairsUp");
+            if (player.inCombat) {
+                count++;
+                player.FloatText("msg", "The enemies inerupted\nthe casting!");
+            } else {
+                PersistentData data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
+                data.depth = 1;
+                player.dungeonController.NotableActionsRef("stairsUp");
+            }
+        } else if (name == "Scroll of Descent") {
+            if (player.inCombat) {
+                count++;
+                player.FloatText("msg", "The enemies inerupted\nthe casting!");
+            } else {
+                player.dungeonController.NotableActionsRef("stairsDown");
+            }
         }
     }
 

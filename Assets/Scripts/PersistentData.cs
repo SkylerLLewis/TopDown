@@ -6,16 +6,19 @@ using UnityEngine.SceneManagement;
 public class PersistentData : MonoBehaviour
 {
     public int depth, direction, entrance;
-    public string floorDirection, loadedMenu, mapType;
+    public string floorDirection, loadedMenu, mapType, sceneToLoad, sceneToUnload;
     public int playerHp, mana, gold;
     public float food;
     public List<PlayerController.Effect> playerEffects;
     public Weapon weapon;
     public Armor armor;
     public GameObject root;
+    public LoadScreenController loadingScreen;
     public List<InventoryItem> inventory, shopList;
+    public List<string> followingEnemies;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
+        loadingScreen = GameObject.Find("LoadingScreen").GetComponent<LoadScreenController>();
         depth = 0;
         entrance = 0;
         gold = 5;
@@ -24,6 +27,7 @@ public class PersistentData : MonoBehaviour
         food = 500;
         direction = 2;
         floorDirection = "down";
+        followingEnemies = new List<string>();
         // Inventory
         inventory = new List<InventoryItem>();
         weapon = new Weapon("Twig");
@@ -34,14 +38,18 @@ public class PersistentData : MonoBehaviour
         inventory.Add(new Food("Roast Squirrel"));
         inventory.Add(new Potion("Health Potion"));
         inventory.Add(new Scroll("Scroll of Return"));
+        inventory.Add(new Scroll("Scroll of Descent"));
         // Shopkeeper List
         shopList = new List<InventoryItem>();
         LoadShopList();
-        LoadingScreenLoad("GreenVillage");
     }
 
-    public void LoadingScreenLoad(string sceneName) {
-        SceneManager.LoadScene("GreenVillage");
+    void Start() {
+        LoadingScreenLoad("GreenVillage", "village");
+    }
+
+    public void LoadingScreenLoad(string sceneName, string style) {
+        loadingScreen.LoadNextScene(sceneName, style);
     }
 
     public void AddToInventory(InventoryItem item) {

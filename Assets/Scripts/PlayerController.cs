@@ -391,7 +391,6 @@ public class PlayerController : MonoBehaviour
                 attacking = false;
             }
         } else if (dying) {
-            
         }
     }
 
@@ -417,6 +416,7 @@ public class PlayerController : MonoBehaviour
     }
     
     public void Damage(int dmg, string style, bool combat=true) {
+        if (dying) return;
         FloatText(style, dmg.ToString());
         if (dmg != 0) {
             dmg -= armorDR;
@@ -558,8 +558,16 @@ public class PlayerController : MonoBehaviour
     }
 
     private void Die() {
+        if (dying) return;
         dying = true;
         animator.CrossFade("die", 0f);
+        data.depth = 0;
+        data.gold -= 20;
+        if (data.gold < 0) data.gold = 0;
+        data.entrance = 3;
+        data.direction = 1;
+        hp = 1;
+        data.LoadingScreenLoad("GreenVillage", "death");
     }
 
     public void EndTurn(float speedMod=1) {
@@ -587,13 +595,14 @@ public class PlayerController : MonoBehaviour
                         FloatText("mana", "1");
                     }
                 }
-            } else if (combatCounter > 0) {
-                combatCounter -= speed;
-                if (combatCounter <= 0) {
-                    inCombat = false;
-                }
             }
             food -= speed;
+        } 
+        if (combatCounter > 0) {
+            combatCounter -= speed;
+            if (combatCounter <= 0) {
+                inCombat = false;
+            }
         }
         // Cycle through active effects
         for (int i=effects.Count-1; i >= 0; i--) {

@@ -53,6 +53,10 @@ public class UIController : MonoBehaviour
         dialogueOptions = new List<string>();
     }
 
+    void Update() {
+
+    }
+
     public void UpdateBars() {
         hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*((float)player.hp/player.maxhp));
         manaBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*((float)player.mana/player.maxMana));
@@ -92,7 +96,6 @@ public class UIController : MonoBehaviour
     }
 
     public void Dialogue(string name, string _prompt, List<string> opts, System.Action<string> response) {
-        Debug.Log("Dialoguing!");
         dialogueGroup.SetActive(true);
         dialogueName.text = name;
         prompt.text = _prompt;
@@ -116,5 +119,9 @@ public class UIController : MonoBehaviour
     public void EndDialogue(string s="") {
         dialogueGroup.SetActive(false);
         player.enabled = true;
+    }
+
+    public void Die() {
+        
     }
 }

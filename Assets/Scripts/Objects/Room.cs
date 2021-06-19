@@ -143,11 +143,26 @@ public class Room
         return null;
     }
 
-    public Vector3Int GetDoorCell(int dir, Room target) {
+    public Vector3Int GetDoorCell(Room target) {
+        int dir;
         Vector3Int delta = new Vector3Int(
             Mathf.RoundToInt(target.center.x - center.x),
             Mathf.RoundToInt(target.center.y - center.y),
             0);
+        // Get naiive direction
+        if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x)) {
+            if (delta.y >= 0) {
+                dir = 0;
+            } else {
+                dir = 2;
+            }
+        } else {
+            if (delta.x >= 0) {
+                dir = 1;
+            } else {
+                dir = 3;
+            }
+        }
         // Basic direction won't work
         if (doors[dir] == null) {
             int prev = dir;
@@ -177,6 +192,13 @@ public class Room
             }
         }
         Vector3Int cell = doors[dir];
+        if (cell.x == 0 && cell.y == -1) {
+            string s = "AHHH BAD DOOR CELL";
+            foreach(Vector3Int d in doors) {
+                s += d+"\n";
+            }
+            Debug.Log(s);
+        }
         if (dir == 0) {
             cell.y++;
         } else if (dir == 1) {

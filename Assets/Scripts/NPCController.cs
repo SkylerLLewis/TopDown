@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public class NPCController : MonoBehaviour
 {
     PersistentData data;
-    UIController uiController;
+    public UIController uiController;
     PlayerController player;
     void Start() {
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
@@ -32,7 +32,7 @@ public class NPCController : MonoBehaviour
                 data.entrance = 2;
                 data.direction = 2;
                 data.LoadShopList();
-                data.LoadingScreenLoad("GreenVillage");
+                data.LoadingScreenLoad("GreenVillage","sleep");
                 uiController.EndDialogue();
             } else {
                 uiController.Dialogue(
@@ -44,6 +44,21 @@ public class NPCController : MonoBehaviour
         } else if (response == "no") {
             uiController.EndDialogue();
         }
+    }
+
+    public void RecoverFromDeath() {
+        uiController.Dialogue(
+            "Barkeep",
+            "You're a lucky one. Some adventurers drug you out of the dungeon.",
+            new List<string>(){"I'm in pain"},
+            RecoverFromDeath);
+    }
+    public void RecoverFromDeath(string response) {
+        uiController.Dialogue(
+            "Barkeep",
+            "Sadly, they didn't pay for your stay or their drinks. I took it out of your pocket.",
+            new List<string>(){"Aw, man"},
+            uiController.EndDialogue);
     }
 
     public void SpeakToShopkeeper() {

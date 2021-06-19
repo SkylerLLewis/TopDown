@@ -86,7 +86,6 @@ public class Initializer : MonoBehaviour
         goldSprites.Add("large", Resources.Load<Sprite>("Gold Pile"));
 
         // Weapons
-        lootWheel.Add("Twig", easy);
         lootWheel.Add("Sharp Twig", easy);
         lootWheel.Add("Plank with a Nail", easy);
         lootWheel.Add("Club", easy);
@@ -124,6 +123,8 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Mana Potion", easy);
         lootWheel.Add("Potion of Speed", easy);
         lootWheel.Add("Scroll of Return", easy);
+        
+        lootWheel.Add("Scroll of Descent", medium);
 
         lootWheel.Add("Potion of Regeneration", hard);
 
@@ -145,24 +146,42 @@ public class Initializer : MonoBehaviour
         dungeonController.UpdateNotables(notableCells);
     }
 
+    void Start() {
+        rooms[0].Draw();
+    }
+
     // Actions on collisions
     public void NotableActions(string key) {
 
         if (key == "stairsUp") {
+            player.enabled = false;
             data.depth--;
             data.floorDirection = "up";
             if (data.depth == 0) {
                 data.entrance = 1;
-                SceneManager.LoadScene("GreenVillage");
+                data.LoadingScreenLoad("GreenVillage", "ascending");
             } else {
-                SceneManager.LoadScene("BasicDungeon");
+                data.LoadingScreenLoad("BasicDungeon", "ascending");
+                data.followingEnemies.Clear();
+                if (enemies.transform.childCount > 0) {
+                    foreach(Transform child in enemies.transform) {
+                        data.followingEnemies.Add(child.name);
+                    }
+                }
             }
             return;
 
         } else if (key == "stairsDown") {
+            player.enabled = false;
             data.depth++;
             data.floorDirection = "down";
-            SceneManager.LoadScene("BasicDungeon");
+            data.LoadingScreenLoad("BasicDungeon", "descending");
+            data.followingEnemies.Clear();
+            if (enemies.transform.childCount > 0) {
+                foreach(Transform child in enemies.transform) {
+                    data.followingEnemies.Add(child.name);
+                }
+            }
             return;
 
         } else if (key.IndexOf("Loot") >= 0) {
@@ -249,6 +268,10 @@ public class Initializer : MonoBehaviour
         tail.y = Random.Range(-3, 0);
         Room core = new Room(head, tail);
         core.enemies.Clear();
+        foreach (string e in data.followingEnemies) {
+            Debug.Log(e);
+            core.enemies.Add(e);
+        }
         rooms.Add(core);
         int rand = Random.Range(0,2);
         if (rand == 0) {// String shape Dungeon
@@ -316,7 +339,7 @@ public class Initializer : MonoBehaviour
             rooms[1].loot += core.loot;
             core.loot = 0;
         }
-        core.Draw();
+        //core.Draw();
     }
 
     private bool GenerateRoom(Room parent, int direction) {
@@ -329,6 +352,13 @@ public class Initializer : MonoBehaviour
         do {
             width = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
             height = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
+            if (width*height <= 4) {
+                if (Random.Range(0,2) == 0) {
+                    width += 2;
+                } else {
+                    height += 2;
+                }
+            }
             tries++;
             // Generate room to test
             if (direction == 0) {
@@ -550,18 +580,20 @@ public class Initializer : MonoBehaviour
             exit = "stairsUp";
         }
         notableCells.Add(entrance, new Vector3Int(0,1,0));
-        int rand = Random.Range(1, rooms.Count);
-        int i = 0;
-        foreach(Room r in rooms) {
-            if (i == rand) {
-                Vector3Int cell = new Vector3Int(
-                    r.tail.x+Random.Range(1,r.width-1),
-                    r.tail.y+Random.Range(1,r.height-1),
-                    0);
-                notableCells.Add(exit, cell);
-                break;
+        if (data.depth < 5) {
+            int rand = Random.Range(1, rooms.Count);
+            int i = 0;
+            foreach(Room r in rooms) {
+                if (i == rand) {
+                    Vector3Int cell = new Vector3Int(
+                        r.tail.x+Random.Range(1,r.width-1),
+                        r.tail.y+Random.Range(1,r.height-1),
+                        0);
+                    notableCells.Add(exit, cell);
+                    break;
+                }
+                i++;
             }
-            i++;
         }
     }
 

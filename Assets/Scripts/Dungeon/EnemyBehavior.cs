@@ -30,8 +30,9 @@ public class EnemyBehavior : MonoBehaviour
 
     public void SetCoords(Vector3Int cell) {
         tilePosition = cell;
+        currentRoom = Room.FindByCell(tilePosition, dungeonController.GetRooms());
     }
-    void Start() {
+    void Awake() {
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
                 floorMap = map;
@@ -47,7 +48,6 @@ public class EnemyBehavior : MonoBehaviour
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
         dungeonController = floorMap.GetComponent<DungeonController>();
-        currentRoom = dungeonController.GetRooms()[0];
         targetDoorCell = Vector3Int.zero;
         pathFinder = floorMap.GetComponent<PathFinder>();
         canvas = GameObject.FindWithTag("WorldCanvas");
@@ -77,14 +77,6 @@ public class EnemyBehavior : MonoBehaviour
         // Manhattan distance
         int distance = Mathf.Abs(delta.x) + Mathf.Abs(delta.y);
 
-        // Ranged? Run away!
-        if (enemyType == "Ranged") {
-            if (distance < 4 && currentRoom == player.currentRoom) {
-                delta.x *= -1;
-                delta.y *= -1;
-            }
-        }
-
         // Get naiive direction
         if (delta.y > 0) {
             direction = 0;
@@ -99,10 +91,16 @@ public class EnemyBehavior : MonoBehaviour
         // In another room? Make for the door!
         if (currentRoom != player.currentRoom) {
             if (targetDoorCell == Vector3Int.zero) {
-                targetDoorCell = currentRoom.GetDoorCell(direction, player.currentRoom);
+                targetDoorCell = currentRoom.GetDoorCell(player.currentRoom);
             }
             delta.x = targetDoorCell.x - tilePosition.x;
             delta.y = targetDoorCell.y - tilePosition.y;
+        }
+
+        // Ranged? Run away!
+        if (enemyType == "Ranged" && distance < 4) {
+            delta.x *= -1;
+            delta.y *= -1;
         }
         
         if (enemyType == "Melee") {
