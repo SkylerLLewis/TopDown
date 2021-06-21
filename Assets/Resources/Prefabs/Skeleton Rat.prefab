@@ -116,6 +116,7 @@ MonoBehaviour:
   maxdmg: 1
   moveRatio: 0
   actionCounter: 0
+  xp: 1
   enemyType: Melee
 --- !u!50 &6930358389063408370
 Rigidbody2D:

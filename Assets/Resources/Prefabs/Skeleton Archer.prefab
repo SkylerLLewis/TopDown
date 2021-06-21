@@ -104,7 +104,9 @@ MonoBehaviour:
   attacking: 0
   dying: 0
   waiting: 0
+  disabled: 0
   tilePosition: {x: 0, y: -2, z: 0}
+  targetDoorCell: {x: 0, y: 0, z: 0}
   facing: []
   maxhp: 1
   hp: 1
@@ -114,6 +116,7 @@ MonoBehaviour:
   maxdmg: 3
   moveRatio: 1
   actionCounter: 0
+  xp: 1
   enemyType: Ranged
 --- !u!50 &1786525879089976968
 Rigidbody2D:

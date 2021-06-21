@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 
 public class UIController : MonoBehaviour
 {
+    Canvas canvas;
     RectTransform hpBar, manaBar, foodBar;
     TextMeshProUGUI depthText;
     private PersistentData data;
@@ -17,9 +18,12 @@ public class UIController : MonoBehaviour
     private List<TextMeshProUGUI> options;
     private List<string> dialogueOptions;
     private List<Button> optionButtons;
+    private List<Toggle> skillButtons;
     private System.Action<string> responseAction;
     void Awake()
     {
+        // Load resources
+        canvas = GetComponent<Canvas>();
         root = GameObject.FindWithTag("Root");
         hpBar = GameObject.Find("HP Bar").GetComponent<RectTransform>();
         manaBar = GameObject.Find("MP Bar").GetComponent<RectTransform>();
@@ -28,6 +32,24 @@ public class UIController : MonoBehaviour
         depthText = GameObject.Find("Depth Text").GetComponent<TextMeshProUGUI>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         depthText.text = data.depth.ToString();
+        // !
+        Toggle mm = GameObject.Find("MagicMissile").GetComponent<Toggle>();
+        //mm.interactable = false;
+        /*m_Toggle.onValueChanged.AddListener(delegate {
+            ToggleValueChanged(m_Toggle);
+        });*/
+
+        // Add skill buttons
+        /*skillButtons = new List<Toggle>();
+        foreach(string skill in data.activeSkills) {
+            GameObject button = Resources.Load<GameObject>("Prefabs/Skill Buttons/"+skill);
+            Toggle skillButton = Instantiate(button, new Vector3(-2,0,0), Quaternion.identity, canvas.transform)
+                .GetComponent<Toggle>();
+            skillButtons.Add(skillButton);
+            skillButton.onValueChanged.AddListener(delegate {
+                Test();
+            });
+        }*/
 
         optionButtons = new List<Button>();
         options = new List<TextMeshProUGUI>();
@@ -51,6 +73,10 @@ public class UIController : MonoBehaviour
             }
         }
         dialogueOptions = new List<string>();
+    }
+
+    void Test() {
+        Debug.Log("Test worked!");
     }
 
     void Update() {

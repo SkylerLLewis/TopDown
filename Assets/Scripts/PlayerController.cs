@@ -117,10 +117,10 @@ public class PlayerController : MonoBehaviour
         mainCamera.transform.position = camVec;
 
         // Set Attributes
-        maxMana = 20;
+        maxMana = data.baseMana;
         mana = data.mana;
         if (mana == 0) mana = maxMana;
-        maxhp = 20;
+        maxhp = data.baseHp;
         hp = data.playerHp;
         if (hp == 0) hp = maxhp;
         food = data.food;
@@ -417,18 +417,20 @@ public class PlayerController : MonoBehaviour
     
     public void Damage(int dmg, string style, bool combat=true) {
         if (dying) return;
-        FloatText(style, dmg.ToString());
         if (dmg != 0) {
             dmg -= armorDR;
+            FloatText(style, dmg.ToString());
             if (dmg < 1) dmg = 1;
             hp -= dmg;
             if (hp <= 0) {
                 Die();
             }
-            if (combat) {
-                combatCounter = combatIsActive;
-                inCombat = true;
-            }
+        } else {
+            FloatText(style, dmg.ToString());
+        }
+        if (combat) {
+            combatCounter = combatIsActive;
+            inCombat = true;
         }
         uiController.UpdateBars();
     }
@@ -449,6 +451,18 @@ public class PlayerController : MonoBehaviour
         food += f;
         if (food > 1000) {
             food = 1000;
+        }
+    }
+
+    public void GetXP(int xp) {
+        data.xp += xp;
+        if (data.xp >= data.nextLevel) {
+            data.LevelUp();
+            maxhp += 2;
+            hp += 2;
+            maxMana += 2;
+            mana += 2;
+            FloatText("msg", "Level up!");
         }
     }
 
@@ -507,7 +521,7 @@ public class PlayerController : MonoBehaviour
             HighlightTiles(rangedTiles, new Color(1,1,1,1));
             return;
         }
-        if (abilityName == "MagicMissile") {
+        if (abilityName == "Magic Missile") {
             if (mana < 4) return;
             rangedToExecute = abilityName;
             RangeFind(range:6);
@@ -515,7 +529,7 @@ public class PlayerController : MonoBehaviour
     }
 
     private void ExecuteRanged(EnemyBehavior e) {
-        if (rangedToExecute == "MagicMissile") {
+        if (rangedToExecute == "Magic Missile") {
             MagicMissile(e);
         }
         rangedToExecute = "";
@@ -545,7 +559,7 @@ public class PlayerController : MonoBehaviour
         clone.name = clone.name.Split('(')[0];
         clone.GetComponent<ProjectileController>().Shoot(target, damage, style);
         target.FutureDamage(damage);
-        EndTurn(2);
+        EndTurn(2*speed);
     }
 
     private void RangeFind(int range) {

@@ -37,8 +37,8 @@ public class Potion : InventoryItem {
                 mana = 20;
             } else if (name == "Potion of Speed") {
                 description = "Static shocks your hand when you touch it.";
-                speed = 1.5f;
-                duration = 20f;
+                speed = 2f;
+                duration = 10f;
             }
         } else if (PotionTiers[1].Contains(name)) {
             cost = 10;

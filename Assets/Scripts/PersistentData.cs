@@ -5,9 +5,10 @@ using UnityEngine.SceneManagement;
 
 public class PersistentData : MonoBehaviour
 {
-    public int depth, direction, entrance;
     public string floorDirection, loadedMenu, mapType, sceneToLoad, sceneToUnload;
-    public int playerHp, mana, gold;
+    public int depth, direction, entrance,
+               playerHp, mana, gold, baseHp, baseMana,
+               xp, level, nextLevel, skillPoints;
     public float food;
     public List<PlayerController.Effect> playerEffects;
     public Weapon weapon;
@@ -15,15 +16,20 @@ public class PersistentData : MonoBehaviour
     public GameObject root;
     public LoadScreenController loadingScreen;
     public List<InventoryItem> inventory, shopList;
-    public List<string> followingEnemies;
+    public List<string> followingEnemies, activeSkills;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
         loadingScreen = GameObject.Find("LoadingScreen").GetComponent<LoadScreenController>();
+        level = 0;
+        xp = 0;
+        nextLevel = Mathf.RoundToInt(25 * Mathf.Pow(2, level/5f));
         depth = 0;
         entrance = 0;
         gold = 5;
         playerHp = 0;
         mana = 0;
+        baseHp = 20;
+        baseMana = 10;
         food = 500;
         direction = 2;
         floorDirection = "down";
@@ -42,6 +48,9 @@ public class PersistentData : MonoBehaviour
         // Shopkeeper List
         shopList = new List<InventoryItem>();
         LoadShopList();
+        // Skills
+        activeSkills = new List<string>();
+        activeSkills.Add("Magic Missile");
     }
 
     void Start() {
@@ -111,5 +120,14 @@ public class PersistentData : MonoBehaviour
         shopList.Add(new Food("Roast Squirrel"));
         shopList.Sort(InventoryController.CompareItems);
         shopList.Reverse();
+    }
+
+    public void LevelUp() {
+        level++;
+        skillPoints++;
+        xp -= nextLevel;
+        nextLevel = Mathf.RoundToInt(25 * Mathf.Pow(2, level/5f));
+        baseHp += 2;
+        baseMana += 2;
     }
 }

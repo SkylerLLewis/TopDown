@@ -25,7 +25,7 @@ public class EnemyBehavior : MonoBehaviour
     public Room currentRoom;
     
     // Combat Stats
-    public int maxhp, hp, attack, defense, mindmg, maxdmg, moveRatio, actionCounter;
+    public int maxhp, hp, attack, defense, mindmg, maxdmg, moveRatio, actionCounter, xp;
     public string enemyType;
 
     public void SetCoords(Vector3Int cell) {
@@ -344,6 +344,7 @@ public class EnemyBehavior : MonoBehaviour
 
     private void Die() {
         dying = true;
+        player.GetXP(xp);
         count = 0f;
         startAngle = this.transform.rotation;
         targetAngle = startAngle;

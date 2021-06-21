@@ -137,4 +137,5 @@ MonoBehaviour:
   maxdmg: 8
   moveRatio: 0
   actionCounter: 0
+  xp: 2
   enemyType: Melee
