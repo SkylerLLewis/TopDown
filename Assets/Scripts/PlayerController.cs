@@ -41,6 +41,7 @@ public class PlayerController : MonoBehaviour
     private string rangedToExecute = "";
     public Room currentRoom;
     public List<Effect> effects;
+    Skill usingSkill;
     
     // Combat Stats
     public Weapon weapon;
@@ -124,7 +125,9 @@ public class PlayerController : MonoBehaviour
         hp = data.playerHp;
         if (hp == 0) hp = maxhp;
         food = data.food;
-        uiController.UpdateBars();
+        uiController.UpdateHp();
+        uiController.UpdateMana();
+        uiController.UpdateFood();
         attack = 5;
         defense = 5;
         speed = 1;
@@ -166,7 +169,7 @@ public class PlayerController : MonoBehaviour
                 Input.mousePosition.y/Screen.height);
             
             // Using interface?
-            if (pos.x<0.1 || pos.x>0.9) {
+            if (pos.x<0.11 || pos.x>0.92) {
                 return;
             }
 
@@ -422,6 +425,7 @@ public class PlayerController : MonoBehaviour
             FloatText(style, dmg.ToString());
             if (dmg < 1) dmg = 1;
             hp -= dmg;
+            uiController.UpdateHp();
             if (hp <= 0) {
                 Die();
             }
@@ -432,19 +436,20 @@ public class PlayerController : MonoBehaviour
             combatCounter = combatIsActive;
             inCombat = true;
         }
-        uiController.UpdateBars();
     }
 
     public void Heal(int heal) {
         hp += heal;
         if (hp > maxhp) hp = maxhp;
         FloatText("heal", heal.ToString());
+        uiController.UpdateHp();
     }
 
     public void GetMana(int m) {
         mana += m;
         if (mana > maxMana) mana = maxMana;
         FloatText("mana", m.ToString());
+        uiController.UpdateMana();
     }
 
     public void Feed(int f) {
@@ -515,17 +520,25 @@ public class PlayerController : MonoBehaviour
         textCont.Init(this.transform.position, style, msg);
     }
 
-    public void Ability(string abilityName) {
-        if (rangedToExecute != "") {
-            rangedToExecute = "";
-            HighlightTiles(rangedTiles, new Color(1,1,1,1));
-            return;
+    public void Ability(Skill s) {
+        if (s.abilityType == "magic") {
+            if (mana < s.manaCost) return;
+
+            if (s.name == "Magic Missile") {
+                usingSkill = s;
+                rangedToExecute = s.name;
+                RangeFind(range:6);
+            } else if (s.name == "Lesser Heal") {
+                Heal(15);
+                mana -= s.manaCost;
+                uiController.UpdateMana();
+            }
         }
-        if (abilityName == "Magic Missile") {
-            if (mana < 4) return;
-            rangedToExecute = abilityName;
-            RangeFind(range:6);
-        }
+    }
+
+    public void CancelAbility(string abilityName) {
+        rangedToExecute = "";
+        HighlightTiles(rangedTiles, new Color(1,1,1,1));
     }
 
     private void ExecuteRanged(EnemyBehavior e) {
@@ -537,8 +550,6 @@ public class PlayerController : MonoBehaviour
     }
 
     void MagicMissile(EnemyBehavior target) {
-        mana -= 4;
-        uiController.UpdateBars();
         int damage;
         int roll = Mathf.RoundToInt(Random.Range(1,20+1))+5;
         string style = "dmg";
@@ -560,6 +571,9 @@ public class PlayerController : MonoBehaviour
         clone.GetComponent<ProjectileController>().Shoot(target, damage, style);
         target.FutureDamage(damage);
         EndTurn(2*speed);
+        uiController.UsedSkill("Magic Missile");
+        mana -= usingSkill.manaCost;
+        uiController.UpdateMana();
     }
 
     private void RangeFind(int range) {
@@ -594,23 +608,29 @@ public class PlayerController : MonoBehaviour
                         hp += 2;
                         if (hp > maxhp) hp = maxhp;
                         FloatText("heal", "2");
+                        uiController.UpdateHp();
                     }
-                    if (mana != maxMana && Random.Range(0,2f) < speed) {
+                    if (mana != maxMana && Random.Range(0,2.66f) < speed) {
                         mana++;
                         FloatText("mana", "1");
+                        uiController.UpdateMana();
                     }
                 } else {// Just walking
                     if(hp != maxhp && Random.Range(0f,4f) < speed) {
                         hp++;
                         FloatText("heal", "1");
-                    }
-                    if (mana != maxMana && Random.Range(0,8f) < speed) {
-                        mana++;
-                        FloatText("mana", "1");
+                        uiController.UpdateHp();
                     }
                 }
             }
+            // Mana regens even in combat
+            if (mana != maxMana && Random.Range(0,8f) < speed) {
+                mana++;
+                FloatText("mana", "1");
+                uiController.UpdateMana();
+            }
             food -= speed;
+            uiController.UpdateFood();
         } 
         if (combatCounter > 0) {
             combatCounter -= speed;
@@ -628,7 +648,6 @@ public class PlayerController : MonoBehaviour
                 effects.RemoveAt(i);
             }
         }
-        uiController.UpdateBars();
         entities.BroadcastMessage("turnStart", speed*speedMod);
     }
 

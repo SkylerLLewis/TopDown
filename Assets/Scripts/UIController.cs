@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 public class UIController : MonoBehaviour
@@ -18,7 +19,7 @@ public class UIController : MonoBehaviour
     private List<TextMeshProUGUI> options;
     private List<string> dialogueOptions;
     private List<Button> optionButtons;
-    private List<Toggle> skillButtons;
+    private List<SkillController> skillButtons;
     private System.Action<string> responseAction;
     void Awake()
     {
@@ -32,24 +33,20 @@ public class UIController : MonoBehaviour
         depthText = GameObject.Find("Depth Text").GetComponent<TextMeshProUGUI>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         depthText.text = data.depth.ToString();
-        // !
-        Toggle mm = GameObject.Find("MagicMissile").GetComponent<Toggle>();
-        //mm.interactable = false;
-        /*m_Toggle.onValueChanged.AddListener(delegate {
-            ToggleValueChanged(m_Toggle);
-        });*/
-
-        // Add skill buttons
-        /*skillButtons = new List<Toggle>();
-        foreach(string skill in data.activeSkills) {
-            GameObject button = Resources.Load<GameObject>("Prefabs/Skill Buttons/"+skill);
-            Toggle skillButton = Instantiate(button, new Vector3(-2,0,0), Quaternion.identity, canvas.transform)
-                .GetComponent<Toggle>();
+        
+        int buttonNum = 1;
+        skillButtons = new List<SkillController>();
+        foreach(string n in data.activeSkills) {
+            SkillController skillButton = GameObject.Find("Skill Button "+buttonNum)
+                .GetComponent<SkillController>();
+            skillButton.SetName(n);
             skillButtons.Add(skillButton);
-            skillButton.onValueChanged.AddListener(delegate {
-                Test();
-            });
-        }*/
+            buttonNum++;
+        }
+        for (int i=buttonNum; i <= 6; i++) {
+            GameObject skillButton = GameObject.Find("Skill Button "+i);
+            skillButton.SetActive(false);
+        }
 
         optionButtons = new List<Button>();
         options = new List<TextMeshProUGUI>();
@@ -75,18 +72,38 @@ public class UIController : MonoBehaviour
         dialogueOptions = new List<string>();
     }
 
-    void Test() {
-        Debug.Log("Test worked!");
-    }
-
     void Update() {
 
     }
 
-    public void UpdateBars() {
+    public void UpdateHp() {
         hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*((float)player.hp/player.maxhp));
+    }
+
+    public void UpdateMana() {
         manaBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*((float)player.mana/player.maxMana));
+        // Activate/deactivate magic skills?
+        foreach(SkillController s in skillButtons) {
+            if (s.skill.abilityType == "magic"){
+                if (!s.disabled && player.mana < s.skill.manaCost) {
+                    s.Disable();
+                } else if (s.disabled && player.mana >= s.skill.manaCost) {
+                    s.Undisable();
+                }
+            }
+        }
+    }
+
+    public void UpdateFood() {
         foodBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*(player.food/1000));
+    }
+
+    public void UsedSkill(string n) {
+        foreach(SkillController s in skillButtons) {
+            if (s.skillName == n) {
+                s.Used();
+            }
+        }
     }
 
     public void OpenInventory() {
@@ -115,10 +132,27 @@ public class UIController : MonoBehaviour
             yield return null;
         }
     }
+
+    public void OpenSkills() {
+        data.loadedMenu = "SkillsScreen";
+        StartCoroutine(LoadSkillsScene());
+    }
+    // Loads Scene on top of current scene asyncronously
+    IEnumerator LoadSkillsScene() {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync("SkillsScreen", LoadSceneMode.Additive);
+        // Wait until the asynchronous scene fully loads
+        while (!asyncLoad.isDone) {
+            yield return null;
+        }
+    }
     
 
-    public void AbilityActivate(string name) {
-        player.Ability(name);
+    public void AbilityActivate(Skill s) {
+        player.Ability(s);
+    }
+
+    public void CancelAbility(string name) {
+        player.CancelAbility(name);
     }
 
     public void Dialogue(string name, string _prompt, List<string> opts, System.Action<string> response) {

@@ -51,6 +51,7 @@ public class PersistentData : MonoBehaviour
         // Skills
         activeSkills = new List<string>();
         activeSkills.Add("Magic Missile");
+        activeSkills.Add("Lesser Heal");
     }
 
     void Start() {

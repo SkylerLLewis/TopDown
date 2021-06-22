@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
 public class InventoryController : MonoBehaviour
 {
@@ -15,6 +15,7 @@ public class InventoryController : MonoBehaviour
     RectTransform hpBar, foodBar;
     Image itemImage;
     PlayerController player;
+    UIController uiController;
     public static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
         {"Armor", 1},
         {"Weapon", 2},
@@ -29,6 +30,7 @@ public class InventoryController : MonoBehaviour
         root = data.root;
         root.SetActive(false);
         player = root.GetComponentInChildren<PlayerController>();
+        uiController = root.GetComponentInChildren<UIController>();
 
         foreach (Transform child in gameObject.transform) {
             if (child.name == "ItemArray") {
@@ -268,6 +270,8 @@ public class InventoryController : MonoBehaviour
                 refreshNeeded = true;
             }
             UpdateBars();
+            uiController.UpdateMana();
+            uiController.UpdateHp();
         } else if (item.itemType == "Scroll") {
             if (data.mapType != "Dungeon") return;
             item.Activate(player);
@@ -287,6 +291,7 @@ public class InventoryController : MonoBehaviour
                 refreshNeeded = true;
             }
             UpdateBars();
+            uiController.UpdateFood();
         }
         // Return if actions are needed
         if (needToReturn) {
