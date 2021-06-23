@@ -9,7 +9,6 @@ public class ShopController : MonoBehaviour
 {
     private int selected;
     private string mode = "buying"; 
-    bool reselectNeeded;
     private PersistentData data;
     private GameObject root, itemArray, eventSystem, textFab;
     private Button buyButton, sellButton;
@@ -68,9 +67,7 @@ public class ShopController : MonoBehaviour
             data.inventory.Sort(InventoryController.CompareItems);
         }
         DisplayItems();
-        if (reselectNeeded) {
-            DisplayItem(0);
-        }
+        DisplayItem(selected);
     }
 
     public void DisplayItems() {
@@ -178,7 +175,7 @@ public class ShopController : MonoBehaviour
         } else if (mode == "selling") {
             data.gold += item.cost;
             goldText.text = data.gold.ToString();
-            reselectNeeded = data.RemoveFromInventory(selected);
+            data.RemoveFromInventory(selected);
             // Float cost text
             GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, gameObject.transform);
             DmgTextController textCont = text.GetComponent<DmgTextController>();
@@ -193,8 +190,7 @@ public class ShopController : MonoBehaviour
         sellButton.enabled = false;
         activeList = data.inventory;
         mode = "selling";
-        Debug.Log("I am selling now!");
-        reselectNeeded = true;
+        selected = 0;
         RefreshItems();
     }
 
@@ -203,8 +199,7 @@ public class ShopController : MonoBehaviour
         buyButton.enabled = false;
         activeList = data.shopList;
         mode = "buying";
-        Debug.Log("I am buying now!");
-        reselectNeeded = true;
+        selected = 0;
         RefreshItems();
     }
 

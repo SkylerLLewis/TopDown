@@ -17,12 +17,13 @@ public class PersistentData : MonoBehaviour
     public LoadScreenController loadingScreen;
     public List<InventoryItem> inventory, shopList;
     public List<string> followingEnemies, activeSkills;
+    public List<Skill> skills;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
         loadingScreen = GameObject.Find("LoadingScreen").GetComponent<LoadScreenController>();
         level = 0;
         xp = 0;
-        nextLevel = Mathf.RoundToInt(25 * Mathf.Pow(2, level/5f));
+        nextLevel = Mathf.RoundToInt(50 * Mathf.Pow(2, level/4f));
         depth = 0;
         entrance = 0;
         gold = 5;
@@ -49,6 +50,8 @@ public class PersistentData : MonoBehaviour
         shopList = new List<InventoryItem>();
         LoadShopList();
         // Skills
+        skills = new List<Skill>();
+        skillPoints = 0;
         activeSkills = new List<string>();
         activeSkills.Add("Magic Missile");
         activeSkills.Add("Lesser Heal");
@@ -127,8 +130,6 @@ public class PersistentData : MonoBehaviour
         level++;
         skillPoints++;
         xp -= nextLevel;
-        nextLevel = Mathf.RoundToInt(25 * Mathf.Pow(2, level/5f));
-        baseHp += 2;
-        baseMana += 2;
+        nextLevel = Mathf.RoundToInt(50 * Mathf.Pow(2, level/4f));
     }
 }

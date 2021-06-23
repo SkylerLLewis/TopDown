@@ -118,19 +118,12 @@ public class PlayerController : MonoBehaviour
         mainCamera.transform.position = camVec;
 
         // Set Attributes
-        maxMana = data.baseMana;
-        mana = data.mana;
-        if (mana == 0) mana = maxMana;
-        maxhp = data.baseHp;
-        hp = data.playerHp;
-        if (hp == 0) hp = maxhp;
-        food = data.food;
+        ApplySkills();
         uiController.UpdateHp();
         uiController.UpdateMana();
         uiController.UpdateFood();
         attack = 5;
         defense = 5;
-        speed = 1;
         mindmg = 0;
         maxdmg = 0;
         armorDR = 0;
@@ -463,16 +456,40 @@ public class PlayerController : MonoBehaviour
         data.xp += xp;
         if (data.xp >= data.nextLevel) {
             data.LevelUp();
-            maxhp += 2;
-            hp += 2;
-            maxMana += 2;
-            mana += 2;
             FloatText("msg", "Level up!");
         }
     }
 
+    public void ApplySkills() {
+        Armor a = armor;
+        Weapon w = weapon;
+        UnequipArmor();
+        UnequipWeapon();
+        maxMana = 10;
+        mana = data.mana;
+        if (mana == 0) mana = maxMana;
+        maxhp = 20;
+        hp = data.playerHp;
+        if (hp == 0) hp = maxhp;
+        food = data.food;
+        speed = 1;
+        foreach (Skill s in data.skills) {
+            if (s.abilityType == "improvement") {
+                if (s.stat == "Health") {
+                    maxhp += s.amount*s.magnitude;
+                } else if (s.stat == "Mana") {
+                    maxMana += s.amount*s.magnitude;
+                } else if (s.stat == "Speed") {
+                    speed = 1f - (0.05f*s.amount*s.magnitude);
+                }
+            }
+        }
+        if (a != null) EquipArmor(a);
+        if (w != null) EquipWeapon(w);
+    }
+
     public void EquipWeapon(Weapon w) {
-        if (weapon != null) { // Unequip old weapon
+        if (weapon != null) {
             attack -= weapon.atk;
             defense -= weapon.def;
             mindmg -= weapon.mindmg;
@@ -485,6 +502,17 @@ public class PlayerController : MonoBehaviour
         mindmg += weapon.mindmg;
         maxdmg += weapon.maxdmg;
         speed *= (1/weapon.speed);
+    }
+
+    public void UnequipWeapon() {
+        if (weapon != null) { // Unequip old weapon
+            attack -= weapon.atk;
+            defense -= weapon.def;
+            mindmg -= weapon.mindmg;
+            maxdmg -= weapon.maxdmg;
+            speed /= (1/weapon.speed);
+            weapon = null;
+        }
     }
 
     public void EquipArmor(Armor a) {
@@ -503,6 +531,18 @@ public class PlayerController : MonoBehaviour
         armorDR += armor.armor;
         mindmg += armor.dmg;
         maxdmg += armor.dmg;
+    }
+
+    public void UnequipArmor() {
+        if (armor != null) { // Unequip old armor
+            defense -= armor.def;
+            attack -= armor.atk;
+            speed /= (1/armor.speed);
+            armorDR -= armor.armor;
+            mindmg -= armor.dmg;
+            maxdmg -= armor.dmg;
+            armor = null;
+        }
     }
 
     public void SpeedEffect(float s, float dur) {
@@ -532,6 +572,7 @@ public class PlayerController : MonoBehaviour
                 Heal(15);
                 mana -= s.manaCost;
                 uiController.UpdateMana();
+                EndTurn(1);
             }
         }
     }

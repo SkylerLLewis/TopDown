@@ -32,6 +32,8 @@ public class StatsScreenCrontroller : MonoBehaviour
 
         string s = "";
         s += player.hp+"/"+player.maxhp+"\n";
+        s += player.mana+"/"+player.maxMana+"\n";
+        s += player.mindmg+"-"+player.maxdmg+"\n";
         s += player.attack+"\n";
         s += player.defense+"\n";
         s += Mathf.FloorToInt((1/player.speed)*100)+"%\n";

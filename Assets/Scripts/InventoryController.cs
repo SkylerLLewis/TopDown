@@ -311,7 +311,7 @@ public class InventoryController : MonoBehaviour
         data.weapon = data.inventory[selected] as Weapon;
         data.inventory.RemoveAt(selected);
         data.inventory.Add(old);
-        selected = -1;
+        DisplayItem(-1);
         player.FloatText("msg", "Equipped "+data.weapon.displayName);
     }
 
@@ -323,7 +323,7 @@ public class InventoryController : MonoBehaviour
         if (old != null) {
             data.inventory.Add(old);
         }
-        selected = -2;
+        DisplayItem(-2);
         player.FloatText("msg", "Equipped "+data.armor.displayName);
     }
 
