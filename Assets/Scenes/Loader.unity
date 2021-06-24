@@ -152,20 +152,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6c967e6f9f892cd3a1d6a31c77c85b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  depth: 0
-  direction: 0
-  entrance: 0
   floorDirection: 
   loadedMenu: 
   mapType: 
   sceneToLoad: 
   sceneToUnload: 
+  depth: 0
+  direction: 0
+  entrance: 0
   playerHp: 0
   mana: 0
   gold: 0
+  baseHp: 0
+  baseMana: 0
+  xp: 0
+  level: 0
+  nextLevel: 0
+  skillPoints: 0
   food: 0
   root: {fileID: 0}
   loadingScreen: {fileID: 0}
+  followingEnemies: []
+  activeSkills: []
 --- !u!4 &476949126
 Transform:
   m_ObjectHideFlags: 0

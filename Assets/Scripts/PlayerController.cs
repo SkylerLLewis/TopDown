@@ -274,22 +274,17 @@ public class PlayerController : MonoBehaviour
                 }
             }
 
-            TileBase targetTile = blockMap.GetTile(targetCell);
-            if (targetTile != null && !blocked) {
-                // Check for important blocks
-                if (targetTile.name == "chest") {
-                    // simulate attack move on chest
-                    attacking = true;
-                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                    highPoint = targetPosition;
-                    targetPosition = startPosition;
-                    count = 0.0f;
-                    readyToEnd = true;
+            // Check blockages
+            if (!blocked) {
+                TileBase targetTile = blockMap.GetTile(targetCell);
+                if (targetTile != null) {
+                    // Check for important blocks
+                    NotableCollide(targetCell);
+                    blocked = true;
                 }
-                NotableCollide(targetCell);
-                blocked = true;
             }
 
+            // Are there enemies?
             if (!blocked) {
                 // Attack enemy in front?
                 EnemyBehavior target = null;
@@ -310,19 +305,30 @@ public class PlayerController : MonoBehaviour
                     targetPosition = startPosition;
                     count = 0.0f;
                     Attack(target);
-                    //EndTurn();
                     readyToEnd = true;
-                // Point is valid?
-                } else {
+
+                } else { // No walls, blocks or enemies: move
+            
                     // Check if I'm walking onto something important
-                    NotableCollide(targetCell);
-                    // Init bezier curve
-                    moving = true;
-                    tilePosition = targetCell;
-                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                    count = 0.0f;
-                    //EndTurn();
-                    readyToEnd = true;
+                    TileBase targetTile = floorMap.GetTile(targetCell);
+                    if (targetTile != null && targetTile.name == "chest") {
+                        NotableCollide(targetCell);
+                        // simulate attack move on chest
+                        attacking = true;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        highPoint = targetPosition;
+                        targetPosition = startPosition;
+                        count = 0.0f;
+                        readyToEnd = true;
+                    } else {
+                        // All good to move
+                        NotableCollide(targetCell);
+                        moving = true;
+                        tilePosition = targetCell;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        count = 0.0f;
+                        readyToEnd = true;
+                    }
                 }
             }
             // Face player in new direction
@@ -415,8 +421,8 @@ public class PlayerController : MonoBehaviour
         if (dying) return;
         if (dmg != 0) {
             dmg -= armorDR;
-            FloatText(style, dmg.ToString());
             if (dmg < 1) dmg = 1;
+            FloatText(style, dmg.ToString());
             hp -= dmg;
             uiController.UpdateHp();
             if (hp <= 0) {

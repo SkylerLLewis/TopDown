@@ -40,7 +40,7 @@ public class LoadScreenController : MonoBehaviour
             duration = 0.5f;
         } else if (style == "death") {
             title.text = "You see a fire approaching...";
-            duration = 4;
+            duration = 3;
         }
         gameObject.SetActive(true);
         StartCoroutine(LoadScene(scene, duration));

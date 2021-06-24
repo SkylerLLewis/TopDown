@@ -10,7 +10,7 @@ public class Initializer : MonoBehaviour
     public Dictionary<string,Vector3Int> notableCells;
     Tile floor, leftWall, rightWall, leftRightWall, leftDoor, leftDoorOpen;
     Tile leftClearWall, rightClearWall, leftRightClearWall;
-    Dictionary<string,Tile> tiles, clearTiles;
+    Dictionary<string,Tile> tiles;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     Vector3Int cellLoc;
     private GameObject enemies, loot, lootFab;
@@ -46,14 +46,7 @@ public class Initializer : MonoBehaviour
         tiles.Add("stairsUp", Resources.Load<Tile>("Tiles/DungeonMap/stairsUp"));
         tiles.Add("stairsDown", Resources.Load<Tile>("Tiles/DungeonMap/stairsDown"));
         tiles.Add("chest", Resources.Load<Tile>("Tiles/DungeonMap/chest"));
-
-        clearTiles = new Dictionary<string,Tile>();
-        clearTiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftClearWall"));
-        clearTiles.Add("rightWall", Resources.Load<Tile>("Tiles/DungeonMap/rightClearWall"));
-        clearTiles.Add("leftDoor", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorClear"));
-        clearTiles.Add("leftDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorOpenClear"));
-        clearTiles.Add("rightDoor", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorClear"));
-        clearTiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpenClear"));
+        tiles.Add("column", Resources.Load<Tile>("Tiles/DungeonMap/column"));
 
         // Load Enemy prefabs and likelyhood
         int easy = 10 - 2*data.depth;
@@ -68,6 +61,7 @@ public class Initializer : MonoBehaviour
         enemyFabs.Add("Skeleton Brute", Resources.Load("Prefabs/Skeleton Brute") as GameObject);
         enemyFabs.Add("Skeleton Stabber", Resources.Load("Prefabs/Skeleton Stabber") as GameObject);
         enemyFabs.Add("Skeleton Warrior", Resources.Load("Prefabs/Skeleton Warrior") as GameObject);
+        enemyFabs.Add("Bonemass", Resources.Load("Prefabs/Bonemass") as GameObject);
         enemyWheel.Add("Skeleton", easy);
         enemyWheel.Add("Skeleton Rat", easy);
         enemyWheel.Add("Skeleton Archer", medium+1);
@@ -269,11 +263,11 @@ public class Initializer : MonoBehaviour
         Room core = new Room(head, tail);
         core.enemies.Clear();
         foreach (string e in data.followingEnemies) {
-            Debug.Log(e);
             core.enemies.Add(e);
         }
         rooms.Add(core);
         int rand = Random.Range(0,2);
+        int boss = 0;
         if (rand == 0) {// String shape Dungeon
             // Create 4 Neighbors
             for (int i=0; i<4; i++) {
@@ -282,7 +276,14 @@ public class Initializer : MonoBehaviour
             // Create string of rooms
             int direction = Random.Range(0, 4);
             Room branch = core.neighbors[direction];
+            boss = Random.Range(0, 4);
             for (int i=0; i<4; i++) {
+                if (data.depth == 5 && i == boss) {
+                    Debug.Log("Bonemass successfully created at room "+i);
+                    GenerateRoom(branch, direction, "Bonemass");
+                    branch = branch.neighbors[direction];
+                    continue;
+                }
                 GenerateRoom(branch, direction);
                 branch = branch.neighbors[direction];
             }
@@ -304,10 +305,17 @@ public class Initializer : MonoBehaviour
             Debug.Log("Loop!");
             Room branch = core;
             int direction = Random.Range(0, 4);
+            boss = Random.Range(0, 5);
             // Create loop of rooms
             for (int i=0; i<4; i++) {
                 int dir = (direction+i)%4;
                 for (int j=0; j<3; j++) {
+                    if (data.depth == 5 && i*3+j == boss) {
+                        Debug.Log("Bonemass successfully created at room "+(i+j));
+                        GenerateRoom(branch, direction, "Bonemass");
+                        branch = branch.neighbors[direction];
+                        continue;
+                    }
                     if (!GenerateRoom(branch, dir)) {
                         break; // Break if room creation fails
                     }
@@ -339,10 +347,9 @@ public class Initializer : MonoBehaviour
             rooms[1].loot += core.loot;
             core.loot = 0;
         }
-        //core.Draw();
     }
 
-    private bool GenerateRoom(Room parent, int direction) {
+    private bool GenerateRoom(Room parent, int direction, string prefab="") {
         int width, height;
         Vector3Int head = new Vector3Int();
         Vector3Int tail = new Vector3Int();
@@ -352,6 +359,10 @@ public class Initializer : MonoBehaviour
         do {
             width = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
             height = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
+            if (prefab == "Bonemass") {
+                width = 9;
+                height = 5;
+            }
             if (width*height <= 4) {
                 if (Random.Range(0,2) == 0) {
                     width += 2;
@@ -382,20 +393,29 @@ public class Initializer : MonoBehaviour
                 tail.x = head.x - width+1;
                 tail.y = head.y - height+1;
             }
-            newRoom = new Room(head, tail);
+            Room room = new Room(head, tail);
             valid = true;
             foreach (Room r in rooms) {
-                if (r.Collides(newRoom)) {
+                if (r.Collides(room)) {
                     valid = false;
                     break;
                 }
             }
             if (tries > 20) {
-                Debug.Log("Room ("+newRoom.ToString()+") with width:"+width+" and height:"+height+" impossible to make");
                 return false;
             }
         } while (!valid);
-        newRoom.SetNeighbors(parent, rooms);
+        newRoom = new Room(head, tail, parent, rooms, prefab);
+        if (prefab == "Bonemass") {
+            Vector3Int cell = new Vector3Int();
+            for (int x=0; x<4; x++) {
+                cell.x = newRoom.tail.x + 1 + 2*x;
+                cell.y = newRoom.tail.y;
+                GenChest(newRoom, cell);
+                cell.y = newRoom.head.y;
+                GenChest(newRoom, cell);
+            }
+        }
         rooms.Add(newRoom);
         parent.neighbors[direction] = rooms[rooms.Count-1];
         return true;
@@ -426,11 +446,23 @@ public class Initializer : MonoBehaviour
                 Utilities.PlaceTile(floorMap, placement, tile);
             }
         }
+        // Special Layout for prefabs
+        if (r.prefab == "Bonemass") {
+            placement = new Vector3Int(0,0,0);
+            for (int x=0; x<4; x++) {
+                placement.x = r.tail.x + 1 + 2*x;
+                for (int y=0; y<2; y++) {
+                    placement.y = r.tail.y + 1 + 2*y;
+                    Utilities.PlaceTile(floorMap, placement, null);
+                    Utilities.PlaceTile(blockMap, placement, tiles["column"]);
+                }
+            }
+        }
         // Place Walls
         CreateWalls(r);
         // Create exits, if applicable
         foreach (KeyValuePair<string,Vector3Int> exit in notableCells) {
-            if (r.Contains(exit.Value)) {
+            if (r.Contains(exit.Value) && exit.Key.IndexOf("stairs") >= 0) {
                 Utilities.PlaceTile(floorMap, exit.Value, null);
                 Utilities.PlaceTile(blockMap, exit.Value, tiles[exit.Key]);
             }
@@ -442,9 +474,7 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
-        for (int i=0; i<r.loot; i++) {
-            GenChest(r);
-        }
+        PlaceChest(r);
         GenEnemies(r);
     }
 
@@ -506,14 +536,16 @@ public class Initializer : MonoBehaviour
 
     void PlaceDoor(Room r1, Room r2) {
         Vector3Int cell = new Vector3Int();
+        Vector3Int opposite = new Vector3Int();
         if (r1.head.y == r2.tail.y-1) { // New room is above
             // Cycle through possible door placments
             cell.y = r1.head.y;
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y+1,cell.z))
-                && !notableCells.ContainsValue(cell)) {
+                opposite = new Vector3Int(cell.x,cell.y+1,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
                     Utilities.PlaceTile(leftWallMap, cell, tiles["leftDoor"]);
                     r1.doors[0] = cell;
                     r2.doors[2] = new Vector3Int(cell.x, cell.y+1, 0);
@@ -527,8 +559,9 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))
-                && !notableCells.ContainsValue(cell)) {
+                opposite = new Vector3Int(cell.x+1,cell.y,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
                     Utilities.PlaceTile(rightWallMap, cell, tiles["rightDoor"]);
                     r1.doors[1] = cell;
                     r2.doors[3] = new Vector3Int(cell.x+1, cell.y, 0);
@@ -542,11 +575,11 @@ public class Initializer : MonoBehaviour
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                Vector3Int doorCell = new Vector3Int(cell.x,cell.y-1,cell.z);
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))
-                && !notableCells.ContainsValue(cell)) {
-                    Utilities.PlaceTile(leftWallMap, doorCell, tiles["leftDoor"]);
-                    leftWallMap.SetColor(doorCell, new Color(1,1,1,0.5f));
+                opposite = new Vector3Int(cell.x,cell.y-1,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
+                    Utilities.PlaceTile(leftWallMap, opposite, tiles["leftDoor"]);
+                    leftWallMap.SetColor(opposite, new Color(1,1,1,0.5f));
                     r1.doors[2] = cell;
                     r2.doors[0] = new Vector3Int(cell.x, cell.y-1, 0);
                     break;
@@ -559,11 +592,11 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                Vector3Int doorCell = new Vector3Int(cell.x-1,cell.y,cell.z);
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))
-                && !notableCells.ContainsValue(cell)) {
-                    Utilities.PlaceTile(rightWallMap, doorCell, tiles["rightDoor"]);
-                    rightWallMap.SetColor(doorCell, new Color(1,1,1,0.5f));
+                opposite = new Vector3Int(cell.x-1,cell.y,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
+                    Utilities.PlaceTile(rightWallMap, opposite, tiles["rightDoor"]);
+                    rightWallMap.SetColor(opposite, new Color(1,1,1,0.5f));
                     r1.doors[3] = cell;
                     r2.doors[1] = new Vector3Int(cell.x-1, cell.y, 0);
                     break;
@@ -602,12 +635,19 @@ public class Initializer : MonoBehaviour
         int loots = Random.Range(6,11);
         for (int i=0; i<loots; i++) {
             int rand = Random.Range(1, rooms.Count);
-            rooms[rand].loot++;
+            if (rooms[rand].prefab != "Bonemass") {
+                rooms[rand].loot++;
+            }
+        }
+        foreach(Room r in rooms) {
+            if (r.loot > 0) {
+                GenChest(r);
+            }
         }
     }
 
     public void OpenChest(Vector3Int cell) {
-        Utilities.PlaceTile(blockMap, cell, null);
+        Utilities.PlaceTile(floorMap, cell, null);
         Utilities.PlaceTile(floorMap, cell, tiles["floor"]);
         DropLoot(cell);
     }
@@ -632,7 +672,8 @@ public class Initializer : MonoBehaviour
     }
 
     // Give a room its list of enemies
-    public void RetrieveEnemies(Room r) {
+    public List<string> RetrieveEnemies() {
+        List<string> enemies = new List<string>();
         float mod = 0;
         if (data.depth == 4) {
             mod = 0.25f;
@@ -650,11 +691,12 @@ public class Initializer : MonoBehaviour
             foreach (KeyValuePair<string,int> e in enemyWheel) {
                 total += e.Value;
                 if (roll <= total) {
-                    r.enemies.Add(e.Key);
+                    enemies.Add(e.Key);
                     break;
                 }
             }
         }
+        return enemies;
     }
 
     public void GenEnemies(Room r) {
@@ -716,8 +758,6 @@ public class Initializer : MonoBehaviour
             if (sentinel > 100) { return; }
         } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
 
-        Utilities.PlaceTile(blockMap, cell, tiles["chest"]);
-
         // Find new chest number to add
         int last = 0;
         foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
@@ -729,6 +769,26 @@ public class Initializer : MonoBehaviour
             }
         }
         notableCells.Add("Chest"+(last+1), cell);
+    }
+    public void GenChest(Room r, Vector3Int cell) {
+        // Find new chest number to add
+        int last = 0;
+        foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+            if (item.Key.IndexOf("Chest") >= 0) {
+                int x = System.Convert.ToInt32(item.Key.Split('t')[1]);
+                if (x > last) {
+                    last = x; 
+                }
+            }
+        }
+        notableCells.Add("Chest"+(last+1), cell);
+    }
+    public void PlaceChest(Room r) {
+        foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+            if (r.Contains(item.Value) && item.Key.IndexOf("Chest") >= 0) {
+                Utilities.PlaceTile(floorMap, item.Value, tiles["chest"]);
+            }
+        }
     }
 
     private void DropLoot(Vector3Int cell) {

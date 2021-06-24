@@ -14,8 +14,9 @@ public class Room
     Tilemap floorMap;
     Initializer mapController;
     public List<string> enemies;
+    public string prefab;
 
-    public Room(Vector3Int h, Vector3Int t, Room parent=null, List<Room> rooms=null) {
+    public Room(Vector3Int h, Vector3Int t, Room parent=null, List<Room> rooms=null, string _prefab="") {
         Grid grid = GameObject.FindObjectOfType<Grid>();
         foreach (Tilemap map in GameObject.FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -26,8 +27,7 @@ public class Room
         // Section for dungeon rooms only
         mapController = floorMap.GetComponent<Initializer>();
         if (mapController != null) {
-            enemies = new List<string>();
-            mapController.RetrieveEnemies(this);
+            enemies = mapController.RetrieveEnemies();
         }
         active = false;
         head = h;
@@ -37,10 +37,20 @@ public class Room
         center = (head + tail) / 2;
         doors = new Vector3Int[4];
         neighbors = new Room[4];
+        loot = 0;
+        // Is this room a special prefab?
+        if (_prefab != "") {
+            prefab = _prefab;
+            if (prefab == "Bonemass") {
+                Bonemass(parent);
+            }
+            return;
+        } else {
+            prefab = "";
+        }
         if (parent != null) {
             SetNeighbors(parent, rooms);
         }
-        loot = 0;
     }
 
     // Draws the room into existence
@@ -56,7 +66,6 @@ public class Room
         foreach (Room r in rooms) {
             dir = Neighboring(r);
             if (dir != -1 && neighbors[dir] == null && r.neighbors[(dir+2)%4] == null) {
-                Debug.Log("Extra neighbor added at "+ToString()+" "+dir);
                 neighbors[dir] = r;
                 r.neighbors[(dir+2)%4] = this;
             }
@@ -216,5 +225,10 @@ public class Room
         s += head.ToString() + ", ";
         s += tail.ToString();
         return s;
+    }
+
+    private void Bonemass(Room parent) {
+        enemies.AddRange(mapController.RetrieveEnemies());
+        enemies.Add("Bonemass");
     }
 }
