@@ -15,6 +15,10 @@ public class DmgTextController : MonoBehaviour
         if (style != "gold" && style != "cost") {
             pos.y += 0.75f;
         }
+        if (style == "skillCost") {
+            pos.y -= 0.75f;
+            pos.x -= 0.25f;
+        }
         this.transform.position = pos;
         starPosition = this.transform.position;
         count = 1.0f;
@@ -74,8 +78,16 @@ public class DmgTextController : MonoBehaviour
             textMesh.fontSize = 48;
             speed /= 2;
             xvar *= 0.5f;
-            yvar *= 1.3f;
+            yvar *= 1.3f; 
+        } else if (style == "skillCost") {
+            textMesh.color = new Color32(0,0,0,255);
+            textMesh.text = msg;
+            textMesh.fontSize = 48;
+            speed /= 2;
+            xvar *= 0.5f;
+            yvar *= -1.2f;
         } else {
+            
             textMesh.text = "AHHH";
             textMesh.color = new Color32(255,0,0,255);
         }

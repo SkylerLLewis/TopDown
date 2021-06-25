@@ -38,9 +38,11 @@ public class Skill {
             abilityType = "magic";
             displayName = name;
             if (name == "Magic Missile") {
+                description = "Fire a magic missile at your enemies from afar that has a higher chance to both hit and crit. This skill takes two turns to cast.";
                 manaCost = 4;
                 activationType = "ranged";
             } else if (name == "Lesser Heal") {
+                description = "Slow bleeding and heal bruises. (+15hp)";
                 manaCost = 10;
                 activationType = "instant";
             }

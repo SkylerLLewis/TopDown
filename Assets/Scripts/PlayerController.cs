@@ -486,7 +486,7 @@ public class PlayerController : MonoBehaviour
                 } else if (s.stat == "Mana") {
                     maxMana += s.amount*s.magnitude;
                 } else if (s.stat == "Speed") {
-                    speed = 1f - (0.05f*s.amount*s.magnitude);
+                    speed = 1f - (0.1f*s.amount*s.magnitude);
                 }
             }
         }
