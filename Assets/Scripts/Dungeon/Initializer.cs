@@ -159,6 +159,7 @@ public class Initializer : MonoBehaviour
             data.floorDirection = "up";
             if (data.depth == 0) {
                 data.entrance = 1;
+                data.followingEnemies.Clear();
                 data.LoadingScreenLoad("GreenVillage", "ascending");
             } else {
                 data.LoadingScreenLoad("BasicDungeon", "ascending");
