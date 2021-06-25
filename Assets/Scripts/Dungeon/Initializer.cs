@@ -10,7 +10,7 @@ public class Initializer : MonoBehaviour
     public Dictionary<string,Vector3Int> notableCells;
     Tile floor, leftWall, rightWall, leftRightWall, leftDoor, leftDoorOpen;
     Tile leftClearWall, rightClearWall, leftRightClearWall;
-    Dictionary<string,Tile> tiles, clearTiles;
+    Dictionary<string,Tile> tiles;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
     Vector3Int cellLoc;
     private GameObject enemies, loot, lootFab;
@@ -19,7 +19,7 @@ public class Initializer : MonoBehaviour
     private Dictionary<string, GameObject> enemyFabs;
     private Dictionary<string, int> enemyWheel, lootWheel, goldLedger;
     private Dictionary<string, Sprite> goldSprites;
-    private List<Room> rooms;
+    public List<Room> rooms;
     private PersistentData data;
     
     void Awake() {
@@ -46,27 +46,28 @@ public class Initializer : MonoBehaviour
         tiles.Add("stairsUp", Resources.Load<Tile>("Tiles/DungeonMap/stairsUp"));
         tiles.Add("stairsDown", Resources.Load<Tile>("Tiles/DungeonMap/stairsDown"));
         tiles.Add("chest", Resources.Load<Tile>("Tiles/DungeonMap/chest"));
-
-        clearTiles = new Dictionary<string,Tile>();
-        clearTiles.Add("leftWall", Resources.Load<Tile>("Tiles/DungeonMap/leftClearWall"));
-        clearTiles.Add("rightWall", Resources.Load<Tile>("Tiles/DungeonMap/rightClearWall"));
-        clearTiles.Add("leftDoor", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorClear"));
-        clearTiles.Add("leftDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/leftDoorOpenClear"));
-        clearTiles.Add("rightDoor", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorClear"));
-        clearTiles.Add("rightDoorOpen", Resources.Load<Tile>("Tiles/DungeonMap/rightDoorOpenClear"));
+        tiles.Add("column", Resources.Load<Tile>("Tiles/DungeonMap/column"));
 
         // Load Enemy prefabs and likelyhood
-        int twiceDepth = (data.depth-1)*2;
+        int easy = 10 - 2*data.depth;
+        int medium = 2;
+        int hard = data.depth/2;
+        int rare = data.depth/4;
         enemyFabs = new Dictionary<string, GameObject>();
         enemyWheel = new Dictionary<string, int>();
         enemyFabs.Add("Skeleton", Resources.Load("Prefabs/Skeleton") as GameObject);
+        enemyFabs.Add("Skeleton Rat", Resources.Load("Prefabs/Skeleton Rat") as GameObject);
         enemyFabs.Add("Skeleton Archer", Resources.Load("Prefabs/Skeleton Archer") as GameObject);
         enemyFabs.Add("Skeleton Brute", Resources.Load("Prefabs/Skeleton Brute") as GameObject);
         enemyFabs.Add("Skeleton Stabber", Resources.Load("Prefabs/Skeleton Stabber") as GameObject);
-        enemyWheel.Add("Skeleton", 10);
-        enemyWheel.Add("Skeleton Archer", twiceDepth+1);
-        enemyWheel.Add("Skeleton Brute", twiceDepth);
-        enemyWheel.Add("Skeleton Stabber", twiceDepth);
+        enemyFabs.Add("Skeleton Warrior", Resources.Load("Prefabs/Skeleton Warrior") as GameObject);
+        enemyFabs.Add("Bonemass", Resources.Load("Prefabs/Bonemass") as GameObject);
+        enemyWheel.Add("Skeleton", easy);
+        enemyWheel.Add("Skeleton Rat", easy);
+        enemyWheel.Add("Skeleton Archer", medium+1);
+        enemyWheel.Add("Skeleton Brute", hard);
+        enemyWheel.Add("Skeleton Stabber", hard);
+        enemyWheel.Add("Skeleton Warrior", rare);
 
         // Loot drop chances!
         lootFab = Resources.Load("Prefabs/Loot Drop") as GameObject;
@@ -78,40 +79,54 @@ public class Initializer : MonoBehaviour
         goldSprites.Add("medium", Resources.Load<Sprite>("Gold Bar"));
         goldSprites.Add("large", Resources.Load<Sprite>("Gold Pile"));
 
+        // Weapons
+        lootWheel.Add("Sharp Twig", easy);
+        lootWheel.Add("Plank with a Nail", easy);
+        lootWheel.Add("Club", easy);
+        lootWheel.Add("Long Stick", easy);
+        lootWheel.Add("Log", easy);
+        lootWheel.Add("Staff", easy);
+        lootWheel.Add("Crude Bow", easy);
 
-        lootWheel.Add("Twig", 10);
-        lootWheel.Add("Sharp Twig", 10);
-        lootWheel.Add("Plank with a Nail", 10);
-        lootWheel.Add("Club", 10);
-        lootWheel.Add("Long Stick", 10);
-        lootWheel.Add("Log", 10);
+        lootWheel.Add("Rusty Shortsword", medium);
+        lootWheel.Add("Half a Scissor", medium);
+        lootWheel.Add("Copper Hatchet", medium);
+        lootWheel.Add("Mallet", medium);
+        lootWheel.Add("Flint Spear", medium);
+        lootWheel.Add("Dog Chain", medium);
+        lootWheel.Add("Cursed Dagger", medium);
+        lootWheel.Add("Shortbow", medium);
 
-        lootWheel.Add("Rusty Shortsword", twiceDepth);
-        lootWheel.Add("Half a Scissor", twiceDepth);
-        lootWheel.Add("Copper Hatchet", twiceDepth);
-        lootWheel.Add("Mallet", twiceDepth);
-        lootWheel.Add("Flint Spear", twiceDepth);
-        lootWheel.Add("Dog Chain", twiceDepth);
-
-        lootWheel.Add("Dueling Sword", data.depth/3);
-        lootWheel.Add("Hunting Knife", data.depth/3);
-        lootWheel.Add("Woodcutter's Axe", data.depth/3);
-        lootWheel.Add("Hammer", data.depth/3);
-        lootWheel.Add("Wooden Pike", data.depth/3);
-        lootWheel.Add("Grain Scythe", data.depth/3);
+        lootWheel.Add("Dueling Sword", rare);
+        lootWheel.Add("Hunting Knife", rare);
+        lootWheel.Add("Woodcutter's Axe", rare);
+        lootWheel.Add("Hammer", rare);
+        lootWheel.Add("Wooden Pike", rare);
+        lootWheel.Add("Grain Scythe", rare);
+        lootWheel.Add("Magewood Blade", rare);
+        lootWheel.Add("Light Crossbow", rare);
         
-        lootWheel.Add("Leather Tunic", 10);
-        lootWheel.Add("Bone Armor", 10);
+        // Armors
+        lootWheel.Add("Leather Tunic", 2*easy);
+        lootWheel.Add("Bone Armor", 2*easy);
 
-        lootWheel.Add("Padded Vest", twiceDepth);
-        lootWheel.Add("Cast Iron Plates", twiceDepth);
-        lootWheel.Add("Fang Bracers", twiceDepth);
+        lootWheel.Add("Padded Vest", medium);
+        lootWheel.Add("Cast Iron Plates", medium);
+        lootWheel.Add("Fang Bracers", medium);
 
-        lootWheel.Add("Light Leather Armor", data.depth/3);
-        lootWheel.Add("Gambeson", data.depth/3);
-        lootWheel.Add("Patchy Brigandine", data.depth/3);
+        lootWheel.Add("Light Leather Armor", rare);
+        lootWheel.Add("Gambeson", rare);
+        lootWheel.Add("Patchy Brigandine", rare);
 
-        lootWheel.Add("Health Potion", 30);
+        // Potions & scrolls
+        lootWheel.Add("Health Potion", 2*easy);
+        lootWheel.Add("Mana Potion", easy);
+        lootWheel.Add("Potion of Speed", easy);
+        lootWheel.Add("Scroll of Return", easy);
+        
+        lootWheel.Add("Scroll of Descent", medium);
+
+        lootWheel.Add("Potion of Regeneration", hard);
 
         foreach (Tilemap map in FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -131,24 +146,42 @@ public class Initializer : MonoBehaviour
         dungeonController.UpdateNotables(notableCells);
     }
 
+    void Start() {
+        rooms[0].Draw();
+    }
+
     // Actions on collisions
     public void NotableActions(string key) {
 
         if (key == "stairsUp") {
+            player.enabled = false;
             data.depth--;
             data.floorDirection = "up";
             if (data.depth == 0) {
                 data.entrance = 1;
-                SceneManager.LoadScene("GreenVillage");
+                data.LoadingScreenLoad("GreenVillage", "ascending");
             } else {
-                SceneManager.LoadScene("BasicDungeon");
+                data.LoadingScreenLoad("BasicDungeon", "ascending");
+                data.followingEnemies.Clear();
+                if (enemies.transform.childCount > 0) {
+                    foreach(Transform child in enemies.transform) {
+                        data.followingEnemies.Add(child.name);
+                    }
+                }
             }
             return;
 
         } else if (key == "stairsDown") {
+            player.enabled = false;
             data.depth++;
             data.floorDirection = "down";
-            SceneManager.LoadScene("BasicDungeon");
+            data.LoadingScreenLoad("BasicDungeon", "descending");
+            data.followingEnemies.Clear();
+            if (enemies.transform.childCount > 0) {
+                foreach(Transform child in enemies.transform) {
+                    data.followingEnemies.Add(child.name);
+                }
+            }
             return;
 
         } else if (key.IndexOf("Loot") >= 0) {
@@ -179,6 +212,10 @@ public class Initializer : MonoBehaviour
                     Potion pot = new Potion(target.name);
                     data.AddToInventory(pot);
                     player.saySomething = pot.displayName;
+                } else if (Scroll.IsScroll(target.name)) {
+                    Scroll scroll = new Scroll(target.name);
+                    data.AddToInventory(scroll);
+                    player.saySomething = scroll.displayName;
                 }
                 Destroy(target.gameObject);
                 notableCells.Remove(key);
@@ -230,8 +267,13 @@ public class Initializer : MonoBehaviour
         tail.x = Random.Range(-3, 0);
         tail.y = Random.Range(-3, 0);
         Room core = new Room(head, tail);
+        core.enemies.Clear();
+        foreach (string e in data.followingEnemies) {
+            core.enemies.Add(e);
+        }
         rooms.Add(core);
         int rand = Random.Range(0,2);
+        int boss = 0;
         if (rand == 0) {// String shape Dungeon
             // Create 4 Neighbors
             for (int i=0; i<4; i++) {
@@ -240,12 +282,19 @@ public class Initializer : MonoBehaviour
             // Create string of rooms
             int direction = Random.Range(0, 4);
             Room branch = core.neighbors[direction];
+            boss = Random.Range(0, 4);
             for (int i=0; i<4; i++) {
+                if (data.depth == 5 && i == boss) {
+                    Debug.Log("Bonemass successfully created at room "+i);
+                    GenerateRoom(branch, direction, "Bonemass");
+                    branch = branch.neighbors[direction];
+                    continue;
+                }
                 GenerateRoom(branch, direction);
                 branch = branch.neighbors[direction];
             }
             // Add Random Rooms
-            for (int i=0; i<10; i++) {
+            for (int i=0; i<16; i++) {
                 branch = rooms[Random.Range(0, rooms.Count)];
                 direction = Random.Range(0, 4);
                 int j = 0;
@@ -262,10 +311,17 @@ public class Initializer : MonoBehaviour
             Debug.Log("Loop!");
             Room branch = core;
             int direction = Random.Range(0, 4);
+            boss = Random.Range(0, 5);
             // Create loop of rooms
             for (int i=0; i<4; i++) {
                 int dir = (direction+i)%4;
                 for (int j=0; j<3; j++) {
+                    if (data.depth == 5 && i*3+j == boss) {
+                        Debug.Log("Bonemass successfully created at room "+(i+j));
+                        GenerateRoom(branch, direction, "Bonemass");
+                        branch = branch.neighbors[direction];
+                        continue;
+                    }
                     if (!GenerateRoom(branch, dir)) {
                         break; // Break if room creation fails
                     }
@@ -277,7 +333,7 @@ public class Initializer : MonoBehaviour
                 GenerateRoom(branch, (direction+2+i)%4);
             }
             // Add Random Rooms
-            for (int i=0; i<6; i++) {
+            for (int i=0; i<12; i++) {
                 branch = rooms[Random.Range(0, rooms.Count)];
                 direction = Random.Range(0, 4);
                 int j = 0;
@@ -293,10 +349,13 @@ public class Initializer : MonoBehaviour
         }
         GenExits();
         GenLoot();
-        core.Draw();
+        if (core.loot > 0) {
+            rooms[1].loot += core.loot;
+            core.loot = 0;
+        }
     }
 
-    private bool GenerateRoom(Room parent, int direction) {
+    private bool GenerateRoom(Room parent, int direction, string prefab="") {
         int width, height;
         Vector3Int head = new Vector3Int();
         Vector3Int tail = new Vector3Int();
@@ -306,6 +365,17 @@ public class Initializer : MonoBehaviour
         do {
             width = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
             height = Mathf.RoundToInt(Mathf.Pow(Random.Range(1.4f, 2.6f), 2));
+            if (prefab == "Bonemass") {
+                width = 9;
+                height = 5;
+            }
+            if (width*height <= 4) {
+                if (Random.Range(0,2) == 0) {
+                    width += 2;
+                } else {
+                    height += 2;
+                }
+            }
             tries++;
             // Generate room to test
             if (direction == 0) {
@@ -329,20 +399,29 @@ public class Initializer : MonoBehaviour
                 tail.x = head.x - width+1;
                 tail.y = head.y - height+1;
             }
-            newRoom = new Room(head, tail);
+            Room room = new Room(head, tail);
             valid = true;
             foreach (Room r in rooms) {
-                if (r.Collides(newRoom)) {
+                if (r.Collides(room)) {
                     valid = false;
                     break;
                 }
             }
             if (tries > 20) {
-                Debug.Log("Room ("+newRoom.ToString()+") with width:"+width+" and height:"+height+" impossible to make");
                 return false;
             }
         } while (!valid);
-        newRoom.SetNeighbors(parent, rooms);
+        newRoom = new Room(head, tail, parent, rooms, prefab);
+        if (prefab == "Bonemass") {
+            Vector3Int cell = new Vector3Int();
+            for (int x=0; x<4; x++) {
+                cell.x = newRoom.tail.x + 1 + 2*x;
+                cell.y = newRoom.tail.y;
+                GenChest(newRoom, cell);
+                cell.y = newRoom.head.y;
+                GenChest(newRoom, cell);
+            }
+        }
         rooms.Add(newRoom);
         parent.neighbors[direction] = rooms[rooms.Count-1];
         return true;
@@ -358,29 +437,40 @@ public class Initializer : MonoBehaviour
             for (int y=0; y>-yLen; y--) {
                 placement.x = r.head.x + x;
                 placement.y = r.head.y + y;
-                Tile clone = null;
-                clone = Instantiate(tiles["floor"]);
+                Tile tile = null;
+                tile = tiles["floor"];
                 int rand = Random.Range(0, 20);
                 if (rand < 10) {
-                    clone = Instantiate(tiles["floor"]);
+                    tile = tiles["floor"];
                 } else if (rand < 18) {
-                    clone = Instantiate(tiles["floor1"]);
+                    tile = tiles["floor1"];
                 } else if (rand == 18) {
-                    clone = Instantiate(tiles["floor2"]);
+                    tile = tiles["floor2"];
                 } else if (rand == 19) {
-                    clone = Instantiate(tiles["floor3"]);
+                    tile = tiles["floor3"];
                 }
-                clone.name = clone.name.Split('(')[0];
-                floorMap.SetTile(placement, clone);
+                Utilities.PlaceTile(floorMap, placement, tile);
+            }
+        }
+        // Special Layout for prefabs
+        if (r.prefab == "Bonemass") {
+            placement = new Vector3Int(0,0,0);
+            for (int x=0; x<4; x++) {
+                placement.x = r.tail.x + 1 + 2*x;
+                for (int y=0; y<2; y++) {
+                    placement.y = r.tail.y + 1 + 2*y;
+                    Utilities.PlaceTile(floorMap, placement, null);
+                    Utilities.PlaceTile(blockMap, placement, tiles["column"]);
+                }
             }
         }
         // Place Walls
         CreateWalls(r);
         // Create exits, if applicable
         foreach (KeyValuePair<string,Vector3Int> exit in notableCells) {
-            if (r.Contains(exit.Value)) {
-                floorMap.SetTile(exit.Value, null);
-                blockMap.SetTile(exit.Value, tiles[exit.Key]);
+            if (r.Contains(exit.Value) && exit.Key.IndexOf("stairs") >= 0) {
+                Utilities.PlaceTile(floorMap, exit.Value, null);
+                Utilities.PlaceTile(blockMap, exit.Value, tiles[exit.Key]);
             }
         }
         // Place Doors
@@ -390,9 +480,7 @@ public class Initializer : MonoBehaviour
             }
         }
         r.active = true;
-        for (int i=0; i<r.loot; i++) {
-            GenChest(r);
-        }
+        PlaceChest(r);
         GenEnemies(r);
     }
 
@@ -442,38 +530,31 @@ public class Initializer : MonoBehaviour
             map = rightWallMap;
         }
         TileBase currentWall = map.GetTile(cell);
-        string currentName = "";
         if (currentWall != null) { // Wall in-place, clarify it
-            currentName = currentWall.name;
-            if (currentName.ToLower().IndexOf("clear") < 0) {
-                Tile clone = Instantiate(clearTiles[currentName]);
-                map.SetTile(cell, clone);
-                clone.name = clone.name.Split('(')[0];
-            }
+            map.SetColor(cell, new Color(1,1,1,0.25f));
         } else { // Place wall normally
-            Tile clone;
-            if (!clear) {
-                clone = Instantiate(tiles[name]);
-                map.SetTile(cell, clone);
-            } else {
-                clone = Instantiate(clearTiles[name]);
-                map.SetTile(cell, clone);
+            Utilities.PlaceTile(map, cell, tiles[name]);
+            if (clear) {
+                map.SetColor(cell, new Color(1,1,1,0.25f));
             }
-            clone.name = clone.name.Split('(')[0];
         }
     }
 
     void PlaceDoor(Room r1, Room r2) {
         Vector3Int cell = new Vector3Int();
+        Vector3Int opposite = new Vector3Int();
         if (r1.head.y == r2.tail.y-1) { // New room is above
             // Cycle through possible door placments
             cell.y = r1.head.y;
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y+1,cell.z))
-                && !notableCells.ContainsValue(cell)) {
-                    leftWallMap.SetTile(cell, tiles["leftDoor"]);
+                opposite = new Vector3Int(cell.x,cell.y+1,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
+                    Utilities.PlaceTile(leftWallMap, cell, tiles["leftDoor"]);
+                    r1.doors[0] = cell;
+                    r2.doors[2] = new Vector3Int(cell.x, cell.y+1, 0);
                     break;
                 }
                 x = (x+1) % r1.width;
@@ -484,9 +565,12 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x+1,cell.y,cell.z))
-                && !notableCells.ContainsValue(cell)) {
-                    rightWallMap.SetTile(cell, tiles["rightDoor"]);
+                opposite = new Vector3Int(cell.x+1,cell.y,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
+                    Utilities.PlaceTile(rightWallMap, cell, tiles["rightDoor"]);
+                    r1.doors[1] = cell;
+                    r2.doors[3] = new Vector3Int(cell.x+1, cell.y, 0);
                     break;
                 }
                 y = (y+1) % r1.height;
@@ -497,9 +581,13 @@ public class Initializer : MonoBehaviour
             int x = Mathf.RoundToInt(Random.Range(0, r1.width));
             for (int i=0; i<r1.width; i++) {
                 cell.x = r1.tail.x + x;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x,cell.y-1,cell.z))
-                && !notableCells.ContainsValue(cell)) {
-                    leftWallMap.SetTile(new Vector3Int(cell.x,cell.y-1,cell.z), clearTiles["leftDoor"]);
+                opposite = new Vector3Int(cell.x,cell.y-1,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
+                    Utilities.PlaceTile(leftWallMap, opposite, tiles["leftDoor"]);
+                    leftWallMap.SetColor(opposite, new Color(1,1,1,0.5f));
+                    r1.doors[2] = cell;
+                    r2.doors[0] = new Vector3Int(cell.x, cell.y-1, 0);
                     break;
                 }
                 x = (x+1) % r1.width;
@@ -510,9 +598,13 @@ public class Initializer : MonoBehaviour
             int y = Mathf.RoundToInt(Random.Range(0, r1.height));
             for (int i=0; i<r1.height; i++) {
                 cell.y = r1.tail.y + y;
-                if (r1.Contains(cell) && r2.Contains(new Vector3Int(cell.x-1,cell.y,cell.z))
-                && !notableCells.ContainsValue(cell)) {
-                    rightWallMap.SetTile(new Vector3Int(cell.x-1,cell.y,cell.z), clearTiles["rightDoor"]);
+                opposite = new Vector3Int(cell.x-1,cell.y,cell.z);
+                if (r1.Contains(cell) && r2.Contains(opposite)
+                && !notableCells.ContainsValue(cell) && !notableCells.ContainsValue(opposite)) {
+                    Utilities.PlaceTile(rightWallMap, opposite, tiles["rightDoor"]);
+                    rightWallMap.SetColor(opposite, new Color(1,1,1,0.5f));
+                    r1.doors[3] = cell;
+                    r2.doors[1] = new Vector3Int(cell.x-1, cell.y, 0);
                     break;
                 }
                 y = (y+1) % r1.height;
@@ -527,60 +619,57 @@ public class Initializer : MonoBehaviour
             exit = "stairsUp";
         }
         notableCells.Add(entrance, new Vector3Int(0,1,0));
-        int rand = Random.Range(1, rooms.Count);
-        int i = 0;
-        foreach(Room r in rooms) {
-            if (i == rand) {
-                Vector3Int cell = new Vector3Int(
-                    r.tail.x+Random.Range(1,r.width-1),
-                    r.tail.y+Random.Range(1,r.height-1),
-                    0);
-                notableCells.Add(exit, cell);
-                break;
+        if (data.depth < 5) {
+            int rand = Random.Range(1, rooms.Count);
+            int i = 0;
+            foreach(Room r in rooms) {
+                if (i == rand) {
+                    Vector3Int cell = new Vector3Int(
+                        r.tail.x+Random.Range(1,r.width-1),
+                        r.tail.y+Random.Range(1,r.height-1),
+                        0);
+                    notableCells.Add(exit, cell);
+                    break;
+                }
+                i++;
             }
-            i++;
         }
     }
 
     void GenLoot() {
-        // 4-8 (6) loot per floor
-        int loots = Random.Range(4,9);
+        // 6-10 (8) loot per floor
+        int loots = Random.Range(6,11);
         for (int i=0; i<loots; i++) {
             int rand = Random.Range(1, rooms.Count);
-            rooms[rand].loot++;
+            if (rooms[rand].prefab != "Bonemass") {
+                rooms[rand].loot++;
+            }
+        }
+        foreach(Room r in rooms) {
+            if (r.loot > 0) {
+                GenChest(r);
+            }
         }
     }
 
     public void OpenChest(Vector3Int cell) {
-        blockMap.SetTile(cell, null);
-        Tile clone = Instantiate(tiles["floor"]);
-        clone.name = clone.name.Split('(')[0];
-        floorMap.SetTile(cell, clone);
+        Utilities.PlaceTile(floorMap, cell, null);
+        Utilities.PlaceTile(floorMap, cell, tiles["floor"]);
         DropLoot(cell);
     }
 
     public void OpenDoor(Vector3Int cell, int dir) {
-        Tile clone;
         if (dir == 0 || dir == 2) {
-            string name = leftWallMap.GetTile(cell).name;
-            if (name.IndexOf("Clear") >= 0) {
-                clone = Instantiate(clearTiles["leftDoorOpen"]);
-            } else {
-                clone = Instantiate(tiles["leftDoorOpen"]);
-            }
-            leftWallMap.SetTile(cell, clone);
+            Color color = leftWallMap.GetColor(cell);
+            Utilities.PlaceTile(leftWallMap, cell, tiles["leftDoorOpen"]);
+            leftWallMap.SetColor(cell, color);
             if (dir == 0) { cell.y++; }
         } else {
-            string name = rightWallMap.GetTile(cell).name;
-            if (name.IndexOf("Clear") >= 0) {
-                clone = Instantiate(clearTiles["rightDoorOpen"]);
-            } else {
-                clone = Instantiate(tiles["rightDoorOpen"]);
-            }
-            rightWallMap.SetTile(cell, clone);
+            Color color = rightWallMap.GetColor(cell);
+            Utilities.PlaceTile(rightWallMap, cell, tiles["rightDoorOpen"]);
+            rightWallMap.SetColor(cell, color);
             if (dir == 1) { cell.x++; }
         }
-        clone.name = clone.name.Split('(')[0];
         foreach (Room r in rooms) {
             if (r.Contains(cell) && !r.active) {
                 r.Draw();
@@ -589,8 +678,15 @@ public class Initializer : MonoBehaviour
     }
 
     // Give a room its list of enemies
-    public void RetrieveEnemies(Room r) {
-        int numEnemies = Mathf.RoundToInt(Mathf.Pow(Random.Range(1f,2f), 2));
+    public List<string> RetrieveEnemies() {
+        List<string> enemies = new List<string>();
+        float mod = 0;
+        if (data.depth == 4) {
+            mod = 0.25f;
+        } else if (data.depth == 5) {
+            mod = 0.5f;
+        }
+        int numEnemies = Mathf.RoundToInt(Mathf.Pow(Random.Range(1f+mod,2f+mod), 2));
         float wheelTotal = 0f;
         foreach (KeyValuePair<string,int> e in enemyWheel) {
             wheelTotal += e.Value;
@@ -601,11 +697,12 @@ public class Initializer : MonoBehaviour
             foreach (KeyValuePair<string,int> e in enemyWheel) {
                 total += e.Value;
                 if (roll <= total) {
-                    r.enemies.Add(e.Key);
+                    enemies.Add(e.Key);
                     break;
                 }
             }
         }
+        return enemies;
     }
 
     public void GenEnemies(Room r) {
@@ -667,10 +764,6 @@ public class Initializer : MonoBehaviour
             if (sentinel > 100) { return; }
         } while (notableCells.ContainsValue(cell) || cell == player.tilePosition);
 
-        Tile clone = Instantiate(tiles["chest"]);
-        clone.name = clone.name.Split('(')[0];
-        blockMap.SetTile(cell, clone);
-
         // Find new chest number to add
         int last = 0;
         foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
@@ -683,6 +776,26 @@ public class Initializer : MonoBehaviour
         }
         notableCells.Add("Chest"+(last+1), cell);
     }
+    public void GenChest(Room r, Vector3Int cell) {
+        // Find new chest number to add
+        int last = 0;
+        foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+            if (item.Key.IndexOf("Chest") >= 0) {
+                int x = System.Convert.ToInt32(item.Key.Split('t')[1]);
+                if (x > last) {
+                    last = x; 
+                }
+            }
+        }
+        notableCells.Add("Chest"+(last+1), cell);
+    }
+    public void PlaceChest(Room r) {
+        foreach (KeyValuePair<string,Vector3Int> item in notableCells) {
+            if (r.Contains(item.Value) && item.Key.IndexOf("Chest") >= 0) {
+                Utilities.PlaceTile(floorMap, item.Value, tiles["chest"]);
+            }
+        }
+    }
 
     private void DropLoot(Vector3Int cell) {
         Vector3 pos = floorMap.CellToWorld(cell);
@@ -690,13 +803,13 @@ public class Initializer : MonoBehaviour
             pos.z = 0;
         
         if (Random.Range(0,2) == 1) { // 50% change for gold drop
-            // 1 - 46  gold at lvl 1
-            // 1 - 74  gold at lvl 3
-            // 1 - 110 gold at lvl 5
-            int pow = 7;
-            if (data.depth >= 3) { pow = 9; }
-            if (data.depth >= 5) { pow = 11; }
-            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(0,pow), 2)) + Random.Range(1, 11) + (data.depth-1)*3;
+            // 1 - 19  gold at lvl 1
+            // 2 - 26  gold at lvl 3
+            // 5 - 35 gold at lvl 5
+            int mod = 0;
+            if (data.depth >= 3) { mod = 1; }
+            if (data.depth >= 5) { mod = 2; }
+            int gold = Mathf.RoundToInt(Mathf.Pow(Random.Range(mod,4+mod), 2)) + Random.Range(1, 11);
             GameObject clone = Instantiate(
                 lootFab,
                 pos,
@@ -704,9 +817,9 @@ public class Initializer : MonoBehaviour
                 loot.transform);
             clone.name = "Gold";
             string sprite = "";
-            if (gold < 50) {
+            if (gold < 25) {
                 sprite = "small";
-            } else if (gold < 100) {
+            } else if (gold < 35) {
                 sprite = "medium";
             } else {
                 sprite = "large";
@@ -749,6 +862,8 @@ public class Initializer : MonoBehaviour
                         sprite = Resources.Load<Sprite>("Armors/"+item.Key);
                     } else if (Potion.IsPotion(item.Key)) {
                         sprite = Resources.Load<Sprite>("Potions/"+item.Key);
+                    } else if (Scroll.IsScroll(item.Key)) {
+                        sprite = Resources.Load<Sprite>("Scrolls/"+item.Key);
                     }
                     clone.GetComponent<SpriteRenderer>().sprite = sprite;
                     break;
@@ -766,5 +881,15 @@ public class Initializer : MonoBehaviour
             }
             notableCells.Add("Loot"+(last+1), cell);
         }
+    }
+
+    public void HighlightTiles(List<Vector3Int> cells, Color color) {
+        foreach (Vector3Int cell in cells) {
+            floorMap.SetColor(cell, color);
+        }
+    }
+
+    public List<Room> GetRooms() {
+        return rooms;
     }
 }

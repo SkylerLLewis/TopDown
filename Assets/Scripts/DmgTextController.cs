@@ -15,6 +15,10 @@ public class DmgTextController : MonoBehaviour
         if (style != "gold" && style != "cost") {
             pos.y += 0.75f;
         }
+        if (style == "skillCost") {
+            pos.y -= 0.75f;
+            pos.x -= 0.25f;
+        }
         this.transform.position = pos;
         starPosition = this.transform.position;
         count = 1.0f;
@@ -42,6 +46,10 @@ public class DmgTextController : MonoBehaviour
             textMesh.text = msg;
             textMesh.color = new Color32(0,255,0,255);
             yvar += 1;
+        } else if (style == "mana") {
+            textMesh.text = msg;
+            textMesh.color = new Color32(0,150,255,255);
+            yvar += 1;
         } else if (style == "wait") {
             textMesh.color = new Color32(255,255,255,255);
             if (msg == "") {
@@ -60,18 +68,26 @@ public class DmgTextController : MonoBehaviour
         } else if (style == "cost") {
             textMesh.color = new Color32(255,150,0,255);
             textMesh.text = msg;
-            textMesh.fontSize = 24;
+            textMesh.fontSize = 48;
             speed /= 2;
             xvar *= 0.5f;
             yvar *= -1.2f;
         } else if (style == "gold") {
             textMesh.color = new Color32(100,255,0,255);
             textMesh.text = msg;
-            textMesh.fontSize = 24;
+            textMesh.fontSize = 48;
             speed /= 2;
             xvar *= 0.5f;
-            yvar *= 1.3f;
+            yvar *= 1.3f; 
+        } else if (style == "skillCost") {
+            textMesh.color = new Color32(0,0,0,255);
+            textMesh.text = msg;
+            textMesh.fontSize = 48;
+            speed /= 2;
+            xvar *= 0.5f;
+            yvar *= -1.2f;
         } else {
+            
             textMesh.text = "AHHH";
             textMesh.color = new Color32(255,0,0,255);
         }

@@ -8,7 +8,9 @@ public class DungeonController : MonoBehaviour
     public Dictionary<string,Vector3Int> notableCells;
     public System.Action<Vector3Int,int> OpenDoorRef;
     public System.Action<Vector3Int> OpenChestRef;
+    public System.Action<List<Vector3Int>,Color> HighlightTilesRef;
     public System.Action<string> NotableActionsRef;
+    public System.Func<List<Room>> GetRoomsRef;
     private PersistentData data;
 
     void Awake()
@@ -16,8 +18,11 @@ public class DungeonController : MonoBehaviour
         OpenDoorRef = gameObject.GetComponent<Initializer>().OpenDoor;
         OpenChestRef = gameObject.GetComponent<Initializer>().OpenChest;
         NotableActionsRef = gameObject.GetComponent<Initializer>().NotableActions;
+        GetRoomsRef = gameObject.GetComponent<Initializer>().GetRooms;
+        HighlightTilesRef = gameObject.GetComponent<Initializer>().HighlightTiles;
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         data.root = GameObject.FindWithTag("Root");
+        data.mapType = "Dungeon";
     }
 
     public void NotableCollide(Vector3Int cell) {
@@ -39,5 +44,13 @@ public class DungeonController : MonoBehaviour
 
     public void OpenChest(Vector3Int cell) {
         OpenChestRef(cell);
+    }
+
+    public List<Room> GetRooms() {
+        return GetRoomsRef();
+    }
+
+    public void HighlightTiles(List<Vector3Int> tiles, Color color) {
+        HighlightTilesRef(tiles, color);
     }
 }

@@ -5,7 +5,7 @@
 - [x] Create inventory
 - [x] Implement loot system
 - [x] Add stats screen
-- [ ] Create basic ranged abilities
+- [x] Create basic ranged abilities
 - [ ] Create skill tree and XP system
 - [ ] Add save functionality
 
@@ -15,6 +15,7 @@
 - [x] Add Gold
 - [ ] Add dynamic door opening
 - [x] Add ranged enemies
+- [x] Add the boss!
 - [ ] Add sneaking mechanic
 - [ ] Add complex room generation
 - [ ] Implement prefab rooms
@@ -24,5 +25,6 @@
 - [ ] Implement dynamic start position
 - [x] Implement buildings
 - [x] Add shopkeeper
+- [x] Add Barkeep
 - [ ] Add talky NPCs
 - [ ] Add Quest #1!

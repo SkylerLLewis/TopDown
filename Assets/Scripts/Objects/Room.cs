@@ -5,15 +5,18 @@ using UnityEngine.Tilemaps;
 
 public class Room
 {
-    public Vector3Int head, tail, center;
+    public Vector3Int head, tail;
     public int width, height, loot;
+    public Vector3 center;
     public Room[] neighbors;
+    public Vector3Int[] doors;
     public bool active;
     Tilemap floorMap;
     Initializer mapController;
     public List<string> enemies;
+    public string prefab;
 
-    public Room(Vector3Int h, Vector3Int t, Room parent=null, List<Room> rooms=null) {
+    public Room(Vector3Int h, Vector3Int t, Room parent=null, List<Room> rooms=null, string _prefab="") {
         Grid grid = GameObject.FindObjectOfType<Grid>();
         foreach (Tilemap map in GameObject.FindObjectsOfType<Tilemap>()) {
             if (map.name == "FloorMap") {
@@ -24,8 +27,7 @@ public class Room
         // Section for dungeon rooms only
         mapController = floorMap.GetComponent<Initializer>();
         if (mapController != null) {
-            enemies = new List<string>();
-            mapController.RetrieveEnemies(this);
+            enemies = mapController.RetrieveEnemies();
         }
         active = false;
         head = h;
@@ -33,11 +35,22 @@ public class Room
         width = head.x - tail.x + 1;
         height = head.y - tail.y + 1;
         center = (head + tail) / 2;
+        doors = new Vector3Int[4];
         neighbors = new Room[4];
+        loot = 0;
+        // Is this room a special prefab?
+        if (_prefab != "") {
+            prefab = _prefab;
+            if (prefab == "Bonemass") {
+                Bonemass(parent);
+            }
+            return;
+        } else {
+            prefab = "";
+        }
         if (parent != null) {
             SetNeighbors(parent, rooms);
         }
-        loot = 0;
     }
 
     // Draws the room into existence
@@ -53,7 +66,6 @@ public class Room
         foreach (Room r in rooms) {
             dir = Neighboring(r);
             if (dir != -1 && neighbors[dir] == null && r.neighbors[(dir+2)%4] == null) {
-                Debug.Log("Extra neighbor added at "+ToString()+" "+dir);
                 neighbors[dir] = r;
                 r.neighbors[(dir+2)%4] = this;
             }
@@ -140,11 +152,83 @@ public class Room
         return null;
     }
 
+    public Vector3Int GetDoorCell(Room target) {
+        int dir;
+        Vector3Int delta = new Vector3Int(
+            Mathf.RoundToInt(target.center.x - center.x),
+            Mathf.RoundToInt(target.center.y - center.y),
+            0);
+        // Get naiive direction
+        if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x)) {
+            if (delta.y >= 0) {
+                dir = 0;
+            } else {
+                dir = 2;
+            }
+        } else {
+            if (delta.x >= 0) {
+                dir = 1;
+            } else {
+                dir = 3;
+            }
+        }
+        // Basic direction won't work
+        if (doors[dir] == null) {
+            int prev = dir;
+            // rotate left or right
+            if (Mathf.Abs(delta.y) >= Mathf.Abs(delta.x)) {
+                // Was going up/down, go left/right
+                if (delta.x >= 0) {
+                    dir = 1;
+                } else {
+                    dir = 3;
+                }
+            } else {
+                // Was going left/right, go up/down
+                if (delta.y >= 0) {
+                    dir = 0;
+                } else {
+                    dir = 2;
+                }
+            }
+            if (doors[dir] == null) {
+                // try other way
+                dir = (dir+2)%4;
+                if (doors[dir] == null) {
+                    // just turn around
+                    dir = (prev+2)%2;
+                }
+            }
+        }
+        Vector3Int cell = doors[dir];
+        if (cell.x == 0 && cell.y == -1) {
+            string s = "AHHH BAD DOOR CELL";
+            foreach(Vector3Int d in doors) {
+                s += d+"\n";
+            }
+            Debug.Log(s);
+        }
+        if (dir == 0) {
+            cell.y++;
+        } else if (dir == 1) {
+            cell.x++;
+        } else if (dir == 2) {
+            cell.y--;
+        } else if (dir == 3) {
+            cell.x--;
+        }
+        return cell;
+    }
     
     public override string ToString() {
         string s = "Room: ";
         s += head.ToString() + ", ";
         s += tail.ToString();
         return s;
+    }
+
+    private void Bonemass(Room parent) {
+        enemies.AddRange(mapController.RetrieveEnemies());
+        enemies.Add("Bonemass");
     }
 }

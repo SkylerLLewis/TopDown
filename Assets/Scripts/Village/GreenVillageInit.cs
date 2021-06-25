@@ -72,8 +72,23 @@ public class GreenVillageInit : MonoBehaviour
         notableCells = new Dictionary<string, Vector3Int>();
         notableCells.Add("stairsDown", new Vector3Int(0,-9,0));
         notableCells.Add("shopkeeper", new Vector3Int(5,-2,0));
+        notableCells.Add("barkeep", new Vector3Int(4,6,0));
 
         villageController.UpdateNotables(notableCells);
+    }
+
+    void Start() {
+        if (data.entrance == 3) {
+            StartCoroutine(DeathDialogue());
+        }
+    }
+
+    IEnumerator DeathDialogue() {
+        while (npcController.uiController == null) {
+            yield return 0;
+        }
+        player.enabled = false;
+        npcController.RecoverFromDeath();
     }
 
     void Update() {
@@ -146,19 +161,31 @@ public class GreenVillageInit : MonoBehaviour
         if (data.entrance == 1) {
             data.direction = 0;
             return new Vector3Int(0,-8,0);
+        } else if (data.entrance == 2) {
+            player.tilePosition = new Vector3Int(2,3,0);
+            OpenDoor(new Vector3Int(2,3,0), 0);
+            return new Vector3Int(1,9,0);;
+        } else if (data.entrance == 3) {
+            player.tilePosition = new Vector3Int(2,3,0);
+            OpenDoor(new Vector3Int(2,3,0), 0);
+            return new Vector3Int(3,6,0);;
         }
         return new Vector3Int(0,0,0);
     }
 
     public void NotableActions(string key) {
         if (key == "stairsDown") {
+            player.enabled = false;
             data.depth++;
             data.floorDirection = "down";
-            SceneManager.LoadScene("BasicDungeon");
+            data.LoadingScreenLoad("BasicDungeon", "descending");
         } else if (key == "shopkeeper") {
-            Debug.Log("Shopkeeping!");
             player.enabled = false;
-            npcController.StartShopping();
+            npcController.SpeakToShopkeeper();
+        } else if (key == "barkeep") {
+            Debug.Log("Talking to barkeep!");
+            player.enabled = false;
+            npcController.SpeakToBarkeep();
         }
     }
 

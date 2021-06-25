@@ -14,6 +14,7 @@ public class VillageController : MonoBehaviour
     void Awake() {
         data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         data.root = GameObject.FindWithTag("Root");
+        data.mapType = "Village";
         NotableActionsRef = gameObject.GetComponent<GreenVillageInit>().NotableActions;
         OpenDoorRef = gameObject.GetComponent<GreenVillageInit>().OpenDoor;
         FetchPositionRef = gameObject.GetComponent<GreenVillageInit>().FetchPosition;

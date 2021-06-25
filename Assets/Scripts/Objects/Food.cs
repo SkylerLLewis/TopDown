@@ -36,7 +36,7 @@ public class Food : InventoryItem {
                 description = "That's... a lot of mold.";
                 damage = 9;
                 food = 500;
-                cost = 10;
+                cost = 5;
             }
         } else if (FoodTiers[1].Contains(name)) {
             tier = 2;
@@ -44,11 +44,11 @@ public class Food : InventoryItem {
                 description = "Mmmm, crunchy!";
                 damage = 1;
                 food = 100;
-                cost = 5;
+                cost = 2;
             } else if (name == "Roast Squirrel") {
                 description = "Hey, that's actually pretty tasty!";
                 food = 200;
-                cost = 15;
+                cost = 5;
             }
         }
     }

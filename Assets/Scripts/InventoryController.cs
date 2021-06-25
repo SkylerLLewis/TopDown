@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
 public class InventoryController : MonoBehaviour
 {
@@ -15,11 +15,13 @@ public class InventoryController : MonoBehaviour
     RectTransform hpBar, foodBar;
     Image itemImage;
     PlayerController player;
+    UIController uiController;
     public static Dictionary<string, int> ItemTypeOrder = new Dictionary<string, int>{
         {"Armor", 1},
         {"Weapon", 2},
-        {"Potion", 3},
-        {"Food", 4}};
+        {"Scroll", 3},
+        {"Potion", 4},
+        {"Food", 5}};
 
     void Start() {
         selected = -1;
@@ -28,6 +30,7 @@ public class InventoryController : MonoBehaviour
         root = data.root;
         root.SetActive(false);
         player = root.GetComponentInChildren<PlayerController>();
+        uiController = root.GetComponentInChildren<UIController>();
 
         foreach (Transform child in gameObject.transform) {
             if (child.name == "ItemArray") {
@@ -137,9 +140,11 @@ public class InventoryController : MonoBehaviour
             }
             string stat = ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
-            stat += ColorStat("atk ", wep.atk, player.weapon.atk);
-            stat += ColorStat("def ", wep.def, player.weapon.def);
-            stat += ColorStat("speed ", wep.speed, player.weapon.speed);
+            stat += ColorStat("attack: ", wep.atk, player.weapon.atk);
+            stat += ColorStat("defense: ", wep.def, player.weapon.def);
+            stat += ColorStat("atk speed: ", wep.attackSpeed, player.weapon.attackSpeed);
+            stat += ColorStat("speed: ", wep.speed, player.weapon.speed);
+            stat += ColorStat("mana regen: ", 1+wep.manaRegen, 1+player.weapon.manaRegen);
             stats.text = stat;
         } else if (item.itemType == "Armor") {
             if (index >= 0) {
@@ -152,13 +157,15 @@ public class InventoryController : MonoBehaviour
             if (player.armor != null) {
                 stat = ColorStat("Def: ", arm.def, player.armor.def);
                 stat += ColorStat("armor ", arm.armor, player.armor.armor);
+                stat += ColorStat("atk ", arm.atk, player.armor.atk);
                 stat += ColorStat("dmg ", arm.dmg, player.armor.dmg);
-                stat += ColorStat("speed ", arm.speed, player.armor.speed);
+                stat += ColorStat("spd ", arm.speed, player.armor.speed);
             } else {
                 stat = ColorStat("Def: ", arm.def, 0);
                 stat += ColorStat("armor ", arm.armor, 0);
+                stat += ColorStat("atk ", arm.atk, 0);
                 stat += ColorStat("dmg ", arm.dmg, 0);
-                stat += ColorStat("speed ", arm.speed, 1f);
+                stat += ColorStat("spd ", arm.speed, 1f);
             }
 
             stats.text = stat;
@@ -184,6 +191,12 @@ public class InventoryController : MonoBehaviour
                 stat += "\n+"+food.healing+" hp";
             }
             stats.text = stat;
+        } else if (item.itemType == "Scroll") {
+            if (data.mapType == "Dungeon") {
+                button.text = "Cast";
+            } else {
+                button.text = "-";
+            }
         }
     }
 
@@ -199,10 +212,22 @@ public class InventoryController : MonoBehaviour
             }
             s += prefix;
             if (w == null) {
-                if (stat > 0) { s += "+"; }
-                s += stat+"\n";
+                s += stat;
+                if (stat != current && current != 0) {
+                    s += " (";
+                    if (stat-current > 0) s += "+";
+                    s += (stat-current)+")";
+                }
+                s += "\n";
             } else { // This is a weapon's damage
-                s += w.mindmg+"-"+w.maxdmg+"\n";
+                float fStat = stat/2f, fCurrent = current/2f;
+                s += w.mindmg+"-"+w.maxdmg;
+                if (stat != current) {
+                    s += " (";
+                    if (stat-current > 0) s += "+";
+                    s += (fStat-fCurrent)+")";
+                }
+                s += "\n";
             }
         }
         return s;
@@ -220,13 +245,20 @@ public class InventoryController : MonoBehaviour
             }
             s += prefix;
             if (stat > 1f) { s += "+"; }
-            s += Mathf.RoundToInt((stat - 1)*100)+"%"+"\n";
+            s += Mathf.RoundToInt((stat - 1)*100)+"%";
+            if (stat != current && current != 1f) {
+                s += " (";
+                if (stat-current > 0) s += "+";
+                s += Mathf.RoundToInt((stat-current)*100)+"%)";
+            }
+            s += "\n";
         }
         return s;
     }
 
     public void ActivateButton() {
         if (selected < 0) return;
+        bool needToReturn = false;
         refreshNeeded = false;
         InventoryItem item = data.inventory[selected];
         if (item.itemType == "Weapon") {
@@ -240,6 +272,16 @@ public class InventoryController : MonoBehaviour
                 refreshNeeded = true;
             }
             UpdateBars();
+            uiController.UpdateMana();
+            uiController.UpdateHp();
+        } else if (item.itemType == "Scroll") {
+            if (data.mapType != "Dungeon") return;
+            item.Activate(player);
+            if (item.count == 0) {
+                data.inventory.RemoveAt(selected);
+                refreshNeeded = true;
+            }
+            needToReturn = true;
         } else if (item.itemType == "Food") {
             if ((item as Food).damage >= player.hp) {// Not enough hp!
                 button.text = "No HP";
@@ -251,9 +293,13 @@ public class InventoryController : MonoBehaviour
                 refreshNeeded = true;
             }
             UpdateBars();
+            uiController.UpdateFood();
         }
+        // Return if actions are needed
+        if (needToReturn) {
+            BackToScene();
         // End the player's turn if in combat
-        if (player.inCombat) {
+        } else if (player.inCombat) {
             BackToScene();
             player.EndTurn();
         } else {
@@ -267,7 +313,7 @@ public class InventoryController : MonoBehaviour
         data.weapon = data.inventory[selected] as Weapon;
         data.inventory.RemoveAt(selected);
         data.inventory.Add(old);
-        selected = -1;
+        DisplayItem(-1);
         player.FloatText("msg", "Equipped "+data.weapon.displayName);
     }
 
@@ -279,7 +325,7 @@ public class InventoryController : MonoBehaviour
         if (old != null) {
             data.inventory.Add(old);
         }
-        selected = -2;
+        DisplayItem(-2);
         player.FloatText("msg", "Equipped "+data.armor.displayName);
     }
 

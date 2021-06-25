@@ -5,23 +5,36 @@ using UnityEngine.SceneManagement;
 
 public class PersistentData : MonoBehaviour
 {
-    public int depth, direction, entrance;
-    public string floorDirection, loadedMenu;
-    public int playerHp, gold;
+    public string floorDirection, loadedMenu, mapType, sceneToLoad, sceneToUnload;
+    public int depth, direction, entrance,
+               playerHp, mana, gold, baseHp, baseMana,
+               xp, level, nextLevel, skillPoints;
     public float food;
+    public List<PlayerController.Effect> playerEffects;
     public Weapon weapon;
     public Armor armor;
     public GameObject root;
+    public LoadScreenController loadingScreen;
     public List<InventoryItem> inventory, shopList;
+    public List<string> followingEnemies, activeSkills;
+    public List<Skill> skills;
     void Awake() {
         DontDestroyOnLoad(transform.gameObject);
+        loadingScreen = GameObject.Find("LoadingScreen").GetComponent<LoadScreenController>();
+        level = 0;
+        xp = 0;
+        nextLevel = Mathf.RoundToInt(50 * Mathf.Pow(2, level/4f));
         depth = 0;
         entrance = 0;
-        gold = 0;
+        gold = 5;
         playerHp = 0;
+        mana = 0;
+        baseHp = 20;
+        baseMana = 10;
         food = 500;
         direction = 2;
         floorDirection = "down";
+        followingEnemies = new List<string>();
         // Inventory
         inventory = new List<InventoryItem>();
         weapon = new Weapon("Twig");
@@ -31,32 +44,27 @@ public class PersistentData : MonoBehaviour
         inventory.Add(bread);
         inventory.Add(new Food("Roast Squirrel"));
         inventory.Add(new Potion("Health Potion"));
+        inventory.Add(new Scroll("Scroll of Return"));
+        inventory.Add(new Scroll("Scroll of Descent"));
         // Shopkeeper List
         shopList = new List<InventoryItem>();
-        List<string> weaponOptions = Sample<string>(4, Weapon.WeaponTiers[0]);
-        foreach (string item in weaponOptions) {
-            shopList.Add(new Weapon(item));
-        }
-        weaponOptions = Sample<string>(3, Weapon.WeaponTiers[1]);
-        foreach (string item in weaponOptions) {
-            shopList.Add(new Weapon(item));
-        }
-        shopList.Add(new Weapon(Weapon.WeaponTiers[2][Random.Range(0, Weapon.WeaponTiers[2].Count)]));
-        shopList.Add(new Armor(Armor.ArmorTiers[0][Random.Range(0, Armor.ArmorTiers[0].Count)]));
-        shopList.Add(new Armor(Armor.ArmorTiers[1][Random.Range(0, Armor.ArmorTiers[1].Count)]));
-        shopList.Add(new Armor(Armor.ArmorTiers[2][Random.Range(0, Armor.ArmorTiers[2].Count)]));
-        shopList.Add(new Potion("Health Potion"));
-        shopList.Add(new Food("Moldy Bread"));
-        shopList.Add(new Food("Moldy Loaf"));
-        shopList.Add(new Food("Burnt Toast"));
-        shopList.Add(new Food("Roast Squirrel"));
-        shopList.Sort(InventoryController.CompareItems);
-        shopList.Reverse();
-        SceneManager.LoadScene("GreenVillage");
+        LoadShopList();
+        // Skills
+        skills = new List<Skill>();
+        skillPoints = 0;
+        activeSkills = new List<string>();
+    }
+
+    void Start() {
+        LoadingScreenLoad("GreenVillage", "village");
+    }
+
+    public void LoadingScreenLoad(string sceneName, string style) {
+        loadingScreen.LoadNextScene(sceneName, style);
     }
 
     public void AddToInventory(InventoryItem item) {
-        if (item.itemType == "Potion" || item.itemType == "Food") {
+        if (item.itemType == "Potion" || item.itemType == "Food" || item.itemType == "Scroll") {
             bool contains = false;
             int index = 0;
             foreach (InventoryItem i in inventory) {
@@ -91,15 +99,35 @@ public class PersistentData : MonoBehaviour
         return true;
     }
 
-    public static List<T> Sample<T>(int count, in List<T> list) {
-        List<T> newList = new List<T>();
-        for (int i=0; i<list.Count; i++) {
-            if (Random.value < (float)count/(list.Count-i)) {
-                newList.Add(list[i]);
-                count--;
-                if (count == 0) break;
-            }
+    public void LoadShopList() {
+        shopList.Clear();
+        List<string> weaponOptions = Utilities.Sample(4, Weapon.WeaponTiers[0]);
+        foreach (string item in weaponOptions) {
+            shopList.Add(new Weapon(item));
         }
-        return newList;
+        weaponOptions = Utilities.Sample(3, Weapon.WeaponTiers[1]);
+        foreach (string item in weaponOptions) {
+            shopList.Add(new Weapon(item));
+        }
+        shopList.Add(new Weapon(Utilities.Choice(Weapon.WeaponTiers[2])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[0])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[1])));
+        shopList.Add(new Armor(Utilities.Choice(Armor.ArmorTiers[2])));
+        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[0])));
+        shopList.Add(new Potion(Utilities.Choice(Potion.PotionTiers[1])));
+        shopList.Add(new Scroll("Scroll of Return"));
+        shopList.Add(new Food("Moldy Bread"));
+        shopList.Add(new Food("Moldy Loaf"));
+        shopList.Add(new Food("Burnt Toast"));
+        shopList.Add(new Food("Roast Squirrel"));
+        shopList.Sort(InventoryController.CompareItems);
+        shopList.Reverse();
+    }
+
+    public void LevelUp() {
+        level++;
+        skillPoints++;
+        xp -= nextLevel;
+        nextLevel = Mathf.RoundToInt(50 * Mathf.Pow(2, level/4f));
     }
 }

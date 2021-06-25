@@ -9,7 +9,6 @@ public class ShopController : MonoBehaviour
 {
     private int selected;
     private string mode = "buying"; 
-    bool reselectNeeded;
     private PersistentData data;
     private GameObject root, itemArray, eventSystem, textFab;
     private Button buyButton, sellButton;
@@ -68,9 +67,7 @@ public class ShopController : MonoBehaviour
             data.inventory.Sort(InventoryController.CompareItems);
         }
         DisplayItems();
-        if (reselectNeeded) {
-            DisplayItem(0);
-        }
+        DisplayItem(selected);
     }
 
     public void DisplayItems() {
@@ -125,21 +122,25 @@ public class ShopController : MonoBehaviour
             Weapon wep = item as Weapon;
             stat += InventoryController.ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
-            stat += InventoryController.ColorStat("atk ", wep.atk, player.weapon.atk);
-            stat += InventoryController.ColorStat("def ", wep.def, player.weapon.def);
-            stat += InventoryController.ColorStat("speed ", wep.speed, player.weapon.speed);
+            stat += InventoryController.ColorStat("attack: ", wep.atk, player.weapon.atk);
+            stat += InventoryController.ColorStat("defense: ", wep.def, player.weapon.def);
+            stat += InventoryController.ColorStat("atk speed: ", wep.attackSpeed, player.weapon.attackSpeed);
+            stat += InventoryController.ColorStat("speed:  ", wep.speed, player.weapon.speed);
+            stat += InventoryController.ColorStat("mana regen: ", 1+wep.manaRegen, 1+player.weapon.manaRegen);
         } else if (item.itemType == "Armor") {
             Armor arm = item as Armor;
             if (player.armor != null) {
                 stat += InventoryController.ColorStat("Def: ", arm.def, player.armor.def);
                 stat += InventoryController.ColorStat("armor ", arm.armor, player.armor.armor);
+                stat += InventoryController.ColorStat("atk ", arm.atk, player.armor.atk);
                 stat += InventoryController.ColorStat("dmg ", arm.dmg, player.armor.dmg);
-                stat += InventoryController.ColorStat("speed ", arm.speed, player.armor.speed);
+                stat += InventoryController.ColorStat("spd ", arm.speed, player.armor.speed);
             } else {
                 stat += InventoryController.ColorStat("Def: ", arm.def, 0);
                 stat += InventoryController.ColorStat("armor ", arm.armor, 0);
+                stat += InventoryController.ColorStat("atk ", arm.atk, 0);
                 stat += InventoryController.ColorStat("dmg ", arm.dmg, 0);
-                stat += InventoryController.ColorStat("speed ", arm.speed, 1f);
+                stat += InventoryController.ColorStat("spd ", arm.speed, 1f);
             }
         } else if (item.itemType == "Potion") {
             Potion pot = item as Potion;
@@ -155,6 +156,8 @@ public class ShopController : MonoBehaviour
             } else if (food.healing > 0) {
                 stat += "\n+"+food.healing+" hp";
             }
+        } else if (item.itemType == "Scroll") {
+            
         }
         stats.text = stat;
     }
@@ -174,7 +177,7 @@ public class ShopController : MonoBehaviour
         } else if (mode == "selling") {
             data.gold += item.cost;
             goldText.text = data.gold.ToString();
-            reselectNeeded = data.RemoveFromInventory(selected);
+            data.RemoveFromInventory(selected);
             // Float cost text
             GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, gameObject.transform);
             DmgTextController textCont = text.GetComponent<DmgTextController>();
@@ -189,8 +192,7 @@ public class ShopController : MonoBehaviour
         sellButton.enabled = false;
         activeList = data.inventory;
         mode = "selling";
-        Debug.Log("I am selling now!");
-        reselectNeeded = true;
+        selected = 0;
         RefreshItems();
     }
 
@@ -199,8 +201,7 @@ public class ShopController : MonoBehaviour
         buyButton.enabled = false;
         activeList = data.shopList;
         mode = "buying";
-        Debug.Log("I am buying now!");
-        reselectNeeded = true;
+        selected = 0;
         RefreshItems();
     }
 

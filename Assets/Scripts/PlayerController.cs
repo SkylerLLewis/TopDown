@@ -7,39 +7,48 @@ public class PlayerController : MonoBehaviour
 {
     private Animator animator;
     private string[] walkNames, attackNames;
-    public float speed, food;
     public bool moving = false, attacking = false, dying = false, waiting = false, readyToEnd = false;
-    public string saySomething;
+    public string saySomething = "";
     public int direction;
     public Vector3Int tilePosition;
     public string[] facing;
     private Tilemap floorMap, leftWallMap, rightWallMap, blockMap;
-    private string mapType;
+    private PathFinder pathFinder;
+    private List<Vector3Int> rangedTiles;
     private Dictionary<string,Tilemap> maps;
     private PersistentData data;
-    private DungeonController dungeonController;
+    public DungeonController dungeonController;
     private VillageController villageController;
     System.Action<Vector3Int> NotableCollide;
     System.Action<Vector3Int, int> OpenDoor;
     System.Action<Vector3Int> OpenChest;
+    System.Action<List<Vector3Int>,Color> HighlightTiles;
     System.Func<Vector3Int> FetchPosition;
     private GameObject entities;
     private EntityController entityController;
     private GameObject mainCamera;
+    private Camera _mainCamera;
     private GameObject canvas;
     private UIController uiController;
-    private GameObject textFab;
+    private GameObject textFab, projectile;
+    private Sprite magicMissileSprite;
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
     private float count = 1.0f, combatCounter = 0f;
     private int combatIsActive = 5;
     public bool inCombat = false;
+    private string rangedToExecute = "";
+    public Room currentRoom;
+    public List<Effect> effects;
+    Skill usingSkill;
     
     // Combat Stats
     public Weapon weapon;
     public Armor armor;
-    public int maxhp, hp, attack, defense, mindmg, maxdmg, armorDR;
+    float manaCounter = 0;
+    public int maxhp, hp, attack, defense, mindmg, maxdmg, armorDR, maxMana, mana;
+    public float speed, food, manaRegen;
 
     void Start() {
         // Load Controllers
@@ -60,31 +69,38 @@ public class PlayerController : MonoBehaviour
         }
         dungeonController = floorMap.GetComponent<DungeonController>();
         if (dungeonController != null) {
-            mapType = "Dungeon";
             NotableCollide = dungeonController.NotableCollide;
             OpenDoor = dungeonController.OpenDoor;
             OpenChest = dungeonController.OpenChest;
+            HighlightTiles = dungeonController.HighlightTiles;
         }
         villageController = floorMap.GetComponent<VillageController>();
         if (villageController != null) {
-            mapType = "Village";
             NotableCollide = villageController.NotableCollide;
             OpenDoor = villageController.OpenDoor;
             FetchPosition = villageController.FetchPosition;
         }
+        pathFinder = floorMap.GetComponent<PathFinder>();
+        rangedTiles = new List<Vector3Int>();
         maps = new Dictionary<string, Tilemap>();
         maps.Add("left", leftWallMap);
         maps.Add("right", rightWallMap);
         uiController = GameObject.Find("UICanvas").GetComponent<UIController>();
         canvas = GameObject.FindWithTag("WorldCanvas");
 
+        entities = GameObject.FindWithTag("EntityList");
+        entityController = entities.GetComponent<EntityController>();
+
         // Load Resources
         walkNames = new string[4] {"walkUp", "walkRight", "walkDown", "walkLeft"};
         attackNames = new string[4] {"attackUp", "attackRight", "attackDown", "attackLeft"};
         targetPosition = this.transform.position;
         textFab = Resources.Load("Prefabs/DamageText") as GameObject;
+        projectile = Resources.Load("Prefabs/PlayerProjectile") as GameObject;
+        
+        magicMissileSprite = Resources.Load<Sprite>("Weapons/Bolt");
 
-        // Set Attributes
+        // Set Position
         tilePosition = new Vector3Int(0,0,0);
         if (FetchPosition != null) {
             tilePosition = FetchPosition();
@@ -93,31 +109,41 @@ public class PlayerController : MonoBehaviour
             transform.position = pos;
             animator.CrossFade(walkNames[data.direction], 0f);
         }
-        entities = GameObject.FindWithTag("EntityList");
-        entityController = entities.GetComponent<EntityController>();
+        if (data.mapType == "Dungeon") {
+            currentRoom = dungeonController.GetRooms()[0];
+        }
+        facing = new string[2];
+
+        // Orient Camera
         mainCamera = GameObject.FindWithTag("MainCamera");
+        _mainCamera = mainCamera.GetComponent<Camera>();
         Vector3 camVec = this.transform.position;
         camVec.z = -10;
         mainCamera.transform.position = camVec;
-        facing = new string[2];
-        maxhp = 20;
-        hp = data.playerHp;
-        if (hp == 0) {
-            hp = maxhp;
-        }
-        food = data.food;
-        uiController.UpdateBars();
+
+        // Set Attributes
+        ApplySkills();
+        uiController.UpdateHp();
+        uiController.UpdateMana();
+        uiController.UpdateFood();
         attack = 5;
         defense = 5;
-        speed = 1;
         mindmg = 0;
         maxdmg = 0;
         armorDR = 0;
+        manaRegen = 0;
         EquipWeapon(data.weapon);
         if (data.armor != null) {
             EquipArmor(data.armor);
         }
-        saySomething = "";
+        // Apply effects
+        effects = new List<Effect>();
+        if (data.playerEffects != null) {
+            effects = data.playerEffects;
+            foreach (Effect e in effects) {
+                e.Apply(this);
+            }
+        }
     }
 
 
@@ -141,8 +167,45 @@ public class PlayerController : MonoBehaviour
                 Input.mousePosition.y/Screen.height);
             
             // Using interface?
-            if (pos.x<0.2 || pos.x>0.8) {
+            if (pos.x<0.11 || pos.x>0.92) {
                 return;
+            }
+
+            // Use Ability?
+            if (rangedToExecute != "") {
+                waiting = true;
+                Vector3Int aimCell = PathFinder.WorldToTile(
+                    _mainCamera.ScreenToWorldPoint(
+                        Input.mousePosition));
+                enemyList = GameObject.FindGameObjectsWithTag("Enemy");
+                foreach (GameObject Eobj in enemyList) {
+                    EnemyBehavior e = Eobj.GetComponent<EnemyBehavior>();
+                    if (aimCell == e.tilePosition && rangedTiles.Contains(aimCell)) {
+                        ExecuteRanged(e);
+                        break;
+                    }
+                }
+                return;
+            }
+
+            // Use ranged weapon?
+            if (weapon.ranged) {
+                enemyList = GameObject.FindGameObjectsWithTag("Enemy");
+                if (enemyList.Length > 0) {
+                    Vector3Int aimCell = PathFinder.WorldToTile(
+                        _mainCamera.ScreenToWorldPoint(
+                            Input.mousePosition));
+                    RangeFind(10);
+                    foreach (GameObject Eobj in enemyList) {
+                        EnemyBehavior e = Eobj.GetComponent<EnemyBehavior>();
+                        if (!e.dying && aimCell == e.tilePosition && rangedTiles.Contains(aimCell)) {
+                            waiting = true;
+                            ShootArrow(e);
+                            EndTurn(1/weapon.attackSpeed);
+                            return;
+                        }
+                    }
+                }
             }
 
             // Wait?
@@ -208,7 +271,7 @@ public class PlayerController : MonoBehaviour
             if (targetWall != null) {
                 if (targetWall.name.ToLower().IndexOf(face+"door") >= 0) { 
                     if (targetWall.name.ToLower().IndexOf("open") < 0) {
-                        if (mapType == "Dungeon") {
+                        if (data.mapType == "Dungeon") {
                             // Open door and simulate an attack move on door
                             blocked = true;
                             OpenDoor(wallCell, direction);
@@ -222,7 +285,8 @@ public class PlayerController : MonoBehaviour
                                 combatCounter = combatIsActive;
                                 inCombat = true;
                             }
-                        } else if (mapType == "Village") {
+                            readyToEnd = true;
+                        } else if (data.mapType == "Village") {
                             // It's a village, just walk on in.
                             OpenDoor(wallCell, direction);
                             blocked = false;
@@ -235,21 +299,17 @@ public class PlayerController : MonoBehaviour
                 }
             }
 
-            TileBase targetTile = blockMap.GetTile(targetCell);
-            if (targetTile != null && !blocked) {
-                // Check for important blocks
-                if (targetTile.name == "chest") {
-                    // simulate attack move on chest
-                    attacking = true;
-                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                    highPoint = targetPosition;
-                    targetPosition = startPosition;
-                    count = 0.0f;
+            // Check blockages
+            if (!blocked) {
+                TileBase targetTile = blockMap.GetTile(targetCell);
+                if (targetTile != null) {
+                    // Check for important blocks
+                    NotableCollide(targetCell);
+                    blocked = true;
                 }
-                NotableCollide(targetCell);
-                blocked = true;
             }
 
+            // Are there enemies?
             if (!blocked) {
                 // Attack enemy in front?
                 EnemyBehavior target = null;
@@ -264,25 +324,43 @@ public class PlayerController : MonoBehaviour
                 }
 
                 if (enemyFront && !target.dying) {
-                    attacking = true;
-                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                    highPoint = targetPosition;
-                    targetPosition = startPosition;
-                    count = 0.0f;
-                    Attack(target);
-                    //EndTurn();
-                    readyToEnd = true;
-                // Point is valid?
-                } else {
+                    if (!weapon.ranged) {
+                        attacking = true;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        highPoint = targetPosition;
+                        targetPosition = startPosition;
+                        count = 0.0f;
+                        Attack(target);
+                        readyToEnd = true;
+                    } else {
+                        waiting = true;
+                        ShootArrow(target);
+                        EndTurn(1/weapon.attackSpeed);
+                        return;
+                    }
+
+                } else { // No walls, blocks or enemies: move
+            
                     // Check if I'm walking onto something important
-                    NotableCollide(targetCell);
-                    // Init bezier curve
-                    moving = true;
-                    tilePosition = targetCell;
-                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                    count = 0.0f;
-                    //EndTurn();
-                    readyToEnd = true;
+                    TileBase targetTile = floorMap.GetTile(targetCell);
+                    if (targetTile != null && targetTile.name == "chest") {
+                        NotableCollide(targetCell);
+                        // simulate attack move on chest
+                        attacking = true;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        highPoint = targetPosition;
+                        targetPosition = startPosition;
+                        count = 0.0f;
+                        readyToEnd = true;
+                    } else {
+                        // All good to move
+                        NotableCollide(targetCell);
+                        moving = true;
+                        tilePosition = targetCell;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        count = 0.0f;
+                        readyToEnd = true;
+                    }
                 }
             }
             // Face player in new direction
@@ -303,7 +381,14 @@ public class PlayerController : MonoBehaviour
                     animator.CrossFade(attackNames[direction], 0f);
                 }
             }
+            // Check if room needs to change
+            if (data.mapType == "Dungeon") {
+                if (!currentRoom.Contains(tilePosition)) {
+                    currentRoom = Room.FindByCell(tilePosition, dungeonController.GetRooms());
+                }
+            }
         } else if (Input.GetMouseButtonUp(0) && waiting) {
+            // Each wait must be an individual click
             waiting = false;
         }
         // End turn after brief delay
@@ -340,7 +425,6 @@ public class PlayerController : MonoBehaviour
                 attacking = false;
             }
         } else if (dying) {
-            
         }
     }
 
@@ -366,28 +450,37 @@ public class PlayerController : MonoBehaviour
     }
     
     public void Damage(int dmg, string style, bool combat=true) {
-        FloatText(style, dmg.ToString());
+        if (dying) return;
         if (dmg != 0) {
             dmg -= armorDR;
             if (dmg < 1) dmg = 1;
+            FloatText(style, dmg.ToString());
             hp -= dmg;
+            uiController.UpdateHp();
             if (hp <= 0) {
                 Die();
             }
-            if (combat) {
-                combatCounter = combatIsActive;
-                inCombat = true;
-            }
+        } else {
+            FloatText(style, dmg.ToString());
         }
-        uiController.UpdateBars();
+        if (combat) {
+            combatCounter = combatIsActive;
+            inCombat = true;
+        }
     }
 
     public void Heal(int heal) {
         hp += heal;
-        if (hp > maxhp) {
-            hp = maxhp;
-        }
+        if (hp > maxhp) hp = maxhp;
         FloatText("heal", heal.ToString());
+        uiController.UpdateHp();
+    }
+
+    public void GetMana(int m) {
+        mana += m;
+        if (mana > maxMana) mana = maxMana;
+        FloatText("mana", m.ToString());
+        uiController.UpdateMana();
     }
 
     public void Feed(int f) {
@@ -397,13 +490,50 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void GetXP(int xp) {
+        data.xp += xp;
+        if (data.xp >= data.nextLevel) {
+            data.LevelUp();
+            FloatText("msg", "Level up!");
+        }
+    }
+
+    public void ApplySkills() {
+        Armor a = armor;
+        Weapon w = weapon;
+        UnequipArmor();
+        UnequipWeapon();
+        maxMana = 10;
+        mana = data.mana;
+        if (mana == 0) mana = maxMana;
+        maxhp = 20;
+        hp = data.playerHp;
+        if (hp == 0) hp = maxhp;
+        food = data.food;
+        speed = 1;
+        foreach (Skill s in data.skills) {
+            if (s.abilityType == "improvement") {
+                if (s.stat == "Health") {
+                    maxhp += s.amount*s.magnitude;
+                } else if (s.stat == "Mana") {
+                    maxMana += s.amount*s.magnitude;
+                } else if (s.stat == "Speed") {
+                    speed = 1f - (0.1f*s.amount*s.magnitude);
+                }
+            }
+        }
+        if (a != null) EquipArmor(a);
+        if (w != null) EquipWeapon(w);
+    }
+
     public void EquipWeapon(Weapon w) {
-        if (weapon != null) { // Unequip old weapon
+        if (weapon != null) {
             attack -= weapon.atk;
             defense -= weapon.def;
             mindmg -= weapon.mindmg;
             maxdmg -= weapon.maxdmg;
             speed /= (1/weapon.speed);
+            manaRegen -= weapon.manaRegen;
         }
         weapon = w;
         attack += weapon.atk;
@@ -411,11 +541,24 @@ public class PlayerController : MonoBehaviour
         mindmg += weapon.mindmg;
         maxdmg += weapon.maxdmg;
         speed *= (1/weapon.speed);
+        manaRegen += weapon.manaRegen;
+    }
+
+    public void UnequipWeapon() {
+        if (weapon != null) { // Unequip old weapon
+            attack -= weapon.atk;
+            defense -= weapon.def;
+            mindmg -= weapon.mindmg;
+            maxdmg -= weapon.maxdmg;
+            speed /= (1/weapon.speed);
+            weapon = null;
+        }
     }
 
     public void EquipArmor(Armor a) {
         if (armor != null) { // Unequip old armor
             defense -= armor.def;
+            attack -= armor.atk;
             speed /= (1/armor.speed);
             armorDR -= armor.armor;
             mindmg -= armor.dmg;
@@ -423,10 +566,32 @@ public class PlayerController : MonoBehaviour
         }
         armor = a;
         defense += armor.def;
+        attack += armor.atk;
         speed *= (1/armor.speed);
         armorDR += armor.armor;
         mindmg += armor.dmg;
         maxdmg += armor.dmg;
+    }
+
+    public void UnequipArmor() {
+        if (armor != null) { // Unequip old armor
+            defense -= armor.def;
+            attack -= armor.atk;
+            speed /= (1/armor.speed);
+            armorDR -= armor.armor;
+            mindmg -= armor.dmg;
+            maxdmg -= armor.dmg;
+            armor = null;
+        }
+    }
+
+    public void SpeedEffect(float s, float dur) {
+        effects.Add(new Effect("Speed", (1/s), dur, this));
+        FloatText("msg", "I am speed");
+    }
+
+    public void RegenEffect(int regen, float dur) {
+        effects.Add(new Effect("Regeneration", regen, dur, this));
     }
 
     public void FloatText(string style, string msg="") {
@@ -435,43 +600,215 @@ public class PlayerController : MonoBehaviour
         textCont.Init(this.transform.position, style, msg);
     }
 
-    public void Ability(string abilityName) {
-        Debug.Log("Ability "+abilityName+" activated!");
+    public void Ability(Skill s) {
+        if (s.abilityType == "magic") {
+            if (mana < s.manaCost) return;
+
+            if (s.name == "Magic Missile") {
+                usingSkill = s;
+                rangedToExecute = s.name;
+                RangeFind(range:6);
+                HighlightTiles(rangedTiles, new Color(0.5f,0.5f,1,1));
+            } else if (s.name == "Lesser Heal") {
+                Heal(15);
+                mana -= s.manaCost;
+                uiController.UpdateMana();
+                EndTurn(1);
+            }
+        }
+    }
+
+    public void CancelAbility(string abilityName) {
+        rangedToExecute = "";
+        HighlightTiles(rangedTiles, new Color(1,1,1,1));
+    }
+
+    private void ExecuteRanged(EnemyBehavior e) {
+        if (rangedToExecute == "Magic Missile") {
+            MagicMissile(e);
+        }
+        rangedToExecute = "";
+        HighlightTiles(rangedTiles, new Color(1,1,1,1));
+    }
+
+    void MagicMissile(EnemyBehavior target) {
+        int damage;
+        int roll = Mathf.RoundToInt(Random.Range(1,20+1))+5;
+        string style = "dmg";
+        if (roll >= 8) {
+            damage = Random.Range(2,5+1);
+            if (Random.Range(0, 100) < 10) {
+                damage += Random.Range(2,5+1);
+                style = "crit";
+            }
+        } else {
+            damage = 0;
+            style = "miss";
+        }
+        GameObject clone = Instantiate(
+            projectile,
+            transform.position,
+            Quaternion.identity);
+        clone.name = clone.name.Split('(')[0];
+        clone.GetComponent<SpriteRenderer>().sprite = magicMissileSprite;
+        clone.GetComponent<ProjectileController>().Shoot(target, damage, style);
+        target.FutureDamage(damage);
+        EndTurn(2*speed);
+        uiController.UsedSkill("Magic Missile");
+        mana -= usingSkill.manaCost;
+        uiController.UpdateMana();
+    }
+
+    private void RangeFind(int range) {
+        rangedTiles = pathFinder.GetTilesInSight(tilePosition, 6);
+    }
+
+    private void ShootArrow(EnemyBehavior target) {
+        combatCounter = combatIsActive;
+        inCombat = true;
+        int dmg;
+        string style;
+        int roll = Mathf.RoundToInt(Random.Range(1,20+1));
+        roll += attack - target.defense;
+        int crit = 5 + attack - target.defense;
+        if (roll >= 8) { // 65% baseline chance to hit, missing sucks.
+            dmg = Random.Range(mindmg,maxdmg+1);
+            if (Random.Range(0, 100) < crit) {
+                for (int i=0; i<(weapon.crit-1); i++) {
+                    dmg += Random.Range(mindmg,maxdmg+1);
+                }
+                style = "crit";
+            } else {
+                style = "dmg";
+            }
+        } else {
+            style = "miss";
+            dmg = 0;
+        }
+        target.FutureDamage(dmg);
+        GameObject clone = Instantiate(
+            projectile,
+            transform.position,
+            Quaternion.identity);
+        clone.name = clone.name.Split('(')[0];
+        clone.GetComponent<ProjectileController>().Shoot(target, dmg, style);
     }
 
     private void Die() {
+        if (dying) return;
         dying = true;
         animator.CrossFade("die", 0f);
+        data.depth = 0;
+        data.gold -= 20;
+        if (data.gold < 0) data.gold = 0;
+        data.entrance = 3;
+        data.direction = 1;
+        hp = 1;
+        data.LoadingScreenLoad("GreenVillage", "death");
     }
 
-    public void EndTurn() {
+    private void RegenMana() {
+        manaCounter += 1+manaRegen;
+        int regenAmount = Mathf.FloorToInt(manaCounter);
+        mana += regenAmount;
+        if (mana > maxMana) mana = maxMana;
+        manaCounter -= regenAmount;
+        FloatText("mana", regenAmount.ToString());
+        uiController.UpdateMana();
+    }
+
+    public void EndTurn(float speedMod=1) {
         if (food > 0) {
             if (combatCounter <= 0) {
-                if (hp != maxhp && Random.Range(0f,3f) < speed) {
-                    if (waiting) { // Resting, triple regen & food cost
-                        hp += 3;
+                // Resting, quadruple regen & food cost
+                if (waiting) {
+                    food -= speed*3;
+                    if(hp != maxhp && Random.Range(0f,2f) < speed) {
+                        hp += 2;
                         if (hp > maxhp) hp = maxhp;
-                        FloatText("heal", "3");
-                        food -= speed*2;
-                    } else { // Just walking
+                        FloatText("heal", "2");
+                        uiController.UpdateHp();
+                    }
+                    if (mana != maxMana && Random.Range(0,2.66f) < speed) {
+                        RegenMana();
+                    }
+                } else {// Just walking
+                    if(hp != maxhp && Random.Range(0f,4f) < speed) {
                         hp++;
                         FloatText("heal", "1");
+                        uiController.UpdateHp();
                     }
                 }
-            } else if (combatCounter > 0) {
-                combatCounter -= speed;
-                if (combatCounter <= 0) {
-                    inCombat = false;
-                }
+            }
+            // Mana regens even in combat
+            if (mana != maxMana && Random.Range(0,8f) < speed) {
+                RegenMana();
             }
             food -= speed;
+            uiController.UpdateFood();
+        } 
+        if (combatCounter > 0) {
+            combatCounter -= speed;
+            if (combatCounter <= 0) {
+                inCombat = false;
+            }
         }
-        uiController.UpdateBars();
-        entities.BroadcastMessage("turnStart", speed);
+        // Cycle through active effects
+        for (int i=effects.Count-1; i >= 0; i--) {
+            Effect e = effects[i];
+            e.duration -= speed;
+            e.Ongoing(this);
+            if (e.duration <= 0) {
+                e.Remove(this);
+                effects.RemoveAt(i);
+            }
+        }
+        entities.BroadcastMessage("turnStart", speed*speedMod);
     }
 
     void OnDestroy() {
         data.playerHp = hp;
+        data.mana = mana;
         data.food = food;
+        data.playerEffects = effects;
+    }
+
+    // A bundle of active effects for easy saving
+    public class Effect {
+        public string typeName;
+        public float effect, duration, effectTimer;
+        public Effect(string t, float e, float dur, PlayerController p) {
+            typeName = t;
+            effect = e;
+            duration = dur;
+            effectTimer = 0;
+            Apply(p);
+        }
+
+        public void Apply(PlayerController p) {
+            if (typeName == "Speed") {
+                Debug.Log("Applying speed "+effect+"!");
+                p.speed *= effect;
+                Debug.Log("New speed: "+p.speed);
+            }
+        }
+
+        public void Ongoing(PlayerController p) {
+            if (typeName == "Regeneration") {
+                effectTimer += p.speed;
+                int heal = Mathf.FloorToInt(effectTimer);
+                if (p.hp < p.maxhp && heal > 0) {
+                    p.Heal(heal);
+                    effectTimer -= heal;
+                }
+            }
+        }
+
+        public void Remove(PlayerController p) {
+            if (typeName == "Speed") {
+                p.speed /= effect;
+            }
+            p.FloatText("msg", typeName+" wore off");
+        }
     }
 }
