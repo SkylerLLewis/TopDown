@@ -85,6 +85,8 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Club", easy);
         lootWheel.Add("Long Stick", easy);
         lootWheel.Add("Log", easy);
+        lootWheel.Add("Staff", easy);
+        lootWheel.Add("Crude Bow", easy);
 
         lootWheel.Add("Rusty Shortsword", medium);
         lootWheel.Add("Half a Scissor", medium);
@@ -92,6 +94,8 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Mallet", medium);
         lootWheel.Add("Flint Spear", medium);
         lootWheel.Add("Dog Chain", medium);
+        lootWheel.Add("Cursed Dagger", medium);
+        lootWheel.Add("Shortbow", medium);
 
         lootWheel.Add("Dueling Sword", rare);
         lootWheel.Add("Hunting Knife", rare);
@@ -99,6 +103,8 @@ public class Initializer : MonoBehaviour
         lootWheel.Add("Hammer", rare);
         lootWheel.Add("Wooden Pike", rare);
         lootWheel.Add("Grain Scythe", rare);
+        lootWheel.Add("Magewood Blade", rare);
+        lootWheel.Add("Light Crossbow", rare);
         
         // Armors
         lootWheel.Add("Leather Tunic", 2*easy);

@@ -65,7 +65,7 @@ public class NPCController : MonoBehaviour
         uiController.Dialogue(
             "Shopkeeper",
             "Looking to protect yourself, or deal some damage?",
-            new List<string>(){"Please sir I'm hungry"},
+            new List<string>(){"Trade"},
             StartShopping);
     }
 

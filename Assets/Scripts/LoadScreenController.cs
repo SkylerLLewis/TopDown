@@ -28,7 +28,7 @@ public class LoadScreenController : MonoBehaviour
     public void LoadNextScene(string scene, string style) {
         float duration = 1;
         if (style == "village") {
-            title.text = "Erecting houses...";
+            title.text = "The Village";
         } else if (style == "sleep") {
             title.text = "z z z . . .";
             duration = 2;

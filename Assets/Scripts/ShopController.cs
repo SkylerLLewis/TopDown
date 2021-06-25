@@ -122,9 +122,11 @@ public class ShopController : MonoBehaviour
             Weapon wep = item as Weapon;
             stat += InventoryController.ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
-            stat += InventoryController.ColorStat("atk ", wep.atk, player.weapon.atk);
-            stat += InventoryController.ColorStat("def ", wep.def, player.weapon.def);
-            stat += InventoryController.ColorStat("spd ", wep.speed, player.weapon.speed);
+            stat += InventoryController.ColorStat("attack: ", wep.atk, player.weapon.atk);
+            stat += InventoryController.ColorStat("defense: ", wep.def, player.weapon.def);
+            stat += InventoryController.ColorStat("atk speed: ", wep.attackSpeed, player.weapon.attackSpeed);
+            stat += InventoryController.ColorStat("speed:  ", wep.speed, player.weapon.speed);
+            stat += InventoryController.ColorStat("mana regen: ", 1+wep.manaRegen, 1+player.weapon.manaRegen);
         } else if (item.itemType == "Armor") {
             Armor arm = item as Armor;
             if (player.armor != null) {

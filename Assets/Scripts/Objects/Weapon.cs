@@ -95,7 +95,7 @@ public class Weapon : InventoryItem {
             } else if (name == "Crude Bow") { // ranged weapon type
                 description = "Nothing more than a bent piece of wood and twine. It's very hard to pull back.";
                 mindmg = 2;
-                maxdmg = 6;
+                maxdmg = 3;
                 attackSpeed = 0.5f;
                 ranged = true;
             }
@@ -155,7 +155,7 @@ public class Weapon : InventoryItem {
                 description = "A small, light bow. Great for travel and rabbit hunting! Not as good for killing.";
                 mindmg = 2;
                 maxdmg = 6;
-                attackSpeed = 0.67f + 0.1f * quality;
+                attackSpeed = 0.60f + 0.1f * quality;
                 ranged = true;
             }
         // -- Tier 3 Weapons -- //
@@ -211,7 +211,7 @@ public class Weapon : InventoryItem {
             } else if (name == "Light Crossbow") {
                 description = "A crossbow small enough to conceal, and more than powerful enough to get the job done.";
                 mindmg = 4;
-                maxdmg = 10;
+                maxdmg = 6;
                 attackSpeed = 0.5f;
                 atk = 2 + 2*quality;
                 ranged = true;

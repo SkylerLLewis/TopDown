@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class SkillController : MonoBehaviour
 {
     UIController uiController;
+    PersistentData data;
     public bool active, disabled;
     public string skillName;
     Image image;
@@ -14,13 +15,14 @@ public class SkillController : MonoBehaviour
 
     void Awake(){
         uiController = transform.parent.GetComponent<UIController>();
+        data = GameObject.FindWithTag("Data").GetComponent<PersistentData>();
         image = GetComponent<Image>();
         active = false;
         disabled = false;
     }
 
     void OnMouseUp() {
-        if (disabled) return;
+        if (disabled || data.mapType != "Dungeon") return;
         if (!active) {
             uiController.AbilityActivate(skill);
             if (skill.activationType != "instant") {

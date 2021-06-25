@@ -37,7 +37,7 @@ public class PersistentData : MonoBehaviour
         followingEnemies = new List<string>();
         // Inventory
         inventory = new List<InventoryItem>();
-        weapon = new Weapon("Shortbow");
+        weapon = new Weapon("Twig");
         armor = null;
         Food bread = new Food("Moldy Bread");
         bread.count = 8;
@@ -51,7 +51,7 @@ public class PersistentData : MonoBehaviour
         LoadShopList();
         // Skills
         skills = new List<Skill>();
-        skillPoints = 1;
+        skillPoints = 0;
         activeSkills = new List<string>();
     }
 

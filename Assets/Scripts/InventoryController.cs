@@ -140,11 +140,11 @@ public class InventoryController : MonoBehaviour
             }
             string stat = ColorStat("Dmg: ", wep.mindmg+wep.maxdmg,
                 player.weapon.mindmg+player.weapon.maxdmg, wep);
-            stat += ColorStat("atk: ", wep.atk, player.weapon.atk);
-            stat += ColorStat("def: ", wep.def, player.weapon.def);
-            stat += ColorStat("atk spd: ", wep.attackSpeed, player.weapon.attackSpeed);
-            stat += ColorStat("spd: ", wep.speed, player.weapon.speed);
-            stat += ColorStat("mana: ", 1+wep.manaRegen, 1+player.weapon.manaRegen);
+            stat += ColorStat("attack: ", wep.atk, player.weapon.atk);
+            stat += ColorStat("defense: ", wep.def, player.weapon.def);
+            stat += ColorStat("atk speed: ", wep.attackSpeed, player.weapon.attackSpeed);
+            stat += ColorStat("speed: ", wep.speed, player.weapon.speed);
+            stat += ColorStat("mana regen: ", 1+wep.manaRegen, 1+player.weapon.manaRegen);
             stats.text = stat;
         } else if (item.itemType == "Armor") {
             if (index >= 0) {
