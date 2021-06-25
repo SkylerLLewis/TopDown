@@ -7,7 +7,6 @@ public class PlayerController : MonoBehaviour
 {
     private Animator animator;
     private string[] walkNames, attackNames;
-    public float speed, food;
     public bool moving = false, attacking = false, dying = false, waiting = false, readyToEnd = false;
     public string saySomething = "";
     public int direction;
@@ -31,7 +30,8 @@ public class PlayerController : MonoBehaviour
     private Camera _mainCamera;
     private GameObject canvas;
     private UIController uiController;
-    private GameObject textFab, magicBolt;
+    private GameObject textFab, projectile;
+    private Sprite magicMissileSprite;
     private GameObject[] enemyList;
     private Vector3 targetPosition, startPosition, highPoint;
     private Quaternion startAngle, targetAngle;
@@ -46,7 +46,9 @@ public class PlayerController : MonoBehaviour
     // Combat Stats
     public Weapon weapon;
     public Armor armor;
+    float manaCounter = 0;
     public int maxhp, hp, attack, defense, mindmg, maxdmg, armorDR, maxMana, mana;
+    public float speed, food, manaRegen;
 
     void Start() {
         // Load Controllers
@@ -94,7 +96,9 @@ public class PlayerController : MonoBehaviour
         attackNames = new string[4] {"attackUp", "attackRight", "attackDown", "attackLeft"};
         targetPosition = this.transform.position;
         textFab = Resources.Load("Prefabs/DamageText") as GameObject;
-        magicBolt = Resources.Load("Prefabs/MagicBolt") as GameObject;
+        projectile = Resources.Load("Prefabs/PlayerProjectile") as GameObject;
+        
+        magicMissileSprite = Resources.Load<Sprite>("Weapons/Bolt");
 
         // Set Position
         tilePosition = new Vector3Int(0,0,0);
@@ -127,6 +131,7 @@ public class PlayerController : MonoBehaviour
         mindmg = 0;
         maxdmg = 0;
         armorDR = 0;
+        manaRegen = 0;
         EquipWeapon(data.weapon);
         if (data.armor != null) {
             EquipArmor(data.armor);
@@ -181,6 +186,26 @@ public class PlayerController : MonoBehaviour
                     }
                 }
                 return;
+            }
+
+            // Use ranged weapon?
+            if (weapon.ranged) {
+                enemyList = GameObject.FindGameObjectsWithTag("Enemy");
+                if (enemyList.Length > 0) {
+                    Vector3Int aimCell = PathFinder.WorldToTile(
+                        _mainCamera.ScreenToWorldPoint(
+                            Input.mousePosition));
+                    RangeFind(10);
+                    foreach (GameObject Eobj in enemyList) {
+                        EnemyBehavior e = Eobj.GetComponent<EnemyBehavior>();
+                        if (!e.dying && aimCell == e.tilePosition && rangedTiles.Contains(aimCell)) {
+                            waiting = true;
+                            ShootArrow(e);
+                            EndTurn(1/weapon.attackSpeed);
+                            return;
+                        }
+                    }
+                }
             }
 
             // Wait?
@@ -299,13 +324,20 @@ public class PlayerController : MonoBehaviour
                 }
 
                 if (enemyFront && !target.dying) {
-                    attacking = true;
-                    highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
-                    highPoint = targetPosition;
-                    targetPosition = startPosition;
-                    count = 0.0f;
-                    Attack(target);
-                    readyToEnd = true;
+                    if (!weapon.ranged) {
+                        attacking = true;
+                        highPoint = startPosition +(targetPosition -startPosition)/2 +Vector3.up *0.5f;
+                        highPoint = targetPosition;
+                        targetPosition = startPosition;
+                        count = 0.0f;
+                        Attack(target);
+                        readyToEnd = true;
+                    } else {
+                        waiting = true;
+                        ShootArrow(target);
+                        EndTurn(1/weapon.attackSpeed);
+                        return;
+                    }
 
                 } else { // No walls, blocks or enemies: move
             
@@ -486,7 +518,7 @@ public class PlayerController : MonoBehaviour
                 } else if (s.stat == "Mana") {
                     maxMana += s.amount*s.magnitude;
                 } else if (s.stat == "Speed") {
-                    speed = 1f - (0.05f*s.amount*s.magnitude);
+                    speed = 1f - (0.1f*s.amount*s.magnitude);
                 }
             }
         }
@@ -501,6 +533,7 @@ public class PlayerController : MonoBehaviour
             mindmg -= weapon.mindmg;
             maxdmg -= weapon.maxdmg;
             speed /= (1/weapon.speed);
+            manaRegen -= weapon.manaRegen;
         }
         weapon = w;
         attack += weapon.atk;
@@ -508,6 +541,7 @@ public class PlayerController : MonoBehaviour
         mindmg += weapon.mindmg;
         maxdmg += weapon.maxdmg;
         speed *= (1/weapon.speed);
+        manaRegen += weapon.manaRegen;
     }
 
     public void UnequipWeapon() {
@@ -574,6 +608,7 @@ public class PlayerController : MonoBehaviour
                 usingSkill = s;
                 rangedToExecute = s.name;
                 RangeFind(range:6);
+                HighlightTiles(rangedTiles, new Color(0.5f,0.5f,1,1));
             } else if (s.name == "Lesser Heal") {
                 Heal(15);
                 mana -= s.manaCost;
@@ -611,10 +646,11 @@ public class PlayerController : MonoBehaviour
             style = "miss";
         }
         GameObject clone = Instantiate(
-            magicBolt,
+            projectile,
             transform.position,
             Quaternion.identity);
         clone.name = clone.name.Split('(')[0];
+        clone.GetComponent<SpriteRenderer>().sprite = magicMissileSprite;
         clone.GetComponent<ProjectileController>().Shoot(target, damage, style);
         target.FutureDamage(damage);
         EndTurn(2*speed);
@@ -625,11 +661,37 @@ public class PlayerController : MonoBehaviour
 
     private void RangeFind(int range) {
         rangedTiles = pathFinder.GetTilesInSight(tilePosition, 6);
-        HighlightTiles(rangedTiles, new Color(0.5f,0.5f,1,1));
     }
 
-    private void ShootArrow() {
-
+    private void ShootArrow(EnemyBehavior target) {
+        combatCounter = combatIsActive;
+        inCombat = true;
+        int dmg;
+        string style;
+        int roll = Mathf.RoundToInt(Random.Range(1,20+1));
+        roll += attack - target.defense;
+        int crit = 5 + attack - target.defense;
+        if (roll >= 8) { // 65% baseline chance to hit, missing sucks.
+            dmg = Random.Range(mindmg,maxdmg+1);
+            if (Random.Range(0, 100) < crit) {
+                for (int i=0; i<(weapon.crit-1); i++) {
+                    dmg += Random.Range(mindmg,maxdmg+1);
+                }
+                style = "crit";
+            } else {
+                style = "dmg";
+            }
+        } else {
+            style = "miss";
+            dmg = 0;
+        }
+        target.FutureDamage(dmg);
+        GameObject clone = Instantiate(
+            projectile,
+            transform.position,
+            Quaternion.identity);
+        clone.name = clone.name.Split('(')[0];
+        clone.GetComponent<ProjectileController>().Shoot(target, dmg, style);
     }
 
     private void Die() {
@@ -645,6 +707,16 @@ public class PlayerController : MonoBehaviour
         data.LoadingScreenLoad("GreenVillage", "death");
     }
 
+    private void RegenMana() {
+        manaCounter += 1+manaRegen;
+        int regenAmount = Mathf.FloorToInt(manaCounter);
+        mana += regenAmount;
+        if (mana > maxMana) mana = maxMana;
+        manaCounter -= regenAmount;
+        FloatText("mana", regenAmount.ToString());
+        uiController.UpdateMana();
+    }
+
     public void EndTurn(float speedMod=1) {
         if (food > 0) {
             if (combatCounter <= 0) {
@@ -658,9 +730,7 @@ public class PlayerController : MonoBehaviour
                         uiController.UpdateHp();
                     }
                     if (mana != maxMana && Random.Range(0,2.66f) < speed) {
-                        mana++;
-                        FloatText("mana", "1");
-                        uiController.UpdateMana();
+                        RegenMana();
                     }
                 } else {// Just walking
                     if(hp != maxhp && Random.Range(0f,4f) < speed) {
@@ -672,9 +742,7 @@ public class PlayerController : MonoBehaviour
             }
             // Mana regens even in combat
             if (mana != maxMana && Random.Range(0,8f) < speed) {
-                mana++;
-                FloatText("mana", "1");
-                uiController.UpdateMana();
+                RegenMana();
             }
             food -= speed;
             uiController.UpdateFood();

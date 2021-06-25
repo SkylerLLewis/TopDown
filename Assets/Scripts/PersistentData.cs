@@ -37,7 +37,7 @@ public class PersistentData : MonoBehaviour
         followingEnemies = new List<string>();
         // Inventory
         inventory = new List<InventoryItem>();
-        weapon = new Weapon("Twig");
+        weapon = new Weapon("Shortbow");
         armor = null;
         Food bread = new Food("Moldy Bread");
         bread.count = 8;

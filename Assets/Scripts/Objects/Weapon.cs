@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class Weapon : InventoryItem {
     public int mindmg, maxdmg, atk, def, crit;
-    public float speed;
+    public float speed, manaRegen, attackSpeed;
+    public bool ranged;
     public static List<List<string>> WeaponTiers = new List<List<string>>() {
-        new List<string>() {"Twig", "Sharp Twig", "Plank with a Nail", "Club", "Long Stick", "Log"},
-        new List<string>() {"Rusty Shortsword", "Half a Scissor", "Copper Hatchet", "Mallet", "Flint Spear", "Dog Chain"},
-        new List<string>() {"Dueling Sword", "Hunting Knife", "Woodcutter's Axe", "Hammer", "Wooden Pike", "Grain Scythe"}
+        new List<string>() {"Twig", "Sharp Twig", "Plank with a Nail", "Club", "Long Stick", "Log", "Staff", "Crude Bow"},
+        new List<string>() {"Rusty Shortsword", "Half a Scissor", "Copper Hatchet", "Mallet", "Flint Spear", "Dog Chain", "Cursed Dagger", "Shortbow"},
+        new List<string>() {"Dueling Sword", "Hunting Knife", "Woodcutter's Axe", "Hammer", "Wooden Pike", "Grain Scythe", "Magewood Blade", "Light Crossbow"}
     };
     public Weapon(string n, int qual=-2) {
         itemType = "Weapon";
@@ -42,6 +43,8 @@ public class Weapon : InventoryItem {
         atk = 0;
         def = 0;
         crit = 2;
+        ranged = false;
+        attackSpeed = 1;
         // -- Tier 1 Starter Weapons -- //
         // Tier 1s have an average of 2 dmg and +10% effect
         if (WeaponTiers[0].Contains(name)) {
@@ -83,6 +86,18 @@ public class Weapon : InventoryItem {
                 atk = 3;
                 def = 3;
                 speed = 0.80f;
+            } else if (name == "Staff") { // Mage weapon type
+                description = "A staff made of wood from the enchanted forest.";
+                mindmg = 1;
+                maxdmg = 2;
+                manaRegen = 0.2f;
+                speed = 1.05f;
+            } else if (name == "Crude Bow") { // ranged weapon type
+                description = "Nothing more than a bent piece of wood and twine. It's very hard to pull back.";
+                mindmg = 2;
+                maxdmg = 6;
+                attackSpeed = 0.5f;
+                ranged = true;
             }
         // -- Tier 2 Weapons -- //
         // Tier 2s have average 3 dmg  and +25% extra effect
@@ -129,6 +144,19 @@ public class Weapon : InventoryItem {
                 speed = 0.85f + 0.05f*quality;
                 atk = 2;
                 def = 3;
+            } else if (name == "Cursed Dagger") {
+                description = "Malice radiates from this dagger like heat from an oven.";
+                mindmg = 2;
+                maxdmg = 4;
+                def = -6 - quality;
+                manaRegen = 0.35f + 0.05f*quality;
+                speed = 1.10f;
+            } else if (name == "Shortbow") { // ranged weapon type
+                description = "A small, light bow. Great for travel and rabbit hunting! Not as good for killing.";
+                mindmg = 2;
+                maxdmg = 6;
+                attackSpeed = 0.67f + 0.1f * quality;
+                ranged = true;
             }
         // -- Tier 3 Weapons -- //
         // Tier 3 weapons have average 4 dmg and + 50% effect
@@ -174,7 +202,22 @@ public class Weapon : InventoryItem {
                 maxdmg = 6;
                 speed = 1.05f + 0.05f*quality;
                 def = 3;
+            } else if (name == "Magewood Blade") {
+                description = "This arming sword has a hilt made from magic wood.";
+                mindmg = 2;
+                maxdmg = 8;
+                manaRegen = 0.25f;
+                speed = 1 + 0.05f*quality;
+            } else if (name == "Light Crossbow") {
+                description = "A crossbow small enough to conceal, and more than powerful enough to get the job done.";
+                mindmg = 4;
+                maxdmg = 10;
+                attackSpeed = 0.5f;
+                atk = 2 + 2*quality;
+                ranged = true;
             }
+        } else {
+            Debug.LogError("Weapon name "+name+" not found!");
         }
 
         // Quality affects cost exponentially
