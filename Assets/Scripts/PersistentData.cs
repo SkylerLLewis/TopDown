@@ -51,10 +51,8 @@ public class PersistentData : MonoBehaviour
         LoadShopList();
         // Skills
         skills = new List<Skill>();
-        skillPoints = 0;
+        skillPoints = 1;
         activeSkills = new List<string>();
-        activeSkills.Add("Magic Missile");
-        activeSkills.Add("Lesser Heal");
     }
 
     void Start() {

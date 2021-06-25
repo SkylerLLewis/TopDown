@@ -64,7 +64,7 @@ public class SkillsScreenController : MonoBehaviour
             skillPoints.text = data.skillPoints.ToString();
             GameObject text = Instantiate(textFab, new Vector3(0,0,0), Quaternion.identity, gameObject.transform);
             DmgTextController textCont = text.GetComponent<DmgTextController>();
-            textCont.Init(skillPoints.transform.position, "cost", (-1).ToString());
+            textCont.Init(skillPoints.transform.position, "skillCost", (-1).ToString());
             bool contains = false;
             Skill selected = null;
             foreach (Skill s in data.skills) {
@@ -78,8 +78,13 @@ public class SkillsScreenController : MonoBehaviour
                 selected.magnitude++;
             } else {
                 data.skills.Add(activeSkill);
+                if (activeSkill.abilityType == "magic") {
+                    data.activeSkills.Add(activeSkill.name);
+                    uiController.UpdateSkillButtons();
+                }
             }
             player.ApplySkills();
+            DisplayUnlock(activeSkill.name);
         }
     }
 }

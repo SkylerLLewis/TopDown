@@ -33,20 +33,14 @@ public class UIController : MonoBehaviour
         depthText = GameObject.Find("Depth Text").GetComponent<TextMeshProUGUI>();
         player = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
         depthText.text = data.depth.ToString();
-        
-        int buttonNum = 1;
+
         skillButtons = new List<SkillController>();
-        foreach(string n in data.activeSkills) {
-            SkillController skillButton = GameObject.Find("Skill Button "+buttonNum)
+        for (int i=1; i<=6; i++) {
+            SkillController skillButton = GameObject.Find("Skill Button "+i)
                 .GetComponent<SkillController>();
-            skillButton.SetName(n);
             skillButtons.Add(skillButton);
-            buttonNum++;
         }
-        for (int i=buttonNum; i <= 6; i++) {
-            GameObject skillButton = GameObject.Find("Skill Button "+i);
-            skillButton.SetActive(false);
-        }
+        UpdateSkillButtons();
 
         optionButtons = new List<Button>();
         options = new List<TextMeshProUGUI>();
@@ -76,6 +70,19 @@ public class UIController : MonoBehaviour
 
     }
 
+    public void UpdateSkillButtons() {
+        int buttonNum = 0;
+        foreach(string n in data.activeSkills) {
+            SkillController skillButton = skillButtons[buttonNum];
+            skillButton.gameObject.SetActive(true);
+            skillButton.SetName(n);
+            buttonNum++;
+        }
+        for (int i=buttonNum; i < 6; i++) {
+            skillButtons[i].gameObject.SetActive(false);
+        }
+    }
+
     public void UpdateHp() {
         hpBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*((float)player.hp/player.maxhp));
     }
@@ -84,6 +91,7 @@ public class UIController : MonoBehaviour
         manaBar.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 380f*((float)player.mana/player.maxMana));
         // Activate/deactivate magic skills?
         foreach(SkillController s in skillButtons) {
+            if (!s.gameObject.activeInHierarchy) break;
             if (s.skill.abilityType == "magic"){
                 if (!s.disabled && player.mana < s.skill.manaCost) {
                     s.Disable();
