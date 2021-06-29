@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Weapon : InventoryItem {
-    public int mindmg, maxdmg, atk, def, crit;
+    public int mindmg, maxdmg, atk, def, crit, sneak;
     public float speed, manaRegen, attackSpeed;
     public bool ranged;
     public static List<List<string>> WeaponTiers = new List<List<string>>() {
@@ -43,6 +43,7 @@ public class Weapon : InventoryItem {
         atk = 0;
         def = 0;
         crit = 2;
+        sneak = 2;
         ranged = false;
         attackSpeed = 1;
         // -- Tier 1 Starter Weapons -- //
@@ -63,7 +64,7 @@ public class Weapon : InventoryItem {
                 speed = 1.15f;
                 atk = 2;
                 def = -3;
-                crit = 4;
+                sneak = 4;
             } else if (name == "Plank with a Nail") { // Axe type
                 description = "This nail should punch through armor at least.";
                 mindmg = 1;
@@ -73,6 +74,7 @@ public class Weapon : InventoryItem {
                 description = "It's slow, but it hits hard.";
                 mindmg = 1;
                 maxdmg = 4;
+                crit = 3;
                 speed = 0.9f;
             } else if (name == "Long Stick") { // Spear type
                 description = "Now this should keep them back.";
@@ -121,7 +123,7 @@ public class Weapon : InventoryItem {
                 speed = 1.15f + 0.05f*quality;
                 atk = 3;
                 def = -4;
-                crit = 4;
+                sneak = 4;
             } else if (name == "Copper Hatchet") {
                 description = "This hatchet should bite deep. It has a nice shine to it.";
                 mindmg = 2;
@@ -131,6 +133,7 @@ public class Weapon : InventoryItem {
                 description = "I'm gettin me mallet!";
                 mindmg = 3 + quality;
                 maxdmg = 6;
+                crit = 3;
                 speed = 0.9f;
             } else if (name == "Flint Spear") {
                 description = "It smells faintly of mammoth blood.";
@@ -180,7 +183,7 @@ public class Weapon : InventoryItem {
                 mindmg = 1;
                 maxdmg = 9;
                 def = -3;
-                crit = 4;
+                sneak = 4;
                 speed = 1.1f + 0.05f*quality;
             } else if (name == "Woodcutter's Axe") {
                 description = "A solid iron axe, good for cleaving.";
@@ -191,6 +194,7 @@ public class Weapon : InventoryItem {
                 description = "Made for smashing.";
                 mindmg = 4 + 2*quality;
                 maxdmg = 8;
+                crit = 3;
             } else if (name == "Wooden Pike") {
                 description = "Was this a signpost?";
                 mindmg = 2 + quality;

@@ -197,6 +197,7 @@ public class InventoryController : MonoBehaviour
             } else {
                 button.text = "-";
             }
+            stats.text = "";
         }
     }
 

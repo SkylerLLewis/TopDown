@@ -43,6 +43,8 @@ public class GreenVillageInit : MonoBehaviour
         rooms = new List<Room>();
         rooms.Add(new Room(new Vector3Int(5,0,0), new Vector3Int(2,-3,0)));
         rooms.Add(new Room(new Vector3Int(4,9,0), new Vector3Int(1,4,0)));
+        rooms.Add(new Room(new Vector3Int(-2,0,0), new Vector3Int(-5,-4,0)));
+        rooms.Add(new Room(new Vector3Int(-3,7,0), new Vector3Int(-7,4,0)));
 
         // -- NEW SHIT! -- //
         GetWorldTiles();
