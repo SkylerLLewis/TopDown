@@ -10,6 +10,7 @@ public class Room
     public Vector3 center;
     public Room[] neighbors;
     public Vector3Int[] doors;
+    public bool[] doorsOpen;
     public bool active;
     Tilemap floorMap;
     Initializer mapController;
@@ -36,6 +37,7 @@ public class Room
         height = head.y - tail.y + 1;
         center = (head + tail) / 2;
         doors = new Vector3Int[4];
+        doorsOpen = new bool[4] {false,false,false,false};
         neighbors = new Room[4];
         loot = 0;
         // Is this room a special prefab?
@@ -173,10 +175,12 @@ public class Room
             }
         }
         // Basic direction won't work
-        if (doors[dir] == null) {
+        if (doors[dir] == null || !(doors[dir] == null || doorsOpen[dir])) {
+            // Super strange logic expression, a V ~(a V b)
+            // if door is null, always override, but also if door is not null and door is not open...
             int prev = dir;
             // rotate left or right
-            if (Mathf.Abs(delta.y) >= Mathf.Abs(delta.x)) {
+            if (dir == 0 || dir == 2) {
                 // Was going up/down, go left/right
                 if (delta.x >= 0) {
                     dir = 1;
@@ -191,10 +195,10 @@ public class Room
                     dir = 2;
                 }
             }
-            if (doors[dir] == null) {
+            if (doors[dir] == null || !(doors[dir] == null || doorsOpen[dir])) {
                 // try other way
                 dir = (dir+2)%4;
-                if (doors[dir] == null) {
+                if (doors[dir] == null || !(doors[dir] == null || doorsOpen[dir])) {
                     // just turn around
                     dir = (prev+2)%2;
                 }

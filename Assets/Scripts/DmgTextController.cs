@@ -24,8 +24,8 @@ public class DmgTextController : MonoBehaviour
         count = 1.0f;
         speed = 2;
         // Lower yvar is higher
-        yvar = Random.Range(2.5f, 3f);
-        xvar = Random.Range(-0.01f,0.01f);
+        yvar = Random.Range(5f, 6f);
+        xvar = Random.Range(-0.001f,0.001f);
 
         if (style == "dmg") {
             textMesh.text = msg;

@@ -112,10 +112,10 @@ public class Armor : InventoryItem {
             displayName = name;
         } else if (quality == 1) {
             displayName = "Good "+name;
-            description = description+" This armor is high quality.";
+            description = description+" This piece is high quality.";
         } else if (quality == 2) {
             displayName = "Fine "+name;
-            description = description+" This armor is of the finest make.";
+            description = description+" This piece is of the finest make.";
         } else if (quality == 3) {
             displayName = "Masterwork "+name;
             description = description+" Whoever crafted this armor was a true master.";

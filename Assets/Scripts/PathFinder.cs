@@ -60,6 +60,7 @@ public class PathFinder : MonoBehaviour
             0);
     }
 
+    // ! A* PATHFINDER, TOO EXPENSIVE
     public int PathFind(Vector3Int s, Vector3Int e) {
         start = s;
         end = e;
@@ -89,6 +90,7 @@ public class PathFinder : MonoBehaviour
         return -1;
     }
 
+    // ! A*
     private bool Search(Node currentNode) {
         Debug.Log("Searching from "+currentNode.cell.ToString());
         currentNode.state = NodeState.Closed;
@@ -108,6 +110,7 @@ public class PathFinder : MonoBehaviour
         return false;
     }
 
+    // ! A*
     private List<Node> GetWalkableNodes(Node fromNode) {
         List<Node> walkable = new List<Node>();
         IEnumerable<Vector3Int> nextLocations = GetAdjacentLocations(fromNode.cell);

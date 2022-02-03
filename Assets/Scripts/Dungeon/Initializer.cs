@@ -672,8 +672,12 @@ public class Initializer : MonoBehaviour
             if (dir == 1) { cell.x++; }
         }
         foreach (Room r in rooms) {
-            if (r.Contains(cell) && !r.active) {
-                r.Draw();
+            if (r.Contains(cell)){
+                // Set door value to open
+                r.doorsOpen[(dir+2)%4] = true;
+                if (!r.active) {
+                    r.Draw();
+                }
             }
         }
     }

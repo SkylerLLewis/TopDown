@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.EventSystems;
 
 public class PlayerController : MonoBehaviour
 {
@@ -163,11 +164,11 @@ public class PlayerController : MonoBehaviour
 
             // Determine screen position
             Vector2 pos = new Vector2(
-                Input.mousePosition.x/Screen.width,
-                Input.mousePosition.y/Screen.height);
+                Input.mousePosition.x/_mainCamera.pixelWidth, //Screen.width,
+                Input.mousePosition.y/_mainCamera.pixelHeight); //Screen.height);
             
-            // Using interface?
-            if (pos.x<0.11 || pos.x>0.92) {
+            // Capture on UI elements
+            if (EventSystem.current.IsPointerOverGameObject()) {
                 return;
             }
 
