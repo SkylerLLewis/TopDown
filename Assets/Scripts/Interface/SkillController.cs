@@ -47,11 +47,13 @@ public class SkillController : MonoBehaviour
     }
 
     public void Disable() {
+        Debug.Log(this.skillName+" Disabled");
         image.sprite = sprites["disabled"];
         disabled = true;
     }
 
-    public void Undisable() {
+    public void Enable() {
+        Debug.Log(this.skillName+" Enabled");
         image.sprite = sprites["off"];
         disabled = false;
     }

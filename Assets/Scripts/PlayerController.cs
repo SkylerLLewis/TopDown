@@ -171,6 +171,35 @@ public class PlayerController : MonoBehaviour
             if (EventSystem.current.IsPointerOverGameObject()) {
                 return;
             }
+            
+            // A numerical direction that can rotate 0-3
+            direction = 0;
+
+            Vector3Int targetCell = tilePosition;
+            // Calculate target pos
+            targetPosition = this.transform.position;
+            startPosition = this.transform.position;
+            if (pos.x < 0.5 && pos.y >= 0.5) { // y++
+                targetPosition.x = this.transform.position.x - 1f;
+                targetPosition.y = this.transform.position.y + 0.5f;
+                targetCell.y++;
+                direction = 0;
+            } else if (pos.x >= 0.5 && pos.y >= 0.5) { // x++
+                targetPosition.x = this.transform.position.x + 1f;
+                targetPosition.y = this.transform.position.y + 0.5f;
+                targetCell.x++;
+                direction = 1;
+            } else if (pos.x >= 0.5 && pos.y < 0.5) { // y--
+                targetPosition.x = this.transform.position.x + 1f;
+                targetPosition.y = this.transform.position.y - 0.5f;
+                targetCell.y--;
+                direction = 2;
+            } else if (pos.x < 0.5 && pos.y < 0.5) { // x--
+                targetPosition.x = this.transform.position.x - 1f;
+                targetPosition.y = this.transform.position.y - 0.5f;
+                targetCell.x--;
+                direction = 3;
+            }
 
             // Use Ability?
             if (rangedToExecute != "") {
@@ -221,34 +250,6 @@ public class PlayerController : MonoBehaviour
                 return;
             }
 
-            // A numerical direction that can rotate 0-3
-            direction = 0;
-
-            Vector3Int targetCell = tilePosition;
-            // Calculate target pos
-            targetPosition = this.transform.position;
-            startPosition = this.transform.position;
-            if (pos.x < 0.5 && pos.y >= 0.5) { // y++
-                targetPosition.x = this.transform.position.x - 1f;
-                targetPosition.y = this.transform.position.y + 0.5f;
-                targetCell.y++;
-                direction = 0;
-            } else if (pos.x >= 0.5 && pos.y >= 0.5) { // x++
-                targetPosition.x = this.transform.position.x + 1f;
-                targetPosition.y = this.transform.position.y + 0.5f;
-                targetCell.x++;
-                direction = 1;
-            } else if (pos.x >= 0.5 && pos.y < 0.5) { // y--
-                targetPosition.x = this.transform.position.x + 1f;
-                targetPosition.y = this.transform.position.y - 0.5f;
-                targetCell.y--;
-                direction = 2;
-            } else if (pos.x < 0.5 && pos.y < 0.5) { // x--
-                targetPosition.x = this.transform.position.x - 1f;
-                targetPosition.y = this.transform.position.y - 0.5f;
-                targetCell.x--;
-                direction = 3;
-            }
 
             // Find target tile/wall
             bool blocked = false;
@@ -429,14 +430,14 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void Attack(EnemyBehavior target) {
+    void Attack(EnemyBehavior target, float mult=1, int bonus=0) {
         combatCounter = combatIsActive;
         inCombat = true;
         int roll = Mathf.RoundToInt(Random.Range(1,20+1));
-        roll += attack - target.defense;
-        int crit = 5 + attack - target.defense;
+        roll += attack - target.defense + bonus;
+        int crit = 5 + attack - target.defense + bonus;
         if (roll >= 8) { // 65% baseline chance to hit, missing sucks.
-            int dmg = Random.Range(mindmg,maxdmg+1);
+            int dmg = Mathf.RoundToInt(Random.Range(mindmg,maxdmg+1) * mult);
             if (Random.Range(0, 100) < crit) {
                 for (int i=0; i<(weapon.crit-1); i++) {
                     dmg += Random.Range(mindmg,maxdmg+1);
@@ -602,6 +603,7 @@ public class PlayerController : MonoBehaviour
     }
 
     public void Ability(Skill s) {
+        Debug.Log("Ability "+s.name+" Activating");
         if (s.abilityType == "magic") {
             if (mana < s.manaCost) return;
 
@@ -616,6 +618,21 @@ public class PlayerController : MonoBehaviour
                 uiController.UpdateMana();
                 EndTurn(1);
             }
+        } else if (s.abilityType == "melee") {
+            Debug.Log("Melee activating");
+
+            if (s.name == "Lunge") {
+                usingSkill = s;
+                rangedToExecute = s.name;
+                RangeFind(range:2, realDist:true);
+                HighlightTiles(rangedTiles, new Color(1,0.5f,0.5f,1));
+            } else if (s.name == "Power Attack") {
+                Debug.Log("POWWAAAAHHHHHH");
+                usingSkill = s;
+                rangedToExecute = s.name;
+                RangeFind(range:1, realDist:true);
+                HighlightTiles(rangedTiles, new Color(1,0.5f,0.5f,1));
+            }
         }
     }
 
@@ -627,6 +644,10 @@ public class PlayerController : MonoBehaviour
     private void ExecuteRanged(EnemyBehavior e) {
         if (rangedToExecute == "Magic Missile") {
             MagicMissile(e);
+        } else if (rangedToExecute == "Lunge") {
+            Lunge(e);
+        } else if (rangedToExecute == "Power Attack") {
+            PowerAttack(e);
         }
         rangedToExecute = "";
         HighlightTiles(rangedTiles, new Color(1,1,1,1));
@@ -660,8 +681,64 @@ public class PlayerController : MonoBehaviour
         uiController.UpdateMana();
     }
 
-    private void RangeFind(int range) {
-        rangedTiles = pathFinder.GetTilesInSight(tilePosition, 6);
+    void Lunge(EnemyBehavior target) {
+        // Lunge attack for animation
+        startPosition = this.transform.position;
+        attacking = true;
+        highPoint = target.transform.position;
+        targetPosition = startPosition;
+        count = 0.0f;
+        readyToEnd = true;
+        Attack(target, mult:1, bonus:2);
+        uiController.UsedSkill("Lunge");
+
+        // Animate
+        if (direction < 2) {
+            facing[0] = "up";
+        } else {
+            facing[0] = "down";
+        }
+        if (direction == 0 || direction == 3) {
+            facing [1] = "left";
+        } else {
+            facing[1] = "right";
+        }
+        animator.CrossFade(attackNames[direction], 0f);
+
+        // Cooldown
+        effects.Add(new Effect("LungeCooldown", 0, 10f, this));
+    }
+
+    void PowerAttack(EnemyBehavior target) {
+        // Lunge attack for animation
+        startPosition = this.transform.position;
+        attacking = true;
+        highPoint = target.transform.position;
+        targetPosition = startPosition;
+        count = 0.0f;
+        readyToEnd = true;
+        Attack(target, mult:2f, bonus:5);
+        uiController.UsedSkill("Power Attack");
+
+        // Animate
+        if (direction < 2) {
+            facing[0] = "up";
+        } else {
+            facing[0] = "down";
+        }
+        if (direction == 0 || direction == 3) {
+            facing [1] = "left";
+        } else {
+            facing[1] = "right";
+        }
+        animator.CrossFade(attackNames[direction], 0f);
+
+        // Cooldown
+        effects.Add(new Effect("PowerAttackCooldown", 0, 20f, this));
+    }
+
+    private void RangeFind(int range, bool realDist=false) {
+        rangedTiles = pathFinder.GetTilesInSight(tilePosition, range, realDist);
     }
 
     private void ShootArrow(EnemyBehavior target) {
@@ -791,6 +868,10 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("Applying speed "+effect+"!");
                 p.speed *= effect;
                 Debug.Log("New speed: "+p.speed);
+            } else if (typeName == "LungeCooldown") {
+                p.uiController.DisableSkill("Lunge");
+            } else if (typeName == "PowerAttackCooldown") {
+                p.uiController.DisableSkill("Power Attack");
             }
         }
 
@@ -808,8 +889,12 @@ public class PlayerController : MonoBehaviour
         public void Remove(PlayerController p) {
             if (typeName == "Speed") {
                 p.speed /= effect;
+                p.FloatText("msg", "Speed Potion wore off");
+            } else if (typeName == "LungeCooldown") {
+                p.uiController.EnableSkill("Lunge");
+            } else if (typeName == "PowerAttackCooldown") {
+                p.uiController.EnableSkill("Power Attack");
             }
-            p.FloatText("msg", typeName+" wore off");
         }
     }
 }

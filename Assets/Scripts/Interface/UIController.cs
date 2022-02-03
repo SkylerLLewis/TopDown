@@ -96,7 +96,7 @@ public class UIController : MonoBehaviour
                 if (!s.disabled && player.mana < s.skill.manaCost) {
                     s.Disable();
                 } else if (s.disabled && player.mana >= s.skill.manaCost) {
-                    s.Undisable();
+                    s.Enable();
                 }
             }
         }
@@ -110,6 +110,23 @@ public class UIController : MonoBehaviour
         foreach(SkillController s in skillButtons) {
             if (s.skillName == n) {
                 s.Used();
+            }
+        }
+    }
+
+    public void DisableSkill(string n) {
+        Debug.Log("Trying to disable "+n);
+        foreach(SkillController s in skillButtons) {
+            if (s.skillName == n) {
+                s.Disable();
+            }
+        }
+    }
+
+    public void EnableSkill(string n) {
+        foreach(SkillController s in skillButtons) {
+            if (s.skillName == n) {
+                s.Enable();
             }
         }
     }

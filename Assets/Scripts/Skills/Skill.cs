@@ -7,7 +7,8 @@ public class Skill {
     public static Dictionary<string, List<string>> SkillTypes = 
     new Dictionary<string,List<string>>() {
         {"basic", new List<string>() {"Health", "Mana", "Speed"}},
-        {"magic", new List<string>() {"Magic Missile", "Lesser Heal"}}
+        {"magic", new List<string>() {"Magic Missile", "Lesser Heal"}},
+        {"melee", new List<string>() {"Lunge", "Power Attack"}}
     };
     public string name, abilityType, activationType, stat,
                   displayName, description;
@@ -45,6 +46,16 @@ public class Skill {
                 description = "Slow bleeding and heal bruises. (+15hp)";
                 manaCost = 10;
                 activationType = "instant";
+            }
+        } else if (SkillTypes["melee"].Contains(name)) {
+            abilityType = "melee";
+            displayName = name;
+            if (name == "Lunge") {
+                description = "Lunge forward suddenly to strike an enemy before they can close with you, staying just out of their reach.";
+                activationType = "ranged";
+            } else if (name == "Power Attack") {
+                description = "Bring your weapon down for a crushing blow.";
+                activationType = "ranged";
             }
         }
     }

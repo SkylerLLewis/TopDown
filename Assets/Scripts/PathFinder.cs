@@ -222,14 +222,17 @@ public class PathFinder : MonoBehaviour
             ydir = 2;
         }
         float xcost, ycost;
+        bool walkable;
         
         s += "\n    Starting at: "+from;
-        Vector3Int xtest = new Vector3Int(), ytest = new Vector3Int(), walk = from, targetCell;
+        Vector3Int xtest = new Vector3Int(), ytest = new Vector3Int(), walk = from, targetCell = Vector3Int.zero;
         while (walk != to) {
             if (deltax == 0) { // vertical target
                 targetCell = DirectionToCell(ydir, walk);
+                walkable = IsWalkable(walk, targetCell);
             } else if (deltay == 0) { // horizontal target
                 targetCell = DirectionToCell(xdir, walk);
+                walkable = IsWalkable(walk, targetCell);
             } else {
                 // Try x
                 xtest = DirectionToCell(xdir, walk);
@@ -242,19 +245,25 @@ public class PathFinder : MonoBehaviour
                 // Closest to target?
                 if (xcost < ycost) {
                     targetCell = xtest;
+                    walkable = IsWalkable(walk, targetCell);
                 } else if (xcost > ycost) {
                     targetCell = ytest;
+                    walkable = IsWalkable(walk, targetCell);
                 } else {// Cross over when unsure
-                    if (Mathf.Abs(deltax) < Mathf.Abs(deltay)) {
+                    if (IsWalkable(walk, xtest)) {
                         targetCell = xtest;
-                    } else {
+                        walkable = true;
+                    } else if (IsWalkable(walk, ytest)) {
                         targetCell = ytest;
+                        walkable = true;
+                    } else {
+                        walkable = false;
                     }
                 }
             }
 
             s += "\n    Walking to "+targetCell;
-            if (IsWalkable(walk, targetCell)) {
+            if (walkable) {
                 walk = targetCell;
             } else {
                 //Debug.Log(s+"\nFailed.");
@@ -294,20 +303,36 @@ public class PathFinder : MonoBehaviour
         return IsWalkable(currentCell, DirectionToCell(direction, currentCell), obstructors);
     }
 
-    public List<Vector3Int> GetTilesInSight(Vector3Int center, int range) {
+    public List<Vector3Int> GetTilesInSight(Vector3Int center, int range, bool realDist=false) {
         List<Vector3Int> cells = new List<Vector3Int>();
         Vector3Int cell = new Vector3Int();
         int width = center.x+range;
         int height = center.y+range;
-        for (int x=center.x-range; x <= width; x++) {
-            for (int y=center.y-range; y <= height; y++) {
-                cell.x = x;
-                cell.y = y;
-                if (floorMap.GetTile(cell) != null) {
-                    if (Vector3Int.Distance(center, cell) <= 6 &&
-                    LineOfSight(center, cell)) {
-                        Vector3Int copy = cell;
-                        cells.Add(cell);
+        if (!realDist) {
+            for (int x=center.x-range; x <= width; x++) {
+                for (int y=center.y-range; y <= height; y++) {
+                    cell.x = x;
+                    cell.y = y;
+                    if (floorMap.GetTile(cell) != null) {
+                        if (Vector3Int.Distance(center, cell) <= range &&
+                        LineOfSight(center, cell)) {
+                            Vector3Int copy = cell;
+                            cells.Add(cell);
+                        }
+                    }
+                }
+            }
+        } else {
+            for (int x=center.x-range; x <= width; x++) {
+                for (int y=center.y-range; y <= height; y++) {
+                    cell.x = x;
+                    cell.y = y;
+                    if (floorMap.GetTile(cell) != null) {
+                        if (Vector3.Distance(center, cell) <= range &&
+                        LineOfSight(center, cell)) {
+                            Vector3Int copy = cell;
+                            cells.Add(cell);
+                        }
                     }
                 }
             }

@@ -53,6 +53,7 @@ public class PersistentData : MonoBehaviour
         skills = new List<Skill>();
         skillPoints = 0;
         activeSkills = new List<string>();
+        activeSkills.Add("Power Attack");
     }
 
     void Start() {
